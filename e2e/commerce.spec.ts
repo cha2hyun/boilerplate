@@ -1,4 +1,9 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
+
+// The browser suite consumes HTTP payloads, independently of Vite's application module graph.
+type CommerceRecord =
+  | { id: string; customer: { name: string; email: string } }
+  | { id: string; name: string; email: string }
 
 test('combines order status and customer search, and recovers from empty results', async ({
   page,
@@ -83,7 +88,9 @@ test('filters, sorts, paginates and inspects sample customer profiles', async ({
   const details = page.getByRole('dialog', { name: 'Orlando Diggs', exact: true })
   await expect(details).toBeVisible()
   await expect(details.getByText('orlando@example.com', { exact: true })).toBeVisible()
-  await expect(details.getByText('$2,416.00', { exact: true })).toBeVisible()
+  await expect(
+    details.locator('[data-number-state] .sr-only').filter({ hasText: '$2,416.00' }),
+  ).toHaveText('$2,416.00')
   await expect(details.getByText('San Francisco, United States', { exact: true })).toBeVisible()
   await details.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(details).toBeHidden()
@@ -98,6 +105,7 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
     const region = page.getByRole('region', { name: `${title} table`, exact: true })
     const table = region.locator('[data-slot="table-container"]')
     await expect(table).toBeVisible()
+    await expect(region).toHaveAttribute('aria-busy', 'false')
     const layout = await table.evaluate((element) => ({
       viewport: window.innerWidth,
       pageWidth: document.documentElement.scrollWidth,
@@ -122,3 +130,110 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
     await expect(sheet).toBeHidden()
   }
 })
+
+async function refreshCommerceResponse(
+  page: Page,
+  endpoint: string,
+  records: unknown,
+  time: number,
+) {
+  // Initial requests use the real demo worker. Override only this read response to model
+  // server edits/deletions, without exposing a QueryClient or test hooks in application code.
+  await page.evaluate(
+    ({ path, data }) => {
+      const originalFetch = window.fetch.bind(window)
+      window.fetch = (input, init) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (new URL(url, window.location.origin).pathname === path) {
+          return Promise.resolve(
+            new Response(JSON.stringify(data), {
+              headers: { 'Content-Type': 'application/json' },
+            }),
+          )
+        }
+        return originalFetch(input, init)
+      }
+    },
+    { path: endpoint, data: records },
+  )
+  await page.clock.setFixedTime(time)
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event('offline'))
+    window.dispatchEvent(new Event('online'))
+  })
+}
+
+for (const route of ['orders', 'customers'] as const) {
+  test(`${route} keeps open details current and contains long customer text`, async ({ page }) => {
+    const start = new Date('2026-11-04T00:00:00Z').getTime()
+    const endpoint = `/api/${route}`
+    await page.clock.setFixedTime(start)
+    const firstResponse = page.waitForResponse(
+      (response) => new URL(response.url()).pathname === endpoint,
+    )
+    await page.goto(`/${route}`)
+    const records = (await (await firstResponse).json()) as CommerceRecord[]
+    const first = records[0]
+    if (!first) throw new Error('The sample commerce response was empty.')
+    const originalName = 'customer' in first ? first.customer.name : first.name
+    const name = 'Alexandra Montgomery-Rutherford with a deliberately long customer profile name'
+    const email = 'alexandra.long.customer.profile.for.account@example.com'
+    const revised =
+      'customer' in first
+        ? { ...first, customer: { ...first.customer, name, email } }
+        : { ...first, name, email }
+    const revisedRecords = records.map((record) => (record.id === first.id ? revised : record))
+    const originalTrigger =
+      route === 'orders' ? `View order ${first.id}` : `View customer ${originalName}`
+    const revisedTrigger = route === 'orders' ? `View order ${first.id}` : `View customer ${name}`
+    await page.getByRole('button', { name: originalTrigger, exact: true }).click()
+    const details = page.getByRole('dialog')
+    await expect(details).toBeVisible()
+
+    await refreshCommerceResponse(page, endpoint, revisedRecords, start + 61_000)
+    await expect(details.getByText(name, { exact: true })).toBeVisible()
+    await expect(details.getByText(email, { exact: true })).toBeVisible()
+    await details.getByRole('button', { name: 'Close', exact: true }).click()
+    await expect(details).toBeHidden()
+
+    const title = route === 'orders' ? 'Orders' : 'Customers'
+    const table = page.getByRole('region', { name: `${title} table`, exact: true })
+    for (const text of [name, email]) {
+      const field = table.getByTitle(text, { exact: true })
+      await expect(field).toHaveText(text)
+      const bounds = await field.evaluate((element) => {
+        const cell = element.closest('td')
+        if (!cell) throw new Error('The customer field is outside its table cell.')
+        const fieldBox = element.getBoundingClientRect()
+        const cellBox = cell.getBoundingClientRect()
+        return {
+          right: fieldBox.right,
+          cellRight: cellBox.right,
+          clipped: element.scrollWidth > element.clientWidth,
+          overflow: getComputedStyle(element).overflowX,
+          ellipsis: getComputedStyle(element).textOverflow,
+        }
+      })
+      expect(bounds.right).toBeLessThanOrEqual(bounds.cellRight)
+      expect(bounds.clipped).toBe(true)
+      expect(bounds.overflow).toBe('hidden')
+      expect(bounds.ellipsis).toBe('ellipsis')
+    }
+
+    await page.getByRole('button', { name: revisedTrigger, exact: true }).click()
+    await expect(details).toBeVisible()
+    await refreshCommerceResponse(
+      page,
+      endpoint,
+      records.filter((record) => record.id !== first.id),
+      start + 122_000,
+    )
+    await expect(details).toBeHidden()
+    await expect(page.getByRole('textbox', { name: `Search ${route}`, exact: true })).toBeFocused()
+
+    // A later response containing the same ID must not reopen a dismissed selection.
+    await refreshCommerceResponse(page, endpoint, revisedRecords, start + 183_000)
+    await expect(page.getByRole('button', { name: revisedTrigger, exact: true })).toBeVisible()
+    await expect(details).toBeHidden()
+  })
+}

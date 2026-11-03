@@ -1,18 +1,21 @@
 # API 계약과 데이터 모드
 
-`src/shared/config/env.ts`에서 환경 변수를 검증합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. API 서버는 이 저장소에 포함되어 있지 않습니다.
+`src/shared/config/env.ts`에서 환경 변수를 검증합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. 실제 백엔드 서버는 포함하지 않으며 demo의 조회 HTTP는 MSW가 브라우저에서 처리합니다.
 
 ## HTTP 계약
 
 JSON 요청/응답을 사용하며 envelope 없이 아래 객체/배열을 반환합니다. 현재 목록 필터/정렬/페이지 나누기는 클라이언트에서 처리합니다. 서버 페이지네이션을 도입하면 Query key, API 계약, UI를 함께 변경해야 합니다.
 
-| 요청                   | 요청 body      | 성공 응답         |
-| ---------------------- | -------------- | ----------------- |
-| `GET /projects`        | 없음           | `200 Project[]`   |
-| `POST /projects`       | `ProjectInput` | `200/201 Project` |
-| `PATCH /projects/:id`  | `ProjectInput` | `200 Project`     |
-| `DELETE /projects/:id` | 없음           | `204` (body 없음) |
-| `GET /analytics`       | 없음           | `200 Analytics`   |
+| 요청                            | 요청 body      | 성공 응답              |
+| ------------------------------- | -------------- | ---------------------- |
+| `GET /projects`                 | 없음           | `200 Project[]`        |
+| `POST /projects`                | `ProjectInput` | `200/201 Project`      |
+| `PATCH /projects/:id`           | `ProjectInput` | `200 Project`          |
+| `DELETE /projects/:id`          | 없음           | `204` (body 없음)      |
+| `GET /analytics`                | 없음           | `200 Analytics`        |
+| `GET /traffic?period=7\|14\|30` | 없음           | `200 Traffic`          |
+| `GET /orders`                   | 없음           | `200 SampleOrder[]`    |
+| `GET /customers`                | 없음           | `200 SampleCustomer[]` |
 
 경로는 `VITE_API_BASE_URL` 뒤에 연결됩니다. `PATCH`에는 현재 계약상 수정 가능한 모든 필드를 보냅니다.
 
@@ -55,6 +58,18 @@ type Analytics = {
 ```
 
 실제 런타임 계약은 `src/entities/project/model/schema.ts`와 `src/entities/analytics/model/schema.ts`가 기준입니다. 계약 변경 시 스키마, API 어댑터, 테스트, 이 문서를 함께 수정합니다.
+
+Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`, `entities/customer`의 `model/schema.ts`가 소유합니다. Traffic은 선택 기간의 일별 방문·세션·페이지뷰와 유입/페이지/기기별 요약을 반환합니다. 주문/고객은 상세 Sheet에 필요한 필드를 포함한 읽기 전용 전체 목록입니다. 목록의 검색·정렬·페이지 나누기는 클라이언트에서 수행하며 서버 필터를 구현한 것으로 설명하지 않습니다.
+
+API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니다. Traffic의 기기 항목은 `device`와 `sessions`만 포함하며, 화면이 로컬 의미 토큰으로 색상을 지정합니다. 응답에 알 수 없는 스타일 필드가 있어도 스키마 검증 결과에서 제거되므로 화면에 전달하지 않습니다.
+
+## 목업 HTTP와 시작 경계
+
+`app/mocks/start.ts`는 demo에서만 MSW를 동적으로 가져와 worker 준비를 기다린 뒤 React 앱을 시작합니다. 운영 API 모드에서는 해당 import/worker 시작을 수행하지 않습니다. 실패하면 shadcn 오류 화면과 Reload 버튼을 제공하며 가짜 성공 데이터로 바꾸지 않습니다. worker에는 secure context(HTTPS 또는 localhost)가 필요합니다.
+
+핸들러는 위 네 개 조회 endpoint만 처리합니다. 프로젝트는 기존 demo 저장 어댑터를 유지하고, 그 외 요청은 통과시킵니다. 고정된 450ms 지연과 `Cache-Control: no-store`로 Query 캐시의 동작을 구분할 수 있습니다. HTTP 목업은 dev와 production demo preview에서 동일하게 동작합니다. 실제 API의 인증/권한/백엔드를 제공하는 기능은 아닙니다.
+
+`public/mockServiceWorker.js`는 MSW CLI가 생성하는 자산이며 내용/무결성 코드를 직접 편집하지 않습니다. MSW 버전을 바꾸면 `pnpm exec msw init public --save`로 재생성합니다. formatter/ESLint는 이 생성 파일 하나만 제외합니다. 정적 호스트는 이 파일을 SPA fallback보다 먼저 JavaScript로 제공해야 합니다. Query 키/캐시 수명·검증 방법은 [Query 캐시](query-cache.md)가 소유합니다.
 
 ## 실패, 취소, 캐시
 

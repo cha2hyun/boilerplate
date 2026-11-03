@@ -1,15 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import {
-  Boxes,
-  ChevronDown,
-  ChevronsUpDown,
-  ExternalLink,
-  Moon,
-  Search,
-  Settings2,
-  Sun,
-} from 'lucide-react'
+import { Boxes, ChevronDown, ExternalLink, Moon, Search, Sun } from 'lucide-react'
 import { usePreferences } from '@/features/workspace-preferences'
 import { env } from '@/shared/config'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
@@ -35,15 +26,8 @@ import {
   CommandList,
   CommandShortcut,
 } from '@/shared/ui/command'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
 import { Separator } from '@/shared/ui/separator'
+import { Kbd } from '@/shared/ui/kbd'
 import {
   Sidebar,
   SidebarContent,
@@ -65,16 +49,20 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
 function WorkspaceSidebar() {
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const workspaceName = usePreferences((state) => state.workspaceName)
   const { setOpenMobile } = useSidebar()
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="gap-5 px-3 pt-5 pb-3">
+      <SidebarHeader className="px-2 pt-5 pb-3">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg" className="hover:bg-transparent">
+            <SidebarMenuButton
+              asChild
+              size="lg"
+              className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center hover:bg-transparent"
+            >
               <Link
                 to="/"
+                aria-label="Blueprint overview"
                 onClick={() => {
                   setOpenMobile(false)
                 }}
@@ -82,47 +70,13 @@ function WorkspaceSidebar() {
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <Boxes className="size-5" />
                 </div>
-                <span className="text-lg font-semibold tracking-tight">
+                <span className="text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
                   blueprint<span className="text-muted-foreground">.</span>
                 </span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <SidebarMenuButton
-              size="lg"
-              className="border border-sidebar-border bg-background shadow-xs"
-            >
-              <Avatar className="size-8 rounded-md">
-                <AvatarFallback className="rounded-md text-xs">
-                  {workspaceName.slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{workspaceName}</span>
-                <span className="text-xs text-muted-foreground">Personal workspace</span>
-              </div>
-              <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
-            </SidebarMenuButton>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="bottom" align="start" className="w-56">
-            <DropdownMenuLabel>Workspace</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link
-                to="/settings"
-                onClick={() => {
-                  setOpenMobile(false)
-                }}
-              >
-                <Settings2 />
-                Workspace settings
-              </Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </SidebarHeader>
       <SidebarContent>
         {navigationGroups.map((group) => (
@@ -138,7 +92,7 @@ function WorkspaceSidebar() {
                         asChild
                         isActive={pathname === item.to}
                         tooltip={item.label}
-                        className="h-10"
+                        className="h-10 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
                       >
                         <Link
                           to={item.to}
@@ -147,22 +101,28 @@ function WorkspaceSidebar() {
                           }}
                         >
                           <item.icon />
-                          <span>{item.label}</span>
+                          <span className="group-data-[collapsible=icon]:sr-only">
+                            {item.label}
+                          </span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
                 {group === 'Resources' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip="Documentation">
+                    <SidebarMenuButton
+                      asChild
+                      tooltip="Documentation"
+                      className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
+                    >
                       <a
                         href="https://github.com/cha2hyun/boilerplate#readme"
                         target="_blank"
                         rel="noreferrer"
                       >
                         <ExternalLink />
-                        <span>Documentation</span>
-                        <ExternalLink className="ml-auto size-3 text-muted-foreground" />
+                        <span className="group-data-[collapsible=icon]:sr-only">Documentation</span>
+                        <ExternalLink className="ml-auto size-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -172,13 +132,19 @@ function WorkspaceSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter className="p-3">
+      <SidebarFooter className="p-2">
         <Separator className="mb-2" />
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild size="lg">
+            <SidebarMenuButton
+              asChild
+              size="lg"
+              tooltip="Workspace settings"
+              className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
+            >
               <Link
                 to="/settings"
+                aria-label="Workspace settings"
                 onClick={() => {
                   setOpenMobile(false)
                 }}
@@ -188,11 +154,11 @@ function WorkspaceSidebar() {
                     BP
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm">
+                <div className="grid flex-1 text-left text-sm group-data-[collapsible=icon]:hidden">
                   <span className="font-medium">Your workspace</span>
                   <span className="text-xs text-muted-foreground">Make it your own</span>
                 </div>
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-4 group-data-[collapsible=icon]:hidden" />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -269,27 +235,22 @@ export function AppShell({ children }: AppShellProps) {
                 Demo workspace
               </Badge>
             )}
-            <div className="relative">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="gap-2 text-muted-foreground md:pr-14"
-                onClick={() => {
-                  setCommandOpen(true)
-                }}
-                aria-label="Search workspace"
-                aria-keyshortcuts="Meta+K Control+K"
-              >
-                <Search className="size-4" aria-hidden="true" />
-                <span className="hidden xl:inline">Search</span>
-              </Button>
-              <kbd
-                aria-hidden="true"
-                className="pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded border px-1 text-[10px] text-muted-foreground md:inline"
-              >
+            <Button
+              variant="ghost"
+              size="sm"
+              className="gap-2 text-muted-foreground"
+              onClick={() => {
+                setCommandOpen(true)
+              }}
+              aria-label="Search workspace"
+              aria-keyshortcuts="Meta+K Control+K"
+            >
+              <Search className="size-4" aria-hidden="true" />
+              <span className="hidden xl:inline">Search</span>
+              <Kbd aria-hidden="true" className="hidden md:inline-flex">
                 ⌘ K
-              </kbd>
-            </div>
+              </Kbd>
+            </Button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

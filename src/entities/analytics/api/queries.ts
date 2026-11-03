@@ -1,19 +1,17 @@
 import { queryOptions } from '@tanstack/react-query'
-import { apiClient, delay } from '@/shared/api'
-import { env } from '@/shared/config'
+import { apiClient } from '@/shared/api'
 import { analyticsSchema } from '../model/schema'
-import { demoAnalytics } from './seed'
+
+export const analyticsKeys = {
+  all: ['analytics'] as const,
+  summary: () => [...analyticsKeys.all, 'summary'] as const,
+}
 
 export function analyticsQueryOptions() {
   return queryOptions({
-    queryKey: ['analytics'] as const,
-    queryFn: async ({ signal }) => {
-      if (env.dataSource === 'api') {
-        return apiClient('/analytics', analyticsSchema, { signal })
-      }
-      await delay(350, signal)
-      return analyticsSchema.parse(demoAnalytics)
-    },
+    queryKey: analyticsKeys.summary(),
+    queryFn: ({ signal }) => apiClient('/analytics', analyticsSchema, { signal }),
     staleTime: 60_000,
+    gcTime: 300_000,
   })
 }

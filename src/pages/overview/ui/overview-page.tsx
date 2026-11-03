@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import { analyticsQueryOptions } from '@/entities/analytics'
 import { projectsQueryOptions } from '@/entities/project'
+import { AnimatedNumber } from '@/features/number-motion'
 import { ProjectEditorDialog } from '@/features/project-editor'
 import { ProjectTable } from '@/widgets/project-table'
 import { RevenueChart } from '@/widgets/revenue-chart'
@@ -37,13 +38,26 @@ import {
   CardHeader,
   CardTitle,
 } from '@/shared/ui/card'
-import { OverviewAnalyticsSkeleton } from './overview-analytics-skeleton'
+import { Skeleton } from '@/shared/ui/skeleton'
 
-const kpiIcons = [DollarSign, Users, ShoppingBag, MousePointer2]
+const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
+
+const kpiCards = [
+  { id: 'revenue', label: 'Total revenue', description: 'vs. previous 30 days', Icon: DollarSign },
+  { id: 'customers', label: 'Active customers', description: 'vs. previous 30 days', Icon: Users },
+  { id: 'orders', label: 'Total orders', description: 'vs. previous 30 days', Icon: ShoppingBag },
+  {
+    id: 'conversion',
+    label: 'Conversion rate',
+    description: 'vs. prior period',
+    Icon: MousePointer2,
+  },
+]
 const activityIcons = { project: FolderKanban, member: Users, billing: CreditCard }
 export function OverviewPage() {
   const analytics = useQuery(analyticsQueryOptions())
   const projects = useQuery(projectsQueryOptions())
+  const isLoading = analytics.isPending && !analytics.data
   const [createOpen, setCreateOpen] = useState(false)
   return (
     <div className="space-y-7">
@@ -80,88 +94,121 @@ export function OverviewPage() {
           </AlertDescription>
         </Alert>
       )}
-      {analytics.isPending ? (
-        <OverviewAnalyticsSkeleton />
-      ) : (
-        analytics.data && (
-          <>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {analytics.data.kpis.map((kpi, index) => {
-                const Icon = kpiIcons[index] ?? DollarSign
-                const Trend = kpi.change >= 0 ? ArrowUpRight : ArrowDownRight
-                return (
-                  <Card key={kpi.id} className="gap-4 shadow-xs">
-                    <CardHeader className="gap-2">
-                      <CardDescription className="text-xs font-medium">{kpi.label}</CardDescription>
-                      <CardAction>
-                        <Icon className="size-4 text-muted-foreground" />
-                      </CardAction>
-                      <CardTitle className="text-3xl font-semibold tracking-tight tabular-nums">
-                        {kpi.format === 'currency'
-                          ? formatCurrency(kpi.value)
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {kpiCards.map(({ id, label, description, Icon }) => {
+          const kpi = analytics.data?.kpis.find((item) => item.id === id)
+          const Trend = (kpi?.change ?? 0) >= 0 ? ArrowUpRight : ArrowDownRight
+          return (
+            <Card key={id} className="gap-4 shadow-xs" aria-label={label} aria-busy={isLoading}>
+              <CardHeader className="gap-2">
+                <CardDescription className="text-xs font-medium">
+                  {kpi?.label ?? label}
+                </CardDescription>
+                <CardAction>
+                  <Icon className="size-4 text-muted-foreground" />
+                </CardAction>
+                <CardTitle className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-28" />
+                  ) : kpi ? (
+                    <AnimatedNumber
+                      value={kpi.value}
+                      format={
+                        kpi.format === 'currency'
+                          ? formatCurrency
                           : kpi.format === 'percent'
-                            ? formatPercent(kpi.value, 2)
-                            : formatNumber(kpi.value)}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardFooter className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className="gap-0.5 text-[11px]">
-                        <Trend className="size-3" />
-                        {kpi.change > 0 ? '+' : ''}
-                        {kpi.change}
-                        {kpi.format === 'percent' ? ' pp' : '%'}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {kpi.description.replace('percentage points ', '')}
-                      </span>
-                    </CardFooter>
-                  </Card>
+                            ? (value) => formatPercent(value, 2)
+                            : formatCount
+                      }
+                    />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardFooter className="grid min-h-8 grid-cols-[5rem_minmax(0,1fr)] items-start gap-2">
+                {isLoading ? (
+                  <Skeleton className="h-5.5 w-20 rounded-full" />
+                ) : kpi ? (
+                  <Badge variant="secondary" className="justify-center gap-0.5 text-[11px]">
+                    <Trend className="size-3" />
+                    {kpi.change > 0 ? '+' : ''}
+                    {kpi.change}
+                    {kpi.format === 'percent' ? ' pp' : '%'}
+                  </Badge>
+                ) : (
+                  <span className="text-xs text-muted-foreground">No data</span>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {kpi?.description.replace('percentage points ', '') ?? description}
+                </span>
+              </CardFooter>
+            </Card>
+          )
+        })}
+      </div>
+      <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <RevenueChart
+          data={analytics.data?.revenue}
+          isLoading={isLoading}
+          error={analytics.error}
+          onRetry={() => void analytics.refetch()}
+        />
+        <Card className="gap-5 shadow-xs" aria-busy={isLoading}>
+          <CardHeader>
+            <CardTitle>Recent activity</CardTitle>
+            <CardDescription>The latest from your workspace.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-114 space-y-6 overflow-y-auto">
+            {isLoading ? (
+              Array.from({ length: 4 }, (_, index) => (
+                <div key={index} className="flex h-24 gap-3" aria-hidden="true">
+                  <Skeleton className="size-9 shrink-0 rounded-lg" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-5 w-4/5" />
+                    <Skeleton className="h-8 w-full" />
+                    <Skeleton className="h-3.5 w-20" />
+                  </div>
+                </div>
+              ))
+            ) : analytics.data?.activity.length ? (
+              analytics.data.activity.slice(0, 5).map((activity) => {
+                const Icon = activityIcons[activity.type]
+                return (
+                  <div key={activity.id} className="flex h-24 gap-3">
+                    <Avatar className="size-9 shrink-0 rounded-lg">
+                      <AvatarFallback className="rounded-lg">
+                        <Icon className="size-4 text-muted-foreground" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 space-y-1">
+                      <p className="line-clamp-2 text-sm leading-5 font-medium">{activity.title}</p>
+                      <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">
+                        {activity.description}
+                      </p>
+                      <p className="text-[11px] leading-4 text-muted-foreground">
+                        {formatRelativeTime(activity.time)}
+                      </p>
+                    </div>
+                  </div>
                 )
-              })}
-            </div>
-            <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-              <RevenueChart data={analytics.data.revenue} />
-              <Card className="gap-5 shadow-xs">
-                <CardHeader>
-                  <CardTitle>Recent activity</CardTitle>
-                  <CardDescription>The latest from your workspace.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {analytics.data.activity.slice(0, 5).map((activity) => {
-                    const Icon = activityIcons[activity.type]
-                    return (
-                      <div key={activity.id} className="flex gap-3">
-                        <Avatar className="size-9 rounded-lg">
-                          <AvatarFallback className="rounded-lg">
-                            <Icon className="size-4 text-muted-foreground" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="min-w-0 space-y-1">
-                          <p className="text-sm leading-snug font-medium">{activity.title}</p>
-                          <p className="text-xs leading-relaxed text-muted-foreground">
-                            {activity.description}
-                          </p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {formatRelativeTime(activity.time)}
-                          </p>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </CardContent>
-                <CardFooter className="mt-auto border-t pt-4">
-                  <Button asChild variant="ghost" size="sm" className="w-full justify-between">
-                    <Link to="/projects">
-                      Explore projects
-                      <ArrowRight className="size-4" />
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
-          </>
-        )
-      )}
+              })
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                {analytics.isError ? 'Activity unavailable' : 'No recent activity'}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="mt-auto border-t pt-4">
+            <Button asChild variant="ghost" size="sm" className="w-full justify-between">
+              <Link to="/projects">
+                Explore projects
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
       <div className="space-y-3">
         <div className="flex justify-end">
           <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
@@ -173,6 +220,7 @@ export function OverviewPage() {
         </div>
         <ProjectTable
           projects={projects.data ?? []}
+          hasData={projects.data !== undefined}
           isLoading={projects.isPending}
           error={projects.error}
           onRetry={() => void projects.refetch()}

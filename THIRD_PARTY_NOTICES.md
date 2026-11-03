@@ -36,6 +36,10 @@ SOFTWARE.
 
 Package dependencies retain their respective licenses. This notice preserves the license for vendored shadcn source; it does not select a license for the original application code in this repository.
 
+## Mock Service Worker
+
+`public/mockServiceWorker.js` is generated without modification by `msw@3.0.3` for the demo HTTP layer. The package's unmodified MIT license is included in [public/licenses/msw.txt](public/licenses/msw.txt) and is copied into the deployed application. Source: [mswjs/msw](https://github.com/mswjs/msw). The worker is started only in the explicitly configured demo mode.
+
 ## Pretendard
 
 The default font uses the unmodified static dynamic subsets from the official `pretendard@1.3.9` package. Only Regular (400), Medium (500), and SemiBold (600) stylesheets are imported. Their Unicode ranges let the browser request the Korean, Latin, and other supported character slices it needs. Vite serves the font assets from the application build; the browser does not contact a font CDN.

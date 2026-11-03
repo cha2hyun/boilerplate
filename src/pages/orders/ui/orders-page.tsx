@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   CheckCheck,
   ChevronLeft,
@@ -9,6 +10,10 @@ import {
   Truck,
   X,
 } from 'lucide-react'
+import { ordersQueryOptions, orderStatuses, type OrderStatus } from '@/entities/order'
+import { AnimatedNumber } from '@/features/number-motion'
+import { formatNumber } from '@/shared/lib/format'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -19,6 +24,7 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
@@ -26,16 +32,13 @@ import {
   formatOrderAmount,
   formatOrderDate,
   orderSortOptions,
-  orderStatuses,
   orderSubtotal,
   orderTotal,
-  sampleOrders,
   type OrderSort,
-  type OrderStatus,
-  type SampleOrder,
 } from '../model/sample-orders'
 
 const pageSize = 6
+const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
 
 function OrderStatusBadge({ status }: { status: OrderStatus }) {
   return (
@@ -51,16 +54,19 @@ function OrderStatusBadge({ status }: { status: OrderStatus }) {
 }
 
 export function OrdersPage() {
+  const ordersQuery = useQuery(ordersQueryOptions())
+  const orders = ordersQuery.data ?? []
+  const isLoading = ordersQuery.isPending && !ordersQuery.data
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
   const [sort, setSort] = useState<OrderSort>('newest')
   const [page, setPage] = useState(0)
-  const [selectedOrder, setSelectedOrder] = useState<SampleOrder | null>(null)
-  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const selectedOrder = orders.find((item) => item.id === selectedOrderId)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const query = search.trim().toLowerCase()
-  const filteredOrders = sampleOrders
+  const filteredOrders = orders
     .filter(
       (order) =>
         (status === 'all' || order.status === status) &&
@@ -68,8 +74,14 @@ export function OrdersPage() {
     )
     .sort((left, right) => compareOrders(left, right, sort))
   const pageCount = Math.max(1, Math.ceil(filteredOrders.length / pageSize))
-  const visibleOrders = filteredOrders.slice(page * pageSize, (page + 1) * pageSize)
+  const currentPage = Math.min(page, pageCount - 1)
+  const visibleOrders = filteredOrders.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
   const hasFilters = search !== '' || status !== 'all' || sort !== 'newest'
+
+  // A refreshed response may remove the selected record; keep only valid UI selection.
+  if (selectedOrderId !== null && ordersQuery.data && !selectedOrder) {
+    setSelectedOrderId(null)
+  }
 
   function resetFilters() {
     setSearch('')
@@ -82,25 +94,25 @@ export function OrdersPage() {
   const summaries = [
     {
       title: 'Total orders',
-      value: sampleOrders.length,
+      value: orders.length,
       description: 'Oct 25 – Nov 3, 2026',
       Icon: Package,
     },
     {
       title: 'Processing',
-      value: sampleOrders.filter((order) => order.status === 'Processing').length,
+      value: orders.filter((order) => order.status === 'Processing').length,
       description: 'Preparing for the next step',
       Icon: Clock3,
     },
     {
       title: 'Shipped',
-      value: sampleOrders.filter((order) => order.status === 'Shipped').length,
+      value: orders.filter((order) => order.status === 'Shipped').length,
       description: 'On the way to customers',
       Icon: Truck,
     },
     {
       title: 'Delivered',
-      value: sampleOrders.filter((order) => order.status === 'Delivered').length,
+      value: orders.filter((order) => order.status === 'Delivered').length,
       description: 'Completed sample orders',
       Icon: CheckCheck,
     },
@@ -120,25 +132,50 @@ export function OrdersPage() {
         </p>
       </div>
 
+      {ordersQuery.isError && ordersQuery.data && (
+        <Alert variant="destructive">
+          <AlertTitle>Orders couldn't refresh</AlertTitle>
+          <AlertDescription>
+            <p>{ordersQuery.error.message}</p>
+            <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaries.map(({ title, value, description, Icon }) => (
-          <Card key={title} className="gap-3 py-5 shadow-none">
+          <Card
+            key={title}
+            className="gap-3 py-5 shadow-none"
+            aria-label={title}
+            aria-busy={isLoading}
+          >
             <CardHeader className="flex flex-row items-center justify-between px-5">
               <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
               <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
             </CardHeader>
             <CardContent className="space-y-1 px-5">
-              <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+              <div className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : ordersQuery.data ? (
+                  <AnimatedNumber value={value} format={formatCount} />
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="min-w-0 gap-5 overflow-hidden shadow-none">
+      <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
         <CardHeader className="px-5">
           <CardTitle className="text-base">All orders</CardTitle>
-          <CardDescription>Browse 12 sample orders. Amounts are shown in USD.</CardDescription>
+          <CardDescription>Browse sample orders. Amounts are shown in USD.</CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 space-y-4 px-0">
           <Tabs
@@ -213,9 +250,22 @@ export function OrdersPage() {
                   </Button>
                 )}
               </div>
-              {visibleOrders.length ? (
-                <div role="region" aria-label="Orders table" className="min-w-0 border-y">
-                  <Table className="min-w-190">
+              {isLoading || visibleOrders.length ? (
+                <div
+                  role="region"
+                  aria-label="Orders table"
+                  aria-busy={isLoading}
+                  className="h-120 min-w-0 border-y"
+                >
+                  <Table className="min-w-190 table-fixed">
+                    <colgroup>
+                      <col className="w-[14%]" />
+                      <col className="w-[28%]" />
+                      <col className="w-[15%]" />
+                      <col className="w-[13%]" />
+                      <col className="w-[16%]" />
+                      <col className="w-[14%]" />
+                    </colgroup>
                     <TableHeader>
                       <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableHead className="pl-5">Order</TableHead>
@@ -227,77 +277,126 @@ export function OrdersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {visibleOrders.map((order) => (
-                        <TableRow key={order.id}>
-                          <TableCell className="py-4 pl-5">
-                            <Button
-                              variant="link"
-                              className="h-auto p-0 font-medium text-foreground"
-                              aria-label={`View order ${order.id}`}
-                              onClick={(event) => {
-                                detailTrigger.current = event.currentTarget
-                                setSelectedOrder(order)
-                                setDetailsOpen(true)
-                              }}
+                      {isLoading
+                        ? Array.from({ length: pageSize }, (_, index) => (
+                            <TableRow key={index} className="h-18" aria-hidden="true">
+                              {Array.from({ length: 6 }, (_, cell) => (
+                                <TableCell key={cell} className="px-5">
+                                  <Skeleton className="h-4 w-full max-w-28" />
+                                </TableCell>
+                              ))}
+                            </TableRow>
+                          ))
+                        : visibleOrders.map((order) => (
+                            <TableRow key={order.id} className="h-18">
+                              <TableCell className="py-2 pl-5">
+                                <Button
+                                  variant="link"
+                                  className="h-auto p-0 font-medium text-foreground"
+                                  aria-label={`View order ${order.id}`}
+                                  onClick={(event) => {
+                                    detailTrigger.current = event.currentTarget
+                                    setSelectedOrderId(order.id)
+                                  }}
+                                >
+                                  {order.id}
+                                </Button>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex min-w-0 items-center gap-3">
+                                  <Avatar className="size-8 shrink-0">
+                                    <AvatarFallback className="text-xs font-medium">
+                                      {order.customer.initials}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate font-medium" title={order.customer.name}>
+                                      {order.customer.name}
+                                    </p>
+                                    <p
+                                      className="truncate text-xs text-muted-foreground"
+                                      title={order.customer.email}
+                                    >
+                                      {order.customer.email}
+                                    </p>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <OrderStatusBadge status={order.status} />
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {order.payment}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {formatOrderDate(order.date)}
+                              </TableCell>
+                              <TableCell className="pr-5 text-right font-medium tabular-nums">
+                                {formatOrderAmount(orderTotal(order))}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      {!isLoading &&
+                        Array.from(
+                          { length: Math.max(0, pageSize - visibleOrders.length) },
+                          (_, index) => (
+                            <TableRow
+                              key={`empty-${String(index)}`}
+                              className="h-18 hover:bg-transparent"
+                              aria-hidden="true"
                             >
-                              {order.id}
-                            </Button>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="size-8">
-                                <AvatarFallback className="text-xs font-medium">
-                                  {order.customer.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">{order.customer.name}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {order.customer.email}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <OrderStatusBadge status={order.status} />
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{order.payment}</TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatOrderDate(order.date)}
-                          </TableCell>
-                          <TableCell className="pr-5 text-right font-medium tabular-nums">
-                            {formatOrderAmount(orderTotal(order))}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                              <TableCell colSpan={6} />
+                            </TableRow>
+                          ),
+                        )}
                     </TableBody>
                   </Table>
                 </div>
               ) : (
-                <Empty className="border-y py-12">
+                <Empty className="h-120 rounded-none border-y py-12">
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
                       <Search aria-hidden="true" />
                     </EmptyMedia>
-                    <EmptyTitle>No matching orders</EmptyTitle>
+                    <EmptyTitle>
+                      {ordersQuery.isError && !ordersQuery.data
+                        ? 'Orders couldn’t load'
+                        : orders.length
+                          ? 'No matching orders'
+                          : 'No orders yet'}
+                    </EmptyTitle>
                     <EmptyDescription>
-                      Try another customer, order number, or status.
+                      {ordersQuery.isError && !ordersQuery.data
+                        ? ordersQuery.error.message
+                        : orders.length
+                          ? 'Try another search or status.'
+                          : 'Orders will appear here when available.'}
                     </EmptyDescription>
                   </EmptyHeader>
-                  <Button variant="outline" onClick={resetFilters}>
-                    Clear filters
-                  </Button>
+                  {ordersQuery.isError && !ordersQuery.data ? (
+                    <Button variant="outline" onClick={() => void ordersQuery.refetch()}>
+                      Try again
+                    </Button>
+                  ) : (
+                    orders.length > 0 && (
+                      <Button variant="outline" onClick={resetFilters}>
+                        Clear filters
+                      </Button>
+                    )
+                  )}
                 </Empty>
               )}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5">
+              <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                 <p className="text-xs text-muted-foreground" aria-live="polite">
-                  {filteredOrders.length
-                    ? `Showing ${String(page * pageSize + 1)}–${String(Math.min((page + 1) * pageSize, filteredOrders.length))} of ${String(filteredOrders.length)} orders`
-                    : '0 orders'}
+                  {isLoading
+                    ? 'Loading orders…'
+                    : filteredOrders.length
+                      ? `Showing ${String(currentPage * pageSize + 1)}–${String(Math.min((currentPage + 1) * pageSize, filteredOrders.length))} of ${String(filteredOrders.length)} orders`
+                      : '0 orders'}
                 </p>
                 <div className="flex items-center gap-3">
                   <p className="text-xs font-medium tabular-nums">
-                    Page {page + 1} of {pageCount}
+                    Page {currentPage + 1} of {pageCount}
                   </p>
                   <div className="flex gap-1">
                     <Button
@@ -305,9 +404,9 @@ export function OrdersPage() {
                       size="icon"
                       className="size-8"
                       aria-label="Previous orders page"
-                      disabled={page === 0}
+                      disabled={isLoading || currentPage === 0}
                       onClick={() => {
-                        setPage(page - 1)
+                        setPage(currentPage - 1)
                       }}
                     >
                       <ChevronLeft aria-hidden="true" />
@@ -317,9 +416,9 @@ export function OrdersPage() {
                       size="icon"
                       className="size-8"
                       aria-label="Next orders page"
-                      disabled={page + 1 >= pageCount}
+                      disabled={isLoading || currentPage + 1 >= pageCount}
                       onClick={() => {
-                        setPage(page + 1)
+                        setPage(currentPage + 1)
                       }}
                     >
                       <ChevronRight aria-hidden="true" />
@@ -332,12 +431,20 @@ export function OrdersPage() {
         </CardContent>
       </Card>
 
-      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+      <Sheet
+        open={selectedOrder !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setSelectedOrderId(null)
+        }}
+      >
         <SheetContent
           className="w-full overflow-y-auto md:max-w-lg"
           onCloseAutoFocus={(event) => {
             event.preventDefault()
-            detailTrigger.current?.focus()
+            const target = detailTrigger.current?.isConnected
+              ? detailTrigger.current
+              : searchRef.current
+            target?.focus()
           }}
         >
           <SheetHeader className="border-b p-6 pr-12">
@@ -396,7 +503,7 @@ export function OrdersPage() {
                     <AvatarFallback>{selectedOrder.customer.initials}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="font-medium">{selectedOrder.customer.name}</p>
+                    <p className="font-medium break-words">{selectedOrder.customer.name}</p>
                     <p className="break-all text-muted-foreground">
                       {selectedOrder.customer.email}
                     </p>

@@ -30,13 +30,33 @@ test('emits route-specific HTML from the built shell without changing scripts or
       'index.html': { type: 'asset', source: index },
     },
   )
-  assert.equal(emitted.length, 8)
+  assert.deepEqual(emitted.map(({ fileName }) => fileName).sort(), [
+    '404.html',
+    'analytics/index.html',
+    'components/index.html',
+    'customers/index.html',
+    'foundations/index.html',
+    'inbox/index.html',
+    'orders/index.html',
+    'projects/index.html',
+    'settings/index.html',
+  ])
+  for (const asset of emitted) {
+    assert.equal(asset.source.split('<body>')[1], index.split('<body>')[1])
+    assert.ok(asset.source.includes('/assets/app-hashed.js'))
+  }
   const orders = emitted.find(({ fileName }) => fileName === 'orders/index.html')
   assert.ok(orders)
   assert.ok(orders.source.includes('<title data-page-meta>Orders · Blueprint</title>'))
   assert.ok(orders.source.includes('property="og:url" content="https://blueprint.example/orders"'))
-  assert.equal(orders.source.split('<body>')[1], index.split('<body>')[1])
-  assert.ok(orders.source.includes('/assets/app-hashed.js'))
+  const foundations = emitted.find(({ fileName }) => fileName === 'foundations/index.html')
+  assert.ok(foundations)
+  assert.ok(foundations.source.includes('<title data-page-meta>Foundations · Blueprint</title>'))
+  assert.ok(
+    foundations.source.includes(
+      'property="og:url" content="https://blueprint.example/foundations"',
+    ),
+  )
   const missing = emitted.find(({ fileName }) => fileName === '404.html')
   assert.ok(missing.source.includes('content="noindex, nofollow"'))
   assert.equal(missing.source.includes('rel="canonical"'), false)

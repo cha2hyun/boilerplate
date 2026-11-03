@@ -6,4 +6,6 @@ test-results
 pnpm-lock.yaml
 .husky/_
 src/app/routeTree.gen.ts
+# Vendored MSW worker; keep its generated integrity checksum unchanged.
+public/mockServiceWorker.js
 *.min.*

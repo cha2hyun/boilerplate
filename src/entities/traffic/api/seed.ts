@@ -1,4 +1,4 @@
-export type TrafficPeriod = '7' | '14' | '30'
+import type { Traffic, TrafficPeriod } from '../model/schema'
 
 const dailyVisitors = [
   684, 752, 691, 845, 921, 642, 578, 790, 866, 803, 912, 1004, 714, 653, 938, 1025, 956, 1098, 1176,
@@ -26,7 +26,7 @@ function distribute(total: number, shares: number[]) {
   })
 }
 
-export function getSampleTraffic(period: TrafficPeriod) {
+export function getSampleTraffic(period: TrafficPeriod): Traffic {
   const days = traffic.slice(-Number(period))
   const visitors = days.reduce((sum, day) => sum + day.visitors, 0)
   const sessions = days.reduce((sum, day) => sum + day.sessions, 0)
@@ -60,7 +60,6 @@ export function getSampleTraffic(period: TrafficPeriod) {
     devices: ['Desktop', 'Mobile', 'Tablet'].map((device, index) => ({
       device,
       sessions: deviceValues[index] ?? 0,
-      fill: `var(--chart-${String(index + 1)})`,
     })),
   }
 }

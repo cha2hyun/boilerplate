@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +10,10 @@ import {
   Users,
   X,
 } from 'lucide-react'
+import { customersQueryOptions, customerStatuses, type CustomerStatus } from '@/entities/customer'
+import { AnimatedNumber } from '@/features/number-motion'
+import { formatNumber } from '@/shared/lib/format'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -19,20 +24,18 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
+import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import {
   compareCustomers,
   customerSortOptions,
-  customerStatuses,
   formatCustomerAmount,
   formatCustomerDate,
-  sampleCustomers,
   type CustomerSort,
-  type CustomerStatus,
-  type SampleCustomer,
 } from '../model/sample-customers'
 
 const pageSize = 6
+const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
 
 function CustomerStatusBadge({ status }: { status: CustomerStatus }) {
   return (
@@ -43,16 +46,19 @@ function CustomerStatusBadge({ status }: { status: CustomerStatus }) {
 }
 
 export function CustomersPage() {
+  const customersQuery = useQuery(customersQueryOptions())
+  const customers = customersQuery.data ?? []
+  const isLoading = customersQuery.isPending && !customersQuery.data
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<CustomerStatus | 'all'>('all')
   const [sort, setSort] = useState<CustomerSort>('newest')
   const [page, setPage] = useState(0)
-  const [selectedCustomer, setSelectedCustomer] = useState<SampleCustomer | null>(null)
-  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
+  const selectedCustomer = customers.find((item) => item.id === selectedCustomerId)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const query = search.trim().toLowerCase()
-  const filteredCustomers = sampleCustomers
+  const filteredCustomers = customers
     .filter(
       (customer) =>
         (status === 'all' || customer.status === status) &&
@@ -62,8 +68,17 @@ export function CustomersPage() {
     )
     .sort((left, right) => compareCustomers(left, right, sort))
   const pageCount = Math.max(1, Math.ceil(filteredCustomers.length / pageSize))
-  const visibleCustomers = filteredCustomers.slice(page * pageSize, (page + 1) * pageSize)
+  const currentPage = Math.min(page, pageCount - 1)
+  const visibleCustomers = filteredCustomers.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize,
+  )
   const hasFilters = search !== '' || status !== 'all' || sort !== 'newest'
+
+  // A refreshed response may remove the selected record; keep only valid UI selection.
+  if (selectedCustomerId !== null && customersQuery.data && !selectedCustomer) {
+    setSelectedCustomerId(null)
+  }
 
   function resetFilters() {
     setSearch('')
@@ -76,25 +91,25 @@ export function CustomersPage() {
   const summaries = [
     {
       title: 'Total customers',
-      value: sampleCustomers.length,
+      value: customers.length,
       description: 'Across the sample directory',
       Icon: Users,
     },
     {
       title: 'Active customers',
-      value: sampleCustomers.filter((customer) => customer.status === 'Active').length,
+      value: customers.filter((customer) => customer.status === 'Active').length,
       description: 'With an active sample profile',
       Icon: UserCheck,
     },
     {
       title: 'Returning customers',
-      value: sampleCustomers.filter((customer) => customer.orders > 1).length,
+      value: customers.filter((customer) => customer.orders > 1).length,
       description: 'More than one sample order',
       Icon: Repeat2,
     },
     {
       title: 'First-time customers',
-      value: sampleCustomers.filter((customer) => customer.orders === 1).length,
+      value: customers.filter((customer) => customer.orders === 1).length,
       description: 'One sample order so far',
       Icon: UserRoundPlus,
     },
@@ -114,22 +129,47 @@ export function CustomersPage() {
         </p>
       </div>
 
+      {customersQuery.isError && customersQuery.data && (
+        <Alert variant="destructive">
+          <AlertTitle>Customers couldn't refresh</AlertTitle>
+          <AlertDescription>
+            <p>{customersQuery.error.message}</p>
+            <Button variant="outline" size="sm" onClick={() => void customersQuery.refetch()}>
+              Try again
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaries.map(({ title, value, description, Icon }) => (
-          <Card key={title} className="gap-3 py-5 shadow-none">
+          <Card
+            key={title}
+            className="gap-3 py-5 shadow-none"
+            aria-label={title}
+            aria-busy={isLoading}
+          >
             <CardHeader className="flex flex-row items-center justify-between px-5">
               <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
               <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
             </CardHeader>
             <CardContent className="space-y-1 px-5">
-              <p className="text-3xl font-semibold tracking-tight tabular-nums">{value}</p>
+              <div className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
+                {isLoading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : customersQuery.data ? (
+                  <AnimatedNumber value={value} format={formatCount} />
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )}
+              </div>
               <p className="text-xs text-muted-foreground">{description}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <Card className="min-w-0 gap-5 overflow-hidden shadow-none">
+      <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
         <CardHeader className="px-5">
           <CardTitle className="text-base">Customer directory</CardTitle>
           <CardDescription>
@@ -202,9 +242,22 @@ export function CustomersPage() {
               </Button>
             )}
           </div>
-          {visibleCustomers.length ? (
-            <div role="region" aria-label="Customers table" className="min-w-0 border-y">
-              <Table className="min-w-200">
+          {isLoading || visibleCustomers.length ? (
+            <div
+              role="region"
+              aria-label="Customers table"
+              aria-busy={isLoading}
+              className="h-120 min-w-0 border-y"
+            >
+              <Table className="min-w-200 table-fixed">
+                <colgroup>
+                  <col className="w-[28%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[20%]" />
+                  <col className="w-[10%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[16%]" />
+                </colgroup>
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
                     <TableHead className="pl-5">Customer</TableHead>
@@ -216,71 +269,125 @@ export function CustomersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {visibleCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell className="py-4 pl-5">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="size-8">
-                            <AvatarFallback className="text-xs font-medium">
-                              {customer.initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <Button
-                              variant="link"
-                              className="h-auto p-0 font-medium text-foreground"
-                              aria-label={`View customer ${customer.name}`}
-                              onClick={(event) => {
-                                detailTrigger.current = event.currentTarget
-                                setSelectedCustomer(customer)
-                                setDetailsOpen(true)
-                              }}
-                            >
-                              {customer.name}
-                            </Button>
-                            <p className="text-xs text-muted-foreground">{customer.email}</p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <CustomerStatusBadge status={customer.status} />
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{customer.country}</TableCell>
-                      <TableCell className="text-right tabular-nums">{customer.orders}</TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">
-                        {formatCustomerAmount(customer.spent)}
-                      </TableCell>
-                      <TableCell className="pr-5 text-muted-foreground">
-                        {formatCustomerDate(customer.joined)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoading
+                    ? Array.from({ length: pageSize }, (_, index) => (
+                        <TableRow key={index} className="h-18" aria-hidden="true">
+                          {Array.from({ length: 6 }, (_, cell) => (
+                            <TableCell key={cell} className="px-5">
+                              <Skeleton className="h-4 w-full max-w-28" />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    : visibleCustomers.map((customer) => (
+                        <TableRow key={customer.id} className="h-18">
+                          <TableCell className="py-2 pl-5">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <Avatar className="size-8 shrink-0">
+                                <AvatarFallback className="text-xs font-medium">
+                                  {customer.initials}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="min-w-0 flex-1">
+                                <Button
+                                  variant="link"
+                                  className="block h-auto max-w-full truncate p-0 text-left font-medium text-foreground"
+                                  title={customer.name}
+                                  aria-label={`View customer ${customer.name}`}
+                                  onClick={(event) => {
+                                    detailTrigger.current = event.currentTarget
+                                    setSelectedCustomerId(customer.id)
+                                  }}
+                                >
+                                  {customer.name}
+                                </Button>
+                                <p
+                                  className="truncate text-xs text-muted-foreground"
+                                  title={customer.email}
+                                >
+                                  {customer.email}
+                                </p>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <CustomerStatusBadge status={customer.status} />
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">
+                            {customer.country}
+                          </TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            {customer.orders}
+                          </TableCell>
+                          <TableCell className="text-right font-medium tabular-nums">
+                            {formatCustomerAmount(customer.spent)}
+                          </TableCell>
+                          <TableCell className="pr-5 text-muted-foreground">
+                            {formatCustomerDate(customer.joined)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  {!isLoading &&
+                    Array.from(
+                      { length: Math.max(0, pageSize - visibleCustomers.length) },
+                      (_, index) => (
+                        <TableRow
+                          key={`empty-${String(index)}`}
+                          className="h-18 hover:bg-transparent"
+                          aria-hidden="true"
+                        >
+                          <TableCell colSpan={6} />
+                        </TableRow>
+                      ),
+                    )}
                 </TableBody>
               </Table>
             </div>
           ) : (
-            <Empty className="border-y py-12">
+            <Empty className="h-120 rounded-none border-y py-12">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <Search aria-hidden="true" />
                 </EmptyMedia>
-                <EmptyTitle>No matching customers</EmptyTitle>
-                <EmptyDescription>Try another name, location, or customer status.</EmptyDescription>
+                <EmptyTitle>
+                  {customersQuery.isError && !customersQuery.data
+                    ? 'Customers couldn’t load'
+                    : customers.length
+                      ? 'No matching customers'
+                      : 'No customers yet'}
+                </EmptyTitle>
+                <EmptyDescription>
+                  {customersQuery.isError && !customersQuery.data
+                    ? customersQuery.error.message
+                    : customers.length
+                      ? 'Try another search or status.'
+                      : 'Customers will appear here when available.'}
+                </EmptyDescription>
               </EmptyHeader>
-              <Button variant="outline" onClick={resetFilters}>
-                Clear filters
-              </Button>
+              {customersQuery.isError && !customersQuery.data ? (
+                <Button variant="outline" onClick={() => void customersQuery.refetch()}>
+                  Try again
+                </Button>
+              ) : (
+                customers.length > 0 && (
+                  <Button variant="outline" onClick={resetFilters}>
+                    Clear filters
+                  </Button>
+                )
+              )}
             </Empty>
           )}
-          <div className="flex flex-wrap items-center justify-between gap-3 px-5">
+          <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <p className="text-xs text-muted-foreground" aria-live="polite">
-              {filteredCustomers.length
-                ? `Showing ${String(page * pageSize + 1)}–${String(Math.min((page + 1) * pageSize, filteredCustomers.length))} of ${String(filteredCustomers.length)} customers`
-                : '0 customers'}
+              {isLoading
+                ? 'Loading customers…'
+                : filteredCustomers.length
+                  ? `Showing ${String(currentPage * pageSize + 1)}–${String(Math.min((currentPage + 1) * pageSize, filteredCustomers.length))} of ${String(filteredCustomers.length)} customers`
+                  : '0 customers'}
             </p>
             <div className="flex items-center gap-3">
               <p className="text-xs font-medium tabular-nums">
-                Page {page + 1} of {pageCount}
+                Page {currentPage + 1} of {pageCount}
               </p>
               <div className="flex gap-1">
                 <Button
@@ -288,9 +395,9 @@ export function CustomersPage() {
                   size="icon"
                   className="size-8"
                   aria-label="Previous customers page"
-                  disabled={page === 0}
+                  disabled={isLoading || currentPage === 0}
                   onClick={() => {
-                    setPage(page - 1)
+                    setPage(currentPage - 1)
                   }}
                 >
                   <ChevronLeft aria-hidden="true" />
@@ -300,9 +407,9 @@ export function CustomersPage() {
                   size="icon"
                   className="size-8"
                   aria-label="Next customers page"
-                  disabled={page + 1 >= pageCount}
+                  disabled={isLoading || currentPage + 1 >= pageCount}
                   onClick={() => {
-                    setPage(page + 1)
+                    setPage(currentPage + 1)
                   }}
                 >
                   <ChevronRight aria-hidden="true" />
@@ -313,16 +420,26 @@ export function CustomersPage() {
         </CardContent>
       </Card>
 
-      <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+      <Sheet
+        open={selectedCustomer !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setSelectedCustomerId(null)
+        }}
+      >
         <SheetContent
           className="w-full overflow-y-auto md:max-w-lg"
           onCloseAutoFocus={(event) => {
             event.preventDefault()
-            detailTrigger.current?.focus()
+            const target = detailTrigger.current?.isConnected
+              ? detailTrigger.current
+              : searchRef.current
+            target?.focus()
           }}
         >
           <SheetHeader className="border-b p-6 pr-12">
-            <SheetTitle>{selectedCustomer?.name ?? 'Customer details'}</SheetTitle>
+            <SheetTitle className="break-words">
+              {selectedCustomer?.name ?? 'Customer details'}
+            </SheetTitle>
             <SheetDescription>
               {selectedCustomer
                 ? `${selectedCustomer.id} · Sample customer profile`
@@ -350,7 +467,7 @@ export function CustomersPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-2xl font-semibold tabular-nums">
-                    {selectedCustomer.orders}
+                    <AnimatedNumber value={selectedCustomer.orders} format={formatCount} />
                   </CardContent>
                 </Card>
                 <Card className="gap-2 py-4 shadow-none">
@@ -360,7 +477,7 @@ export function CustomersPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-xl font-semibold tabular-nums">
-                    {formatCustomerAmount(selectedCustomer.spent)}
+                    <AnimatedNumber value={selectedCustomer.spent} format={formatCustomerAmount} />
                   </CardContent>
                 </Card>
               </div>

@@ -62,6 +62,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 interface ProjectTableProps {
   projects: Project[]
   isLoading?: boolean
+  hasData?: boolean
   compact?: boolean
   error?: Error | null
   onRetry?: () => void
@@ -140,10 +141,14 @@ function exportProjects(projects: Project[]) {
 export function ProjectTable({
   projects,
   isLoading = false,
+  hasData = projects.length > 0,
   compact = false,
   error,
   onRetry,
 }: ProjectTableProps) {
+  const showLoading = isLoading && !hasData
+  const showError = Boolean(error) && !hasData
+  const showRefreshError = Boolean(error) && hasData
   const [sorting, setSorting] = useState<SortingState>([{ id: 'updatedAt', desc: true }])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -218,14 +223,14 @@ export function ProjectTable({
           )
         },
         cell: ({ row }) => (
-          <div className="flex min-w-52 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/50 text-muted-foreground">
               <FolderKanban className="size-4" aria-hidden="true" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <Button
                 variant="link"
-                className="h-auto max-w-72 justify-start truncate p-0 text-left font-medium text-foreground"
+                className="h-auto max-w-full justify-start truncate p-0 text-left font-medium text-foreground"
                 onClick={(event) => {
                   actionTriggerRef.current = event.currentTarget
                   setEditingProject(row.original)
@@ -233,7 +238,7 @@ export function ProjectTable({
               >
                 {row.original.name}
               </Button>
-              <p className="max-w-72 truncate text-xs text-muted-foreground">
+              <p className="truncate text-xs text-muted-foreground">
                 {row.original.description || 'No description yet'}
               </p>
             </div>
@@ -411,7 +416,6 @@ export function ProjectTable({
   const hasFilters = Boolean(search || columnFilters.length)
   const pageCount = Math.max(1, table.getPageCount())
   const pageIndex = table.getState().pagination.pageIndex
-  const visibleColumnCount = table.getVisibleLeafColumns().length
 
   function clearFilters() {
     setSearch('')
@@ -425,31 +429,41 @@ export function ProjectTable({
         ref={tableRef}
         tabIndex={-1}
         aria-label={compact ? 'Recent projects' : 'All projects'}
-        aria-busy={isLoading}
+        aria-busy={showLoading}
         className="gap-0 overflow-hidden py-0 shadow-none"
       >
         <CardHeader className="border-b px-5 py-5 md:px-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <CardTitle className="flex items-center gap-2 text-base">
-                {compact ? 'Recent projects' : 'All projects'}
-                {!isLoading && !error && (
-                  <Badge variant="secondary" className="font-normal tabular-nums">
-                    {projects.length}
-                  </Badge>
-                )}
+            <div className="min-w-0 flex-1 space-y-1">
+              <CardTitle className="flex h-6 items-center gap-2 text-base">
+                <span className="truncate">{compact ? 'Recent projects' : 'All projects'}</span>
+                <Badge
+                  variant="secondary"
+                  className="h-5 min-w-6 shrink-0 justify-center font-normal tabular-nums"
+                >
+                  {hasData ? projects.length : '—'}
+                </Badge>
               </CardTitle>
-              <CardDescription>
-                {compact
-                  ? 'A little progress, every day.'
-                  : 'Your team’s work, organized in one place.'}
+              <CardDescription className="flex h-8 items-center gap-2" aria-live="polite">
+                <span className="min-w-0 flex-1 truncate">
+                  {showRefreshError
+                    ? 'Couldn’t refresh. Showing saved projects.'
+                    : compact
+                      ? 'A little progress, every day.'
+                      : 'Your team’s work, organized in one place.'}
+                </span>
+                {showRefreshError && onRetry && (
+                  <Button variant="outline" size="sm" className="shrink-0" onClick={onRetry}>
+                    <RefreshCw aria-hidden="true" /> Try again
+                  </Button>
+                )}
               </CardDescription>
             </div>
             {!compact && (
               <Button
                 variant="outline"
                 size="sm"
-                disabled={isLoading || Boolean(error) || filteredCount === 0}
+                disabled={showLoading || showError || filteredCount === 0}
                 onClick={() => {
                   exportProjects(
                     (selectedRows.length ? selectedRows : table.getFilteredRowModel().rows).map(
@@ -498,11 +512,16 @@ export function ProjectTable({
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
-              {hasFilters && (
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
-                  <X aria-hidden="true" /> Reset
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={hasFilters ? undefined : 'invisible'}
+                aria-hidden={!hasFilters}
+                disabled={!hasFilters}
+                onClick={clearFilters}
+              >
+                <X aria-hidden="true" /> Reset
+              </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="ml-auto">
@@ -535,26 +554,16 @@ export function ProjectTable({
           )}
         </CardHeader>
         <CardContent className="px-0">
-          {error ? (
-            <Empty className="py-16">
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <TriangleAlert aria-hidden="true" />
-                </EmptyMedia>
-                <EmptyTitle>Projects couldn’t be loaded</EmptyTitle>
-                <EmptyDescription>
-                  {error.message || 'Something went wrong while loading your projects.'}
-                </EmptyDescription>
-              </EmptyHeader>
-              {onRetry && (
-                <Button variant="outline" onClick={onRetry}>
-                  <RefreshCw aria-hidden="true" /> Try again
-                </Button>
-              )}
-            </Empty>
-          ) : (
-            <Table aria-label={compact ? 'Recent projects' : 'Projects'}>
-              <TableHeader className="bg-muted/40">
+          {/* Keep a 40px header plus five/eight 72px rows in every request state. */}
+          <div
+            data-project-table-viewport
+            className={`relative overflow-auto [&>[data-slot=table-container]]:overflow-visible ${compact ? 'h-[25rem]' : 'h-[38.5rem]'}`}
+          >
+            <Table
+              aria-label={compact ? 'Recent projects' : 'Projects'}
+              className={compact ? 'min-w-[44rem] table-fixed' : 'min-w-[58rem] table-fixed'}
+            >
+              <TableHeader className="sticky top-0 z-10 bg-muted">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id} className="hover:bg-transparent">
                     {headerGroup.headers.map((header) => (
@@ -563,11 +572,19 @@ export function ProjectTable({
                         className={
                           header.column.id === 'select'
                             ? 'w-12 pl-5 md:pl-6'
-                            : header.column.id === 'actions'
-                              ? 'w-12 pr-5 md:pr-6'
-                              : compact && header.column.id === 'name'
-                                ? 'pl-5 md:pl-6'
-                                : ''
+                            : header.column.id === 'status'
+                              ? 'w-28'
+                              : header.column.id === 'owner'
+                                ? 'w-44'
+                                : header.column.id === 'progress'
+                                  ? 'w-36'
+                                  : header.column.id === 'updatedAt'
+                                    ? 'w-36'
+                                    : header.column.id === 'actions'
+                                      ? 'w-12 pr-5 md:pr-6'
+                                      : compact && header.column.id === 'name'
+                                        ? 'pl-5 md:pl-6'
+                                        : ''
                         }
                         aria-sort={
                           header.column.getIsSorted() === 'asc'
@@ -586,83 +603,110 @@ export function ProjectTable({
                 ))}
               </TableHeader>
               <TableBody>
-                {isLoading ? (
-                  Array.from({ length: compact ? 5 : 6 }, (_, index) => (
-                    <TableRow key={index}>
-                      {table.getVisibleLeafColumns().map((column) => (
-                        <TableCell key={column.id} className="px-4 py-5">
-                          <Skeleton
-                            className={
-                              column.id === 'name'
-                                ? 'h-8 w-44'
-                                : column.id === 'select' || column.id === 'actions'
-                                  ? 'size-4'
-                                  : 'h-5 w-20'
-                            }
-                          />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : table.getRowModel().rows.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() ? 'selected' : undefined}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell
-                          key={cell.id}
-                          className={`py-4 ${cell.column.id === 'select' ? 'pl-5 md:pl-6' : cell.column.id === 'actions' ? 'pr-5 md:pr-6' : compact && cell.column.id === 'name' ? 'pl-5 md:pl-6' : ''}`}
-                        >
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow className="hover:bg-transparent">
-                    <TableCell colSpan={visibleColumnCount}>
-                      <Empty className="py-14">
-                        <EmptyHeader>
-                          <EmptyMedia variant="icon">
-                            {hasFilters ? (
-                              <Search aria-hidden="true" />
+                {showLoading
+                  ? Array.from({ length: compact ? 5 : 8 }, (_, index) => (
+                      <TableRow key={index} className="h-18" aria-hidden="true">
+                        {table.getVisibleLeafColumns().map((column) => (
+                          <TableCell
+                            key={column.id}
+                            className={`py-4 ${column.id === 'select' ? 'pl-5 md:pl-6' : column.id === 'actions' ? 'pr-5 md:pr-6' : compact && column.id === 'name' ? 'pl-5 md:pl-6' : ''}`}
+                          >
+                            {column.id === 'name' ? (
+                              <div className="flex items-center gap-3">
+                                <Skeleton className="size-9 shrink-0 rounded-lg" />
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <Skeleton className="h-4 w-40 max-w-full" />
+                                  <Skeleton className="h-3 w-48 max-w-full" />
+                                </div>
+                              </div>
                             ) : (
-                              <FolderKanban aria-hidden="true" />
+                              <Skeleton
+                                className={
+                                  column.id === 'select'
+                                    ? 'size-6'
+                                    : column.id === 'actions'
+                                      ? 'size-8'
+                                      : 'h-5 w-20'
+                                }
+                              />
                             )}
-                          </EmptyMedia>
-                          <EmptyTitle>
-                            {hasFilters
-                              ? 'No matching projects'
-                              : 'A fresh start for your next idea'}
-                          </EmptyTitle>
-                          <EmptyDescription>
-                            {hasFilters
-                              ? 'Try a different search or clear your filters.'
-                              : 'Create your first project to start bringing your work together.'}
-                          </EmptyDescription>
-                        </EmptyHeader>
-                        {hasFilters && (
-                          <Button variant="outline" onClick={clearFilters}>
-                            Clear filters
-                          </Button>
-                        )}
-                      </Empty>
-                    </TableCell>
-                  </TableRow>
-                )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  : !showError
+                    ? table.getRowModel().rows.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          className="h-18"
+                          data-state={row.getIsSelected() ? 'selected' : undefined}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell
+                              key={cell.id}
+                              className={`py-4 ${cell.column.id === 'select' ? 'pl-5 md:pl-6' : cell.column.id === 'actions' ? 'pr-5 md:pr-6' : compact && cell.column.id === 'name' ? 'pl-5 md:pl-6' : ''}`}
+                            >
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    : null}
               </TableBody>
             </Table>
-          )}
-          {!compact && !error && (
-            <div className="flex flex-wrap items-center justify-between gap-4 border-t px-5 py-4 text-sm md:px-6">
-              <p className="text-xs text-muted-foreground" aria-live="polite">
-                {selectedRows.length
-                  ? `${String(selectedRows.length)} of ${String(filteredCount)} selected`
-                  : filteredCount
-                    ? `Showing ${String(pageIndex * table.getState().pagination.pageSize + 1)}–${String(Math.min((pageIndex + 1) * table.getState().pagination.pageSize, filteredCount))} of ${String(filteredCount)} projects`
-                    : '0 projects'}
+            {!showLoading && (showError || !table.getRowModel().rows.length) && (
+              <div className="absolute inset-x-0 top-10 bottom-0 overflow-y-auto">
+                <Empty className="min-h-full" role={showError ? 'alert' : 'status'}>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      {showError ? (
+                        <TriangleAlert aria-hidden="true" />
+                      ) : hasFilters ? (
+                        <Search aria-hidden="true" />
+                      ) : (
+                        <FolderKanban aria-hidden="true" />
+                      )}
+                    </EmptyMedia>
+                    <EmptyTitle>
+                      {showError
+                        ? 'Projects couldn’t be loaded'
+                        : hasFilters
+                          ? 'No matching projects'
+                          : 'A fresh start for your next idea'}
+                    </EmptyTitle>
+                    <EmptyDescription>
+                      {showError
+                        ? 'Try again to load your projects.'
+                        : hasFilters
+                          ? 'Try a different search or clear your filters.'
+                          : 'Create your first project to start bringing your work together.'}
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  {showError && onRetry ? (
+                    <Button variant="outline" onClick={onRetry}>
+                      <RefreshCw aria-hidden="true" /> Try again
+                    </Button>
+                  ) : hasFilters ? (
+                    <Button variant="outline" onClick={clearFilters}>
+                      Clear filters
+                    </Button>
+                  ) : null}
+                </Empty>
+              </div>
+            )}
+          </div>
+          {!compact && (
+            <div className="flex h-24 flex-col items-start justify-center gap-3 border-t px-5 py-4 text-sm md:h-16 md:flex-row md:items-center md:justify-between md:px-6">
+              <p className="min-w-0 truncate text-xs text-muted-foreground" aria-live="polite">
+                {showLoading
+                  ? 'Loading projects…'
+                  : showError
+                    ? 'Projects unavailable'
+                    : selectedRows.length
+                      ? `${String(selectedRows.length)} of ${String(filteredCount)} selected`
+                      : filteredCount
+                        ? `Showing ${String(pageIndex * table.getState().pagination.pageSize + 1)}–${String(Math.min((pageIndex + 1) * table.getState().pagination.pageSize, filteredCount))} of ${String(filteredCount)} projects`
+                        : '0 projects'}
               </p>
               <div className="flex items-center gap-4 md:gap-6">
                 <div className="hidden items-center gap-2 md:flex">

@@ -62,7 +62,7 @@ PC는 `--preset=desktop`, Projects는 URL `/projects`를 선택한다. 동일 �
 
 이번 원본 HTML/JSON 12개는 로컬의 `test-results/lighthouse/2026-11-03/`에 보관했다. 파일 이름은 `{before,after}-{overview-desktop,overview-mobile,projects-mobile}.report.{html,json}`이며 git에서 제외된다. 이후에는 **Lighthouse Actions → Run workflow → page/device 선택**으로 한 조합만 검사할 수 있다. 한 job/build/audit, artifact 3일 정책이며 자동 PR 검사와 중복하지 않는다. [실행 정책](../testing.md#선택-실행-lighthouse)을 참고한다.
 
-로컬 개선 후 보고서: [Overview PC](../../test-results/lighthouse/2026-11-03/after-overview-desktop.report.html), [Overview 모바일](../../test-results/lighthouse/2026-11-03/after-overview-mobile.report.html), [Projects 모바일](../../test-results/lighthouse/2026-11-03/after-projects-mobile.report.html). 이 파일은 저장소에 커밋되지 않으므로 다른 환경에서는 직접 측정하거나 Actions artifact를 사용한다.
+개선 후 보고서 이름은 `after-overview-desktop.report.html`, `after-overview-mobile.report.html`, `after-projects-mobile.report.html`이다. 이 파일은 저장소에 커밋되지 않고 로컬 정리 시 삭제될 수 있으므로 영구 링크로 제공하지 않는다. 새 측정이 필요하면 Actions artifact를 사용한다. 위 측정 기록은 당시 결과이며 현재 변경의 성능 점수를 보증하지 않는다.
 
 ## 검증 기록
 
