@@ -201,7 +201,11 @@ export function AnalyticsPage() {
                     cursor={false}
                     content={
                       <ChartTooltipContent
-                        labelFormatter={(value) => formatDate(String(value))}
+                        labelFormatter={(value) =>
+                          typeof value === 'string' && !Number.isNaN(Date.parse(value))
+                            ? formatDate(value)
+                            : null
+                        }
                         indicator="dot"
                       />
                     }
@@ -220,7 +224,7 @@ export function AnalyticsPage() {
                     stroke="var(--color-visitors)"
                     strokeWidth={2}
                   />
-                  <ChartLegend content={<ChartLegendContent />} />
+                  <ChartLegend position="bottom" content={<ChartLegendContent />} />
                 </AreaChart>
               </ChartContainer>
             ) : (
