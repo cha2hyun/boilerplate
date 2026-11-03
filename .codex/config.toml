@@ -1,0 +1,6 @@
+# Project-scoped shadcn MCP. Open this checkout as a trusted Codex project.
+[mcp_servers.shadcn]
+command = "pnpm"
+args = ["exec", "shadcn", "mcp"]
+startup_timeout_sec = 30
+tool_timeout_sec = 60
