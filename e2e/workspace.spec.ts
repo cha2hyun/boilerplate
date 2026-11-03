@@ -165,7 +165,9 @@ test('navigates through the sidebar and closes the mobile drawer after navigatio
 }) => {
   const isMobileLayout = (viewport?.width ?? 1440) < 768
   await page.goto('/')
-  const sidebarTrigger = page.getByRole('button', { name: 'Toggle Sidebar', exact: true })
+  const sidebarTrigger = page
+    .getByRole('main')
+    .getByRole('button', { name: 'Toggle Sidebar', exact: true })
   const sidebar = page.getByRole('dialog', { name: 'Sidebar', exact: true })
   if (!isMobileLayout) {
     const rail = page.locator('[data-slot="sidebar"][data-state]')
