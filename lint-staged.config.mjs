@@ -1,0 +1,4 @@
+export default {
+  '*.{js,mjs,cjs,ts,tsx}': ['eslint --fix --max-warnings 0 --no-warn-ignored', 'prettier --write'],
+  '*.{json,jsonc,md,yml,yaml,css,html}': ['prettier --write'],
+}

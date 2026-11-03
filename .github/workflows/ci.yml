@@ -1,0 +1,120 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'scripts/**'
+      - 'public/**'
+      - '.github/workflows/**'
+      - '*config*'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'index.html'
+      - '.env.example'
+      - '.nvmrc'
+      - '.prettierignore'
+      - '.editorconfig'
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'src/**'
+      - 'e2e/**'
+      - 'scripts/**'
+      - 'public/**'
+      - '.github/workflows/**'
+      - '*config*'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+      - 'index.html'
+      - '.env.example'
+      - '.nvmrc'
+      - '.prettierignore'
+      - '.editorconfig'
+  workflow_dispatch:
+    inputs:
+      category:
+        description: Browser test category (quality/unit/build always run)
+        type: choice
+        default: all
+        options: [all, core, samples]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  HUSKY: '0'
+
+jobs:
+  quality:
+    name: Quality, unit tests, and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Static checks, guardrail and unit tests, production build
+        run: pnpm check:ci
+      - name: Share the tested production bundle
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: production-dist
+          path: dist/
+          retention-days: 1
+          if-no-files-found: error
+
+  browser:
+    name: Browser / ${{ matrix.category }}
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        category: ${{ fromJSON(github.event_name == 'workflow_dispatch' && inputs.category != 'all' && format('["{0}"]', inputs.category) || '["core","samples"]') }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        with:
+          name: production-dist
+          path: dist/
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Test the shared production bundle
+        env:
+          TEST_CATEGORY: ${{ matrix.category }}
+        run: pnpm "test:e2e:$TEST_CATEGORY"
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-${{ matrix.category }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 3
+          if-no-files-found: ignore

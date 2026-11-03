@@ -1,0 +1,22 @@
+name: Bug report
+description: 재현 가능한 오류를 기록합니다.
+title: 'bug: '
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 재현 단계
+      description: 경로, 입력, 실행 순서를 포함해주세요. 비밀 정보는 제외해주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 동작과 실제 동작
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 환경과 증거
+      description: 브라우저, 운영체제, Node/pnpm 버전, 콘솔 오류 또는 화면을 적어주세요.

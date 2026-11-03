@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+playwright-report
+test-results
+pnpm-lock.yaml
+.husky/_
+src/app/routeTree.gen.ts
+*.min.*
