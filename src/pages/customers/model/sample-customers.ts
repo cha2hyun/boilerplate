@@ -1,6 +1,6 @@
 import type { SampleCustomer } from '@/entities/customer'
+import { formatNumber } from '@/shared/lib/format'
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -9,7 +9,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 export function formatCustomerAmount(cents: number) {
-  return currencyFormatter.format(cents / 100)
+  return formatNumber(cents / 100, { style: 'currency', currency: 'USD' })
 }
 
 export function formatCustomerDate(date: string) {

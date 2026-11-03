@@ -32,6 +32,71 @@ async function expectNoPageOverflow(page: Page) {
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
 }
 
+test('switches shared number formats and keeps compact motion text within its reserved width', async ({
+  page,
+}) => {
+  await page.goto('/foundations')
+  await page.getByRole('tab', { name: '피드백', exact: true }).click()
+  const number = page.locator('[data-number-state]')
+  const finalValue = number.locator('.sr-only')
+  await expect(finalValue).toHaveText('100,400')
+  await expect(page.getByRole('switch', { name: '통화 기호', exact: true })).toBeDisabled()
+  await page.getByRole('switch', { name: '천 단위 구분', exact: true }).click()
+  await expect(finalValue).toHaveText('100400')
+  await page.getByRole('combobox', { name: '숫자 형식', exact: true }).click()
+  await page.getByRole('option', { name: '미국 달러 · USD', exact: true }).click()
+  await expect(finalValue).toHaveText('$100400.00')
+  await page.getByRole('switch', { name: '통화 기호', exact: true }).click()
+  await expect(finalValue).toHaveText('100400.00')
+  await page.getByRole('switch', { name: '축약 표기', exact: true }).click()
+  await expect(finalValue).toHaveText('100.4K')
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.getByRole('switch', { name: '숫자 애니메이션', exact: true }).click()
+  await expect(number).toHaveAttribute('data-number-state', 'idle')
+
+  // Begin measurement in the same browser task as the click, before the first animated frame.
+  const measurements = await page.evaluate(async () => {
+    await document.fonts.ready
+    const changeValue = [...document.querySelectorAll('button')].find(
+      (button) => button.textContent.trim() === '값 변경',
+    )
+    if (!changeValue) throw new Error('The number demo change button is missing.')
+    changeValue.click()
+    const widths: number[] = []
+    const clipped: string[] = []
+    let sawIntermediate = false
+    const start = performance.now()
+    await new Promise<void>((resolve, reject) => {
+      const measure = () => {
+        const element = document.querySelector<HTMLElement>('[data-number-state]')
+        const visual = element?.querySelector<HTMLElement>('.absolute[aria-hidden="true"]')
+        if (!element || !visual) {
+          reject(new Error('The number demo is missing.'))
+          return
+        }
+        widths.push(element.getBoundingClientRect().width)
+        if (visual.scrollWidth > visual.clientWidth + 1) clipped.push(visual.textContent)
+        if (element.dataset.numberState === 'running') sawIntermediate = true
+        if (performance.now() - start < 400) requestAnimationFrame(measure)
+        else resolve()
+      }
+      requestAnimationFrame(measure)
+    })
+    return { widths, clipped, sawIntermediate }
+  })
+  expect(measurements.sawIntermediate).toBe(true)
+  expect(measurements.clipped).toEqual([])
+  expect(Math.max(...measurements.widths) - Math.min(...measurements.widths)).toBeLessThanOrEqual(
+    0.5,
+  )
+  await expect(finalValue).toHaveText('1M')
+  await page.getByRole('switch', { name: '숫자 애니메이션', exact: true }).click()
+  await page.getByRole('button', { name: '값 변경', exact: true }).click()
+  await expect(finalValue).toHaveText('100.4K')
+  await expect(number).toHaveAttribute('data-number-state', 'idle')
+  await expectNoPageOverflow(page)
+})
+
 test('loads the overview without browser errors and changes the revenue period', async ({
   page,
 }, testInfo) => {

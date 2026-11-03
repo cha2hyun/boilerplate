@@ -1,4 +1,5 @@
 import type { SampleOrder } from '@/entities/order'
+import { formatNumber } from '@/shared/lib/format'
 
 export function orderSubtotal(order: SampleOrder) {
   return order.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
@@ -8,7 +9,6 @@ export function orderTotal(order: SampleOrder) {
   return orderSubtotal(order) + order.shipping
 }
 
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
@@ -17,7 +17,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 })
 
 export function formatOrderAmount(cents: number) {
-  return currencyFormatter.format(cents / 100)
+  return formatNumber(cents / 100, { style: 'currency', currency: 'USD' })
 }
 
 export function formatOrderDate(date: string) {

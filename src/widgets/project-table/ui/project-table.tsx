@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Project } from '@/entities/project'
+import { formatNumber } from '@/shared/lib/format'
 import { ProjectDeleteDialog, ProjectEditorDialog } from '@/features/project-editor'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -134,7 +135,7 @@ function exportProjects(projects: Project[]) {
     URL.revokeObjectURL(url)
   }, 1000)
   toast.success(
-    `Exported ${String(projects.length)} ${projects.length === 1 ? 'project' : 'projects'}`,
+    `Exported ${formatNumber(projects.length)} ${projects.length === 1 ? 'project' : 'projects'}`,
   )
 }
 
@@ -294,7 +295,7 @@ export function ProjectTable({
               aria-label={`${row.original.name} progress`}
             />
             <span className="w-8 text-right text-xs text-muted-foreground tabular-nums">
-              {row.original.progress}%
+              {formatNumber(row.original.progress, { style: 'percent', maximumFractionDigits: 0 })}
             </span>
           </div>
         ),
@@ -441,7 +442,7 @@ export function ProjectTable({
                   variant="secondary"
                   className="h-5 min-w-6 shrink-0 justify-center font-normal tabular-nums"
                 >
-                  {hasData ? projects.length : '—'}
+                  {formatNumber(hasData ? projects.length : undefined)}
                 </Badge>
               </CardTitle>
               <CardDescription className="flex h-8 items-center gap-2" aria-live="polite">
@@ -473,7 +474,9 @@ export function ProjectTable({
                 }}
               >
                 <ArrowDownToLine aria-hidden="true" />
-                {selectedRows.length ? `Export ${String(selectedRows.length)} selected` : 'Export'}
+                {selectedRows.length
+                  ? `Export ${formatNumber(selectedRows.length)} selected`
+                  : 'Export'}
               </Button>
             )}
           </div>
@@ -703,10 +706,10 @@ export function ProjectTable({
                   : showError
                     ? 'Projects unavailable'
                     : selectedRows.length
-                      ? `${String(selectedRows.length)} of ${String(filteredCount)} selected`
+                      ? `${formatNumber(selectedRows.length)} of ${formatNumber(filteredCount)} selected`
                       : filteredCount
-                        ? `Showing ${String(pageIndex * table.getState().pagination.pageSize + 1)}–${String(Math.min((pageIndex + 1) * table.getState().pagination.pageSize, filteredCount))} of ${String(filteredCount)} projects`
-                        : '0 projects'}
+                        ? `Showing ${formatNumber(pageIndex * table.getState().pagination.pageSize + 1)}–${formatNumber(Math.min((pageIndex + 1) * table.getState().pagination.pageSize, filteredCount))} of ${formatNumber(filteredCount)} projects`
+                        : `${formatNumber(0)} projects`}
               </p>
               <div className="flex items-center gap-4 md:gap-6">
                 <div className="hidden items-center gap-2 md:flex">
@@ -728,14 +731,14 @@ export function ProjectTable({
                     <SelectContent>
                       {[8, 16, 32].map((size) => (
                         <SelectItem key={size} value={String(size)}>
-                          {size}
+                          {formatNumber(size)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <p className="text-xs font-medium whitespace-nowrap tabular-nums">
-                  Page {pageIndex + 1} of {pageCount}
+                  Page {formatNumber(pageIndex + 1)} of {formatNumber(pageCount)}
                 </p>
                 <div className="flex items-center gap-1">
                   <Button

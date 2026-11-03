@@ -27,6 +27,8 @@
 
 본문 크기는 rem 기반 Tailwind 스케일을 사용합니다. 한글과 영문을 함께 확인하고 줄 수가 늘어도 잘리지 않게 합니다. 고정 높이로 본문을 가두지 않습니다. 목록 제목은 필요한 경우 `min-w-0`와 `truncate`, 상세 본문은 `break-words`를 사용합니다. 금액/식별자/날짜의 생략은 사용자가 전체 값을 확인할 수 있을 때만 허용합니다.
 
+수량·금액·비율의 문자열은 [숫자 표시](../number-formatting.md)의 공통 함수로 만들고, 정렬이 필요한 숫자는 `tabular-nums`를 사용합니다. 숫자 모션과 최종 문자열 너비 예약은 [로딩과 모션](../loading-and-motion.md)을 따릅니다.
+
 ## 참고 자료의 적용 범위
 
 [SEED Typography](https://seed-design.io/foundations/typography)에서 크기·행간·두께와 역할을 구분하는 접근을 참고했습니다. 이 저장소는 기존 Pretendard와 Tailwind 스케일을 유지하며 SEED의 시스템 폰트 정책, 별도 텍스트 컴포넌트, 토큰 이름, 추가 두께는 도입하지 않습니다.

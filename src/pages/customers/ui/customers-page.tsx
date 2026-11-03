@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { customersQueryOptions, customerStatuses, type CustomerStatus } from '@/entities/customer'
-import { AnimatedNumber } from '@/features/number-motion'
+import { NumberDisplay } from '@/features/number-motion'
 import { formatNumber } from '@/shared/lib/format'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
@@ -35,7 +35,7 @@ import {
 } from '../model/sample-customers'
 
 const pageSize = 6
-const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
+const countFormat = { maximumFractionDigits: 0 }
 
 function CustomerStatusBadge({ status }: { status: CustomerStatus }) {
   return (
@@ -158,7 +158,7 @@ export function CustomersPage() {
                 {isLoading ? (
                   <Skeleton className="h-8 w-16" />
                 ) : customersQuery.data ? (
-                  <AnimatedNumber value={value} format={formatCount} />
+                  <NumberDisplay animate value={value} format={countFormat} />
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
@@ -317,7 +317,7 @@ export function CustomersPage() {
                             {customer.country}
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
-                            {customer.orders}
+                            {formatNumber(customer.orders)}
                           </TableCell>
                           <TableCell className="text-right font-medium tabular-nums">
                             {formatCustomerAmount(customer.spent)}
@@ -382,12 +382,12 @@ export function CustomersPage() {
               {isLoading
                 ? 'Loading customers…'
                 : filteredCustomers.length
-                  ? `Showing ${String(currentPage * pageSize + 1)}–${String(Math.min((currentPage + 1) * pageSize, filteredCustomers.length))} of ${String(filteredCustomers.length)} customers`
-                  : '0 customers'}
+                  ? `Showing ${formatNumber(currentPage * pageSize + 1)}–${formatNumber(Math.min((currentPage + 1) * pageSize, filteredCustomers.length))} of ${formatNumber(filteredCustomers.length)} customers`
+                  : `${formatNumber(0)} customers`}
             </p>
             <div className="flex items-center gap-3">
               <p className="text-xs font-medium tabular-nums">
-                Page {currentPage + 1} of {pageCount}
+                Page {formatNumber(currentPage + 1)} of {formatNumber(pageCount)}
               </p>
               <div className="flex gap-1">
                 <Button
@@ -467,7 +467,7 @@ export function CustomersPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-2xl font-semibold tabular-nums">
-                    <AnimatedNumber value={selectedCustomer.orders} format={formatCount} />
+                    <NumberDisplay animate value={selectedCustomer.orders} format={countFormat} />
                   </CardContent>
                 </Card>
                 <Card className="gap-2 py-4 shadow-none">
@@ -477,7 +477,11 @@ export function CustomersPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-xl font-semibold tabular-nums">
-                    <AnimatedNumber value={selectedCustomer.spent} format={formatCustomerAmount} />
+                    <NumberDisplay
+                      animate
+                      value={selectedCustomer.spent / 100}
+                      format={{ style: 'currency', currency: 'USD' }}
+                    />
                   </CardContent>
                 </Card>
               </div>

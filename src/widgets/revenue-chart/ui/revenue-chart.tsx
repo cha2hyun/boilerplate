@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 import type { Analytics } from '@/entities/analytics'
-import { AnimatedNumber } from '@/features/number-motion'
-import { formatCurrency, formatDate } from '@/shared/lib/format'
+import { NumberDisplay } from '@/features/number-motion'
+import { formatNumber, formatDate } from '@/shared/lib/format'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -56,9 +56,9 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="14">Last 14 days</SelectItem>
-              <SelectItem value="7">Last 7 days</SelectItem>
+              <SelectItem value="30">Last {formatNumber(30)} days</SelectItem>
+              <SelectItem value="14">Last {formatNumber(14)} days</SelectItem>
+              <SelectItem value="7">Last {formatNumber(7)} days</SelectItem>
             </SelectContent>
           </Select>
         </CardAction>
@@ -72,16 +72,23 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
             </>
           ) : data ? (
             <>
-              <AnimatedNumber
+              <NumberDisplay
+                animate
                 value={total}
-                format={formatCurrency}
+                format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 0 }}
                 className="text-3xl font-semibold tracking-tight"
               />
               <Badge variant="secondary" className="gap-1">
                 <TrendingUp className="size-3" />
-                <AnimatedNumber
+                <NumberDisplay
+                  animate
                   value={change}
-                  format={(value) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`}
+                  format={{
+                    style: 'percent',
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                    signDisplay: 'always',
+                  }}
                 />
               </Badge>
             </>

@@ -1,6 +1,6 @@
 # 로딩·카드 치수·숫자 모션
 
-이 문서가 로딩과 숫자 모션의 단일 계약입니다. UI는 기존 shadcn 컴포넌트를 조합하며 커스텀 컨트롤/별도 CSS/모션 라이브러리를 추가하지 않습니다. 캐시 상태 판단은 [Query 캐시](query-cache.md), 일반 정렬은 [레이아웃](design/layout.md)을 따릅니다.
+이 문서가 로딩과 숫자 모션의 단일 계약입니다. 숫자·통화·비율의 표현 옵션은 [숫자 표시](number-formatting.md)가 소유합니다. UI는 기존 shadcn 컴포넌트를 조합하며 커스텀 컨트롤/별도 CSS/모션 라이브러리를 추가하지 않습니다. 캐시 상태 판단은 [Query 캐시](query-cache.md), 일반 정렬은 [레이아웃](design/layout.md)을 따릅니다.
 
 ## 카드의 바깥 구조는 유지한다
 
@@ -16,17 +16,18 @@
 
 Skeleton의 pulse도 `prefers-reduced-motion: reduce`에서 중단합니다. 이 처리는 공유 shadcn Skeleton이 소유하며 화면마다 별도 애니메이션을 추가하지 않습니다.
 
-## 수치는 240ms 안에 표현한다
+## 숫자 모션은 선택적으로 300ms 동안 실행한다
 
-`@/features/number-motion`의 `AnimatedNumber`를 KPI, 요약 금액·비율·개수에 사용합니다. API 응답 후 최초 표시와 **캐시로 페이지에 재진입하는 경우 모두** 같은 동작을 사용합니다. 식별자, 날짜, 페이지 번호, 입력값, 모든 표 셀에 무조건 적용하지 않습니다.
+`@/features/number-motion`의 `NumberDisplay`는 공통 `formatNumber`로 값을 표시하며 `animate`의 기본값은 `false`입니다. KPI, 요약 금액·비율·개수의 모션은 `animate`를 명시해서 켭니다. 이 경우 API 응답 후 최초 표시와 **캐시로 페이지에 재진입하는 경우 모두** 같은 동작을 사용합니다. 식별자, 날짜, 페이지 번호, 입력값, 모든 표 셀에 모션을 무조건 적용하지 않습니다.
 
 ```tsx
-<AnimatedNumber value={total} format={formatCurrency} />
+<NumberDisplay value={total} format={{ style: 'currency', currency: 'USD' }} animate />
 ```
 
-- 고정 240ms, 상한 300ms입니다. frame 개수가 아닌 실제 경과 시간으로 계산하고 deadline에서 최종값을 확정합니다. 숫자 크기에 따라 지속 시간을 늘리지 않습니다. 브라우저의 메인 스레드가 멈춘 시간까지 실행을 보장하는 것은 아니며 다시 실행 가능한 즉시 최종값으로 끝냅니다.
-- 0에서 최종값으로 짧게 증가합니다. 정수 목표는 중간 값도 정수입니다. 포맷은 호출부에서 `Intl` 기반 함수로 명시하고 금액/비율의 소수 정밀도를 유지합니다.
-- 최종 문자열이 차지하는 너비를 처음부터 예약하고 `tabular-nums`를 사용합니다. 중간 자리수 때문에 옆 아이콘이나 카드가 움직이지 않아야 합니다.
+- 켠 경우 고정 300ms입니다. frame 개수가 아닌 실제 경과 시간으로 계산하고 deadline에서 최종값을 확정합니다. 숫자 크기에 따라 지속 시간을 늘리지 않으며 호출부에서 duration을 바꾸지 않습니다. 브라우저의 메인 스레드가 멈춘 시간까지 실행을 보장하는 것은 아니며 다시 실행 가능한 즉시 최종값으로 끝냅니다.
+- 끈 경우 즉시 최종값을 보여주며 애니메이션 frame이나 deadline timer를 예약하지 않습니다. 실행 도중 꺼도 즉시 최종값으로 끝냅니다.
+- 0에서 최종값으로 짧게 이동합니다. 정수 목표는 중간 값도 정수입니다. `format`에는 [공통 숫자 옵션](number-formatting.md)을 전달하고 중간값과 최종값 모두 같은 `formatNumber`를 사용합니다. 통화/비율/축약을 별도 formatter 콜백으로 구현하지 않습니다.
+- 최종 문자열과 실제로 표시할 중간 문자열 모두의 너비를 처음부터 예약하고 `tabular-nums`를 사용합니다. 중간 자리수 때문에 옆 아이콘이나 카드가 움직이지 않아야 합니다. `875K → 1M`처럼 중간 문자열이 더 넓어도 잘리거나 마지막에 너비가 줄어들지 않습니다. 공유 컴포넌트는 경과 시간으로 표시 단계를 결정하고 가능한 문자열만 미리 포맷합니다.
 - 목표 값이 바뀌거나 컴포넌트가 새로 나타날 때 실행합니다. 일반적인 부모 rerender나 동일 값 background refresh마다 재시작하지 않습니다.
 - `prefers-reduced-motion: reduce`이면 즉시 최종값을 보여 줍니다. 도중에 해당 설정이 켜져도 즉시 끝내고, hidden 문서에서는 불필요한 애니메이션을 완료 처리합니다.
 - 화면 낭독기는 정적인 최종값 한 번을 읽습니다. 매 프레임의 숫자를 live region으로 알리지 않습니다. unmount 때 frame·timer·이벤트 구독을 정리합니다.
@@ -35,4 +36,4 @@ Skeleton의 pulse도 `prefers-reduced-motion: reduce`에서 중단합니다. 이
 
 production bundle에서 cold load→데이터 표시의 카드 bounding box를 비교합니다. PC/태블릿/모바일에서 너비·높이 차이는 소수점 반올림 오차 0.5px 이내여야 합니다. 카드만 맞고 아래 콘텐츠가 크게 밀리지 않는지도 함께 확인합니다.
 
-숫자 단위 테스트는 완료 시간, 값 변경, cache 재진입에 해당하는 remount, 일반 rerender, reduced motion, cleanup을 검증합니다. E2E는 네트워크 수와 실제 치수를 확인합니다. 테스트 편의를 위해 동작을 끄거나 검증 범위를 전체 로컬 suite로 늘리지 말고 [테스트 정책](testing.md)을 따릅니다.
+숫자 단위 테스트는 정적 기본값, 애니메이션 on/off, 완료 시간, 값 변경, cache 재진입에 해당하는 remount, 일반 rerender, reduced motion, cleanup을 검증합니다. E2E는 네트워크 수와 실제 치수를 확인합니다. 테스트 편의를 위해 동작을 끄거나 검증 범위를 전체 로컬 suite로 늘리지 말고 [테스트 정책](testing.md)을 따릅니다.

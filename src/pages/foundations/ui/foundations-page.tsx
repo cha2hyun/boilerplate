@@ -12,8 +12,8 @@ import {
   RotateCcw,
   Settings,
 } from 'lucide-react'
-import { AnimatedNumber } from '@/features/number-motion'
-import { formatNumber } from '@/shared/lib/format'
+import { NumberDisplay } from '@/features/number-motion'
+import { formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
@@ -30,7 +31,6 @@ const railItems = [
   { label: '설정', icon: Settings },
 ]
 const sampleTimestamp = new Date('2026-11-04T06:30:00Z')
-const formatInteger = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
 
 function BasicsExamples() {
   return (
@@ -50,11 +50,11 @@ function BasicsExamples() {
             </p>
           </div>
           <dl className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-4 text-sm">
-            <dt className="text-muted-foreground">400 · Regular</dt>
+            <dt className="text-muted-foreground">{formatNumber(400)} · Regular</dt>
             <dd className="font-normal">본문과 입력값</dd>
-            <dt className="text-muted-foreground">500 · Medium</dt>
+            <dt className="text-muted-foreground">{formatNumber(500)} · Medium</dt>
             <dd className="font-medium">레이블과 버튼</dd>
-            <dt className="text-muted-foreground">600 · SemiBold</dt>
+            <dt className="text-muted-foreground">{formatNumber(600)} · SemiBold</dt>
             <dd className="font-semibold">제목과 핵심 수치</dd>
           </dl>
         </CardContent>
@@ -235,15 +235,21 @@ function LayoutExamples() {
           <dl className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
               <dt>모바일</dt>
-              <dd className="text-muted-foreground">768px 미만 · 1열</dd>
+              <dd className="text-muted-foreground">
+                {formatNumber(768)}px 미만 · {formatNumber(1)}열
+              </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt>태블릿</dt>
-              <dd className="text-muted-foreground">768px부터 · 1–2열</dd>
+              <dd className="text-muted-foreground">
+                {formatNumber(768)}px부터 · {formatNumber(1)}–{formatNumber(2)}열
+              </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
               <dt>PC</dt>
-              <dd className="text-muted-foreground">1280px부터 · 2–4열</dd>
+              <dd className="text-muted-foreground">
+                {formatNumber(1280)}px부터 · {formatNumber(2)}–{formatNumber(4)}열
+              </dd>
             </div>
           </dl>
           <code className="block rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
@@ -301,7 +307,7 @@ function ContentExamples() {
               같은 데이터, 다른 표기
             </h2>
           </CardTitle>
-          <CardDescription>언어와 시간대를 선택해 Intl 표기를 비교하세요.</CardDescription>
+          <CardDescription>언어와 시간대를 선택해 표시 형식을 비교하세요.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="grid gap-3 xl:grid-cols-2">
@@ -336,9 +342,7 @@ function ContentExamples() {
             <div>
               <dt className="text-xs text-muted-foreground">금액 · USD</dt>
               <dd className="mt-1 text-2xl font-semibold break-words tabular-nums">
-                {new Intl.NumberFormat(locale, { style: 'currency', currency: 'USD' }).format(
-                  12480.5,
-                )}
+                {formatNumber(12480.5, { locale, style: 'currency', currency: 'USD' })}
               </dd>
             </div>
             <div>
@@ -363,48 +367,110 @@ function ContentExamples() {
 }
 
 function FeedbackExamples() {
-  const [value, setValue] = useState(12840)
+  const [value, setValue] = useState(100400)
+  const [numberStyle, setNumberStyle] = useState('decimal')
+  const [useGrouping, setUseGrouping] = useState(true)
+  const [compact, setCompact] = useState(false)
+  const [showCurrency, setShowCurrency] = useState(true)
+  const [animate, setAnimate] = useState(false)
+  const [replay, setReplay] = useState(0)
   const [recovered, setRecovered] = useState(false)
+  const format: NumberFormatOptions = {
+    useGrouping,
+    notation: compact ? 'compact' : 'standard',
+    ...(numberStyle === 'decimal'
+      ? { style: 'decimal' }
+      : { style: 'currency', currency: numberStyle, showCurrency }),
+  }
   return (
     <div className="grid min-w-0 gap-5 md:grid-cols-2">
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>숫자가 바뀌는 순간</h2>
+            <h2>같은 숫자, 필요한 표현</h2>
           </CardTitle>
-          <CardDescription>
-            데이터의 변화를 짧게 연결하고 최종 값을 분명하게 보여줍니다.
-          </CardDescription>
+          <CardDescription>구분 기호, 통화, 축약과 움직임을 선택해 비교하세요.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="rounded-lg border p-5">
-            <p className="text-sm text-muted-foreground">방문 수 · 예시 데이터</p>
-            <AnimatedNumber
-              value={value}
-              format={formatInteger}
-              className="mt-2 text-3xl font-semibold tracking-tight"
-            />
+            <p className="text-sm text-muted-foreground">
+              {numberStyle === 'decimal' ? '일반 숫자' : `금액 · ${numberStyle}`} · 예시 데이터
+            </p>
+            <div className="mt-2 flex h-9 items-center text-3xl font-semibold tracking-tight">
+              <NumberDisplay key={replay} value={value} format={format} animate={animate} />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">원래 값: {formatNumber(value)}</p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="foundation-number-style">숫자 형식</Label>
+            <Select value={numberStyle} onValueChange={setNumberStyle}>
+              <SelectTrigger id="foundation-number-style" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="decimal">일반 숫자</SelectItem>
+                <SelectItem value="USD">미국 달러 · USD</SelectItem>
+                <SelectItem value="KRW">대한민국 원 · KRW</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-4 xl:grid-cols-2">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="foundation-number-grouping">천 단위 구분</Label>
+              <Switch
+                id="foundation-number-grouping"
+                checked={useGrouping}
+                onCheckedChange={setUseGrouping}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="foundation-number-compact">축약 표기</Label>
+              <Switch
+                id="foundation-number-compact"
+                checked={compact}
+                onCheckedChange={setCompact}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="foundation-number-currency">통화 기호</Label>
+              <Switch
+                id="foundation-number-currency"
+                checked={showCurrency}
+                onCheckedChange={setShowCurrency}
+                disabled={numberStyle === 'decimal'}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="foundation-number-animation">숫자 애니메이션</Label>
+              <Switch
+                id="foundation-number-animation"
+                checked={animate}
+                onCheckedChange={setAnimate}
+              />
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
               onClick={() => {
-                setValue((current) => (current === 12840 ? 19260 : 12840))
+                setValue((current) => (current === 100400 ? 1000000 : 100400))
               }}
             >
               값 변경
             </Button>
             <Button
               variant="outline"
+              disabled={!animate}
               onClick={() => {
-                setValue(12840)
+                setReplay((current) => current + 1)
               }}
             >
               <RotateCcw aria-hidden="true" />
-              초기화
+              다시 재생
             </Button>
           </div>
           <p className="text-xs leading-5 text-muted-foreground">
-            움직임 줄이기를 켜면 최종 값이 즉시 표시됩니다. 화면낭독기에는 최종 값만 제공합니다.
+            애니메이션은 {formatNumber(300)}ms 동안 표시됩니다. 움직임 줄이기를 켜면 즉시 최종 값을
+            보여주며, 화면낭독기에도 최종 값만 제공합니다. 통화 선택은 환율을 적용하지 않습니다.
           </p>
         </CardContent>
       </Card>

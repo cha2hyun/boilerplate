@@ -206,6 +206,25 @@ export function checkFile(filename, contents) {
 
   function visit(node) {
     if (
+      file !== 'shared/lib/format.ts' &&
+      !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file) &&
+      (ts.isNewExpression(node) || ts.isCallExpression(node)) &&
+      ts.isPropertyAccessExpression(node.expression)
+    ) {
+      const member = node.expression
+      const directNumberFormat =
+        ts.isIdentifier(member.expression) &&
+        member.expression.text === 'Intl' &&
+        member.name.text === 'NumberFormat'
+      if (directNumberFormat || ['toFixed', 'toPrecision'].includes(member.name.text)) {
+        report(
+          'number-format',
+          '숫자 표시는 shared/lib/format의 formatNumber를 사용하세요. 숫자 계약은 docs/number-formatting.md를 참고하세요.',
+          location(source, node),
+        )
+      }
+    }
+    if (
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
       node.moduleSpecifier &&
       ts.isStringLiteralLike(node.moduleSpecifier)

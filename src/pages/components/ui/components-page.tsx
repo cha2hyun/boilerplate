@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowUpRight, Bell, Check, LoaderCircle, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { formatNumber } from '@/shared/lib/format'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -121,9 +122,13 @@ export function ComponentsPage() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
-                  {['JD', 'AK', 'ML', '+3'].map((name) => (
+                  {['JD', 'AK', 'ML', 3].map((name) => (
                     <Avatar key={name} className="border-2 border-background">
-                      <AvatarFallback className="text-xs">{name}</AvatarFallback>
+                      <AvatarFallback className="text-xs">
+                        {typeof name === 'number'
+                          ? formatNumber(name, { signDisplay: 'always' })
+                          : name}
+                      </AvatarFallback>
                     </Avatar>
                   ))}
                 </div>
@@ -214,7 +219,9 @@ export function ComponentsPage() {
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
                 <span>Workspace setup</span>
-                <span className="tabular-nums">{progress}%</span>
+                <span className="tabular-nums">
+                  {formatNumber(progress, { style: 'percent', maximumFractionDigits: 0 })}
+                </span>
               </div>
               <Progress value={progress} aria-label="Workspace setup" />
               <Button

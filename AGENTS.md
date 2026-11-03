@@ -14,6 +14,7 @@ React + TypeScript + Vite + pnpm 프런트엔드입니다. 현재 데이터/워�
 - `app → pages → widgets → features → entities → shared`. 같은 레이어의 다른 슬라이스를 가져오지 않고 슬라이스 루트 `index.ts`로 공개합니다. 예외와 세부 규칙은 [아키텍처](docs/architecture.md)를 따릅니다.
 - Router는 URL, Query는 서버 데이터, Zustand는 UI 환경 설정을 소유합니다. [API 계약](docs/api-contract.md), [Query 캐시](docs/query-cache.md)를 확인하고 입력/API 응답을 런타임 검증하세요. `VITE_`/번들에 비밀을 넣거나 브라우저에 권한 판단을 맡기지 마세요.
 - UI는 설치된 shadcn, lucide, Tailwind 의미 토큰, Pretendard 400/500/600을 사용합니다. 새 custom primitive/UI 프레임워크/SEED 의존성을 추가하지 마세요. CSS는 `src/app/styles/globals.css`만 사용하며 neutral primary와 brand를 구분합니다.
+- 화면의 수량·통화·비율은 [숫자 표시](docs/number-formatting.md)의 공통 `formatNumber` 계약을 따릅니다.
 - 로딩·오류/재시도·빈 결과·키보드·세 화면 구간을 함께 다루세요. [로딩과 모션](docs/loading-and-motion.md)의 단일 계약을 따르고 접근 가능한 이름과 초점 흐름을 보존합니다.
 
 ## 검증과 완료
