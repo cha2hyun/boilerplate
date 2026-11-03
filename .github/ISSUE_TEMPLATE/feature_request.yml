@@ -1,0 +1,21 @@
+name: Feature request
+description: 사용자 문제와 완료 조건을 제안합니다.
+title: 'feat: '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 해결할 사용자 문제
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 완료 조건
+      description: 관찰 가능한 동작으로 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: 범위와 제약

@@ -1,0 +1,124 @@
+name: Lighthouse
+
+on:
+  workflow_dispatch:
+    inputs:
+      page:
+        description: Page to audit (one page per run)
+        type: choice
+        required: true
+        default: overview
+        options: [overview, projects]
+      device:
+        description: Lighthouse device profile (one profile per run)
+        type: choice
+        required: true
+        default: mobile
+        options: [mobile, desktop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lighthouse-${{ github.ref }}-${{ inputs.page }}-${{ inputs.device }}
+  cancel-in-progress: true
+
+env:
+  CI: 'true'
+  HUSKY: '0'
+
+jobs:
+  audit:
+    name: Lighthouse / ${{ inputs.page }} / ${{ inputs.device }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build the production bundle once
+        run: pnpm build
+      - name: Audit the selected page and device
+        env:
+          LIGHTHOUSE_PAGE: ${{ inputs.page }}
+          LIGHTHOUSE_DEVICE: ${{ inputs.device }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          case "$LIGHTHOUSE_PAGE" in
+            overview) page_path=/ ;;
+            projects) page_path=/projects ;;
+            *) echo "Unsupported page: $LIGHTHOUSE_PAGE" >&2; exit 1 ;;
+          esac
+          device_flags=()
+          case "$LIGHTHOUSE_DEVICE" in
+            mobile) ;;
+            desktop) device_flags+=(--preset=desktop) ;;
+            *) echo "Unsupported device: $LIGHTHOUSE_DEVICE" >&2; exit 1 ;;
+          esac
+
+          export CHROME_PATH
+          CHROME_PATH="$(command -v google-chrome)"
+          report_dir=test-results/lighthouse
+          report_prefix="$report_dir/$LIGHTHOUSE_PAGE-$LIGHTHOUSE_DEVICE"
+          mkdir -p "$report_dir"
+
+          node node_modules/vite/bin/vite.js preview \
+            --host 127.0.0.1 --port 4173 --strictPort \
+            > "$report_dir/preview.log" 2>&1 &
+          preview_pid=$!
+          cleanup() {
+            kill "$preview_pid" 2>/dev/null || true
+            wait "$preview_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+
+          audit_url="http://127.0.0.1:4173$page_path"
+          if ! curl --fail --silent --show-error --max-time 2 \
+            --retry 30 --retry-connrefused --retry-delay 1 --retry-max-time 30 \
+            "$audit_url" > /dev/null; then
+            cat "$report_dir/preview.log"
+            exit 1
+          fi
+          if ! kill -0 "$preview_pid" 2>/dev/null; then
+            cat "$report_dir/preview.log"
+            exit 1
+          fi
+
+          pnpm dlx lighthouse@13.6.0 "$audit_url" \
+            "${device_flags[@]}" \
+            --chrome-flags='--headless' \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=json --output=html --output-path="$report_prefix" \
+            --no-enable-error-reporting --quiet
+
+          node --input-type=module - "$report_prefix.report.json" <<'NODE'
+          import { readFileSync } from 'node:fs'
+
+          const report = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+          if (report.runtimeError) {
+            throw new Error(`Lighthouse runtime error: ${report.runtimeError.message}`)
+          }
+          for (const id of ['performance', 'accessibility', 'best-practices', 'seo']) {
+            if (typeof report.categories?.[id]?.score !== 'number') {
+              throw new Error(`Lighthouse did not produce a score for ${id}`)
+            }
+          }
+          NODE
+      - name: Upload Lighthouse reports and preview diagnostics
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: lighthouse-${{ inputs.page }}-${{ inputs.device }}
+          path: test-results/lighthouse/
+          retention-days: 3
+          if-no-files-found: ignore
