@@ -39,12 +39,12 @@ import { httpProjectAdapter } from './http'
 | 상태                           | 소유자                    | 이유                                                |
 | ------------------------------ | ------------------------- | --------------------------------------------------- |
 | 경로와 탐색                    | TanStack Router           | 새로고침/직접 링크에 일관된 진입점                  |
-| 원격 프로젝트/분석 데이터      | TanStack Query            | 캐시, 로딩/오류, 요청 취소, mutation 후 무효화      |
+| 원격/샘플 조회 데이터          | TanStack Query            | 캐시, 로딩/오류, 요청 취소, mutation 후 무효화      |
 | 워크스페이스 이름/compact mode | Zustand                   | 서버와 독립적인 UI 환경 설정의 명시적 소유권        |
 | light/dark/system 테마         | shadcn Vite ThemeProvider | 공식 Vite recipe 기반의 class 적용/시스템 테마 구독 |
 | 폼 입력/열린 대화상자          | 해당 컴포넌트/feature     | 수명이 짧고 다른 영역에 공개할 이유가 없음          |
 
-Query 결과를 Zustand에 복제하지 않습니다. 서버 상태의 진실 공급원은 서버이며 데모에서는 API 어댑터입니다. API 응답은 Zod로 검증하고 컴포넌트에는 검증된 도메인 데이터를 전달합니다. 데이터 어댑터는 `demo`와 `api` 모드에서 같은 계약을 따릅니다.
+Query 결과를 Zustand에 복제하지 않습니다. 서버 상태의 진실 공급원은 서버이며 데모에서는 API 어댑터입니다. API 응답은 Zod로 검증하고 컴포넌트에는 검증된 도메인 데이터를 전달합니다. 데이터 어댑터는 `demo`와 `api` 모드에서 같은 계약을 따릅니다. 캐시 수명·무효화·화면 갱신은 [Query 캐시](query-cache.md), 응답/페이지/정렬/저장 규칙은 [API 계약](api-contract.md)이 소유합니다.
 
 테마 provider는 `app/providers/theme-provider.tsx`, context와 `useTheme`는 `shared/lib/theme.ts`에 둡니다. 따라서 shared UI의 Sonner나 화면이 app 레이어를 거슬러 가져오지 않습니다. `blueprint-theme`에 `light`/`dark`/`system`만 저장하며, system 모드에서는 OS 설정 변경을 구독합니다. 배경은 공식 shadcn 토큰이 선택된 root class에 따라 바뀝니다. [테마 구현 결정](adr/003-vite-theme-provider.md)을 참고하세요.
 
@@ -56,9 +56,9 @@ shadcn 컴포넌트는 `src/shared/ui`에 두며 [shadcn의 CSS 변수 테마 �
 
 CSS 파일은 `src/app/styles/globals.css` 하나입니다. 여기에 Tailwind/폰트 import, shadcn light/dark 토큰, `@theme`, 기본 `@apply`를 둡니다. 화면별 CSS, CSS Modules, Sass, styled-components/Emotion은 사용하지 않습니다. 공식 shadcn 컴포넌트의 차트/사이드바처럼 동적 CSS 변수 또는 내부 style 태그가 필요한 생성 코드만 `shared/ui`에서 허용합니다. 이것은 임의 스타일을 그 폴더로 옮기는 우회 경로가 아닙니다.
 
-Pretendard는 400/500/600 동적 subset만 번들에 포함합니다. 텍스트는 normal/medium/semibold만 사용하고, brand는 neutral primary와 별도 토큰으로 관리합니다. 앱 레이아웃은 md(768px)/xl(1280px)의 세 구간으로 구성하며 생성된 shadcn primitive의 기본 반응형 동작은 유지합니다. 상세 계약은 [디자인 시스템](design-system.md)을 따릅니다.
+Pretendard는 400/500/600 동적 subset만 번들에 포함합니다. 텍스트는 normal/medium/semibold만 사용하고, brand는 neutral primary와 별도 토큰으로 관리합니다. 앱 레이아웃은 md(768px)/xl(1280px)의 세 구간으로 구성하며 생성된 shadcn primitive의 기본 반응형 동작은 유지합니다. 상세 계약은 [디자인 시스템 인덱스](design-system.md)에서 해당 주제만 읽습니다. 가로/세로 배치는 HTML + Tailwind 조합이며 별도 HStack/VStack primitive나 SEED 의존성을 추가하지 않습니다. 국제화 문서는 확장 기준이며 앱 전체 번역/RTL 구현을 뜻하지 않습니다. 로딩·skeleton·숫자 모션은 [로딩과 모션](loading-and-motion.md)이 소유합니다.
 
-Analytics, Orders, Customers, Inbox는 `pages` 슬라이스 내부의 독립적인 샘플입니다. 공통 서버 도메인인 프로젝트 API와 혼동하지 않도록 Sample 안내를 표시합니다. 운영 데이터 연결 시 필요한 도메인을 `entities`로, 사용자의 변경 행동을 `features`로 분리하고 Query를 통해 연결하세요. 샘플 fixture를 서버 상태처럼 Zustand에 복제하지 않습니다.
+Analytics, Orders, Customers의 조회 데이터는 각각 `entities/traffic`, `entities/order`, `entities/customer`가 Query와 응답 스키마를 소유합니다. 데모에서는 샘플을 반환하며 운영 데이터나 계정이 있다고 표현하지 않도록 Sample 안내를 유지합니다. Inbox의 읽음/보관 상태는 페이지 내부 샘플이며 화면을 떠나면 초기화됩니다. 실제 수신함 연결 시 도메인 계약을 `entities`로, 사용자의 변경 행동을 `features`로 분리합니다. Query 데이터나 샘플 fixture를 Zustand에 복제하지 않습니다.
 
 ## 자동 검사와 한계
 

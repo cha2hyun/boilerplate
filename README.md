@@ -1,8 +1,10 @@
 # Blueprint
 
-React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러플레이트입니다. 대시보드, 프로젝트 관리, 분석, 주문, 고객, 받은편지함, 설정 화면과 함께 FSD 구조, 서버/클라이언트 상태 분리, 디자인 토큰, 테스트, CI, AI 작업 가드레일을 제공합니다.
+React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러플레이트입니다. 대시보드, 프로젝트 관리, 분석, 주문, 고객, 받은편지함, 설정, Foundations 화면과 함께 FSD 구조, 서버/클라이언트 상태 분리, 디자인 토큰, 테스트, CI, AI 작업 가드레일을 제공합니다.
 
 기본 실행은 **브라우저에 저장되는 데모 모드**입니다. 대시보드 수치는 샘플이며 실제 계정, 결제, 인증, 서버 권한 검사는 포함하지 않습니다. 운영 연결은 [API 계약](docs/api-contract.md)과 [운영 전환 체크리스트](docs/production-readiness.md)를 기준으로 진행하세요.
+
+Overview·Analytics·Orders·Customers는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 240ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
 
 ## 실행
 
@@ -38,6 +40,7 @@ VITE_API_BASE_URL=/api
 | 폰트            | Pretendard 동적 subset 자체 호스팅, 400 / 500 / 600               |
 | URL/탐색        | TanStack Router                                                   |
 | 서버 데이터     | TanStack Query, 취소 가능한 요청, Zod 응답 검증                   |
+| 목업 HTTP       | demo 전용 MSW, 요청 횟수와 Query 캐시 재사용 검증                 |
 | 클라이언트 상태 | Zustand                                                           |
 | 테이블/차트     | TanStack Table, shadcn Chart/Recharts                             |
 | 품질            | ESLint typed rules, Prettier, Vitest, Testing Library, Playwright |
@@ -52,16 +55,19 @@ VITE_API_BASE_URL=/api
 
 ## 샘플 페이지
 
-| 메뉴                  | 제공하는 흐름                                        |
-| --------------------- | ---------------------------------------------------- |
-| Overview / Projects   | 기간별 요약, 프로젝트 생성·수정·삭제, 검색·필터      |
-| Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지   |
-| Orders                | 상태 탭, 검색·정렬·페이지 이동, 주문 상세 Sheet      |
-| Customers             | 상태 필터, 검색·정렬·페이지 이동, 고객 상세 Sheet    |
-| Inbox                 | 검색, 읽음/읽지 않음, 보관·복원, 메시지 상세         |
-| Components / Settings | shadcn 구성 요소·토큰·폰트, 테마와 워크스페이스 설정 |
+| 메뉴                  | 제공하는 흐름                                            |
+| --------------------- | -------------------------------------------------------- |
+| Overview / Projects   | 기간별 요약, 프로젝트 생성·수정·삭제, 검색·필터          |
+| Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지       |
+| Orders                | 상태 탭, 검색·정렬·페이지 이동, 주문 상세 Sheet          |
+| Customers             | 상태 필터, 검색·정렬·페이지 이동, 고객 상세 Sheet        |
+| Inbox                 | 검색, 읽음/읽지 않음, 보관·복원, 메시지 상세             |
+| Components / Settings | shadcn 구성 요소·토큰·폰트, 테마와 워크스페이스 설정     |
+| Foundations           | 디자인 규칙, HStack/VStack 조합, 문구·국제화·피드백 예시 |
 
-새 Sample admin 메뉴는 페이지 내부 가상 데이터로 동작합니다. 주문/고객은 읽기 전용이며 받은편지함 변경은 페이지를 떠나면 초기화됩니다. 실제 메일 발송이나 결제 기능은 없습니다. 모바일(768px 미만)은 사이드바 drawer, 태블릿(768–1279px)은 기본 아이콘 탐색, PC(1280px 이상)는 펼친 사이드바를 사용합니다.
+주문/고객은 HTTP 목업에서 읽는 조회 전용 데이터이며 받은편지함 변경은 페이지를 떠나면 초기화됩니다. 실제 메일 발송이나 결제 기능은 없습니다. 모바일(768px 미만)은 사이드바 drawer, 태블릿(768–1279px)은 기본 아이콘 탐색, PC(1280px 이상)는 펼친 사이드바를 사용합니다. 접힌 로고·메뉴·프로필은 같은 중심선을 사용하며 workspace 전환 블록은 표시하지 않습니다.
+
+Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이지입니다. SEED의 설계 관점을 참고하되 패키지/토큰/컴포넌트를 가져오지 않습니다. HStack/VStack은 재사용할 수 있는 Tailwind 조합 예시이며 별도 UI primitive가 아닙니다.
 
 ## 명령
 
@@ -97,6 +103,7 @@ src/
   shared/    # shadcn UI, API transport, 설정, 공통 도구
 ```
 
+- [작업별 문서 지도](docs/README.md) — 필요한 책임의 문서만 선택
 - [아키텍처와 경계](docs/architecture.md)
 - [폰트·색상·반응형 규칙](docs/design-system.md)
 - [테스트 범주와 Actions 실행 정책](docs/testing.md)
@@ -104,6 +111,8 @@ src/
 - [시니어 코드 리뷰와 수정 근거](docs/reviews/production-code-review.md)
 - [Lighthouse 측정 결과와 개선](docs/reviews/lighthouse-audit.md)
 - [API 계약과 데모 어댑터](docs/api-contract.md)
+- [Query 키·캐시·목업 검증](docs/query-cache.md)
+- [카드 로딩·숫자 모션](docs/loading-and-motion.md)
 - [운영 전환 체크리스트](docs/production-readiness.md)
 - [AI 작업 흐름](docs/ai-workflow.md) · [에이전트 지침](AGENTS.md)
 - [기여/커밋/PR 규칙](CONTRIBUTING.md)

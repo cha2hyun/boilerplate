@@ -47,6 +47,11 @@ export const pageMetadata = {
     description:
       'Personalize the Blueprint demo workspace with theme, layout, and workspace preferences.',
   },
+  '/foundations': {
+    title: 'Foundations',
+    description:
+      'Explore Blueprint’s design foundations, layout recipes, writing principles, and accessible feedback.',
+  },
 } as const satisfies Record<string, PageMetadata>
 
 export type PagePath = keyof typeof pageMetadata

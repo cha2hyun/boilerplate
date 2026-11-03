@@ -46,7 +46,12 @@ test('loads the overview without browser errors and changes the revenue period',
     page.getByRole('heading', { name: 'A little clarity. A lot of possibility.' }),
   ).toBeVisible()
   await expect(page.getByText('Active customers', { exact: true })).toBeVisible()
-  await expect(page.getByText('2,420', { exact: true })).toBeVisible()
+  const customerMetric = page.locator('[data-slot="card"][aria-label="Active customers"]')
+  await expect(customerMetric.locator('[data-number-state] .sr-only')).toHaveText('2,420')
+  await expect(customerMetric.locator('[data-number-state]')).toHaveAttribute(
+    'data-number-state',
+    'idle',
+  )
   await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
   await expect(page.getByText('Oct 5 – Nov 3 · Revenue in USD', { exact: true })).toBeVisible()
 
@@ -56,7 +61,11 @@ test('loads the overview without browser errors and changes the revenue period',
   const period = page.getByRole('combobox', { name: 'Revenue period' })
   await period.click()
   await page.getByRole('option', { name: 'Last 7 days', exact: true }).click()
-  await expect(chart.getByText('$9,200', { exact: true })).toBeVisible()
+  await expect(chart.locator('[data-number-state] .sr-only').first()).toHaveText('$9,200')
+  await expect(chart.locator('[data-number-state]').first()).toHaveAttribute(
+    'data-number-state',
+    'idle',
+  )
   await expect(chart.getByText('Oct 28 – Nov 3 · Revenue in USD', { exact: true })).toBeVisible()
   await period.click()
   await page.getByRole('option', { name: 'Last 30 days', exact: true }).click()
@@ -158,6 +167,41 @@ test('navigates through the sidebar and closes the mobile drawer after navigatio
   await page.goto('/')
   const sidebarTrigger = page.getByRole('button', { name: 'Toggle Sidebar', exact: true })
   const sidebar = page.getByRole('dialog', { name: 'Sidebar', exact: true })
+  if (!isMobileLayout) {
+    const rail = page.locator('[data-slot="sidebar"][data-state]')
+    if ((await rail.getAttribute('data-state')) === 'expanded') await sidebarTrigger.click()
+    await expect(rail).toHaveAttribute('data-state', 'collapsed')
+    // Inspect actual visual centers: the avatar must not offset the collapsed menu icons.
+    await expect
+      .poll(() =>
+        rail.evaluate((element) => {
+          const targets = [
+            element.querySelector('[data-slot="sidebar-header"] svg'),
+            ...element.querySelectorAll(
+              '[data-slot="sidebar-content"] [data-slot="sidebar-menu-button"] > svg:first-child',
+            ),
+            element.querySelector('[data-slot="sidebar-footer"] [data-slot="avatar"]'),
+          ]
+          if (targets.some((target) => !target)) return Infinity
+          const centers = targets.map((target) => {
+            const rect = target!.getBoundingClientRect()
+            const button = target!
+              .closest('[data-slot="sidebar-menu-button"]')!
+              .getBoundingClientRect()
+            return {
+              x: rect.x + rect.width / 2,
+              vertical: Math.abs(rect.y + rect.height / 2 - button.y - button.height / 2),
+            }
+          })
+          const xs = centers.map(({ x }) => x)
+          return Math.max(
+            Math.max(...xs) - Math.min(...xs),
+            ...centers.map(({ vertical }) => vertical),
+          )
+        }),
+      )
+      .toBeLessThanOrEqual(0.5)
+  }
   if (isMobileLayout) {
     await sidebarTrigger.focus()
     await page.keyboard.press('Enter')

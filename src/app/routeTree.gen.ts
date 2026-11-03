@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as CustomersRouteImport } from './routes/customers'
+import { Route as FoundationsRouteImport } from './routes/foundations'
 import { Route as InboxRouteImport } from './routes/inbox'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -36,6 +37,11 @@ const ComponentsRoute = ComponentsRouteImport.update({
 const CustomersRoute = CustomersRouteImport.update({
   id: '/customers',
   path: '/customers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FoundationsRoute = FoundationsRouteImport.update({
+  id: '/foundations',
+  path: '/foundations',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InboxRoute = InboxRouteImport.update({
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/components': typeof ComponentsRoute
   '/customers': typeof CustomersRoute
+  '/foundations': typeof FoundationsRoute
   '/inbox': typeof InboxRoute
   '/orders': typeof OrdersRoute
   '/projects': typeof ProjectsRoute
@@ -74,6 +81,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/components': typeof ComponentsRoute
   '/customers': typeof CustomersRoute
+  '/foundations': typeof FoundationsRoute
   '/inbox': typeof InboxRoute
   '/orders': typeof OrdersRoute
   '/projects': typeof ProjectsRoute
@@ -85,6 +93,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/components': typeof ComponentsRoute
   '/customers': typeof CustomersRoute
+  '/foundations': typeof FoundationsRoute
   '/inbox': typeof InboxRoute
   '/orders': typeof OrdersRoute
   '/projects': typeof ProjectsRoute
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/components'
     | '/customers'
+    | '/foundations'
     | '/inbox'
     | '/orders'
     | '/projects'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/components'
     | '/customers'
+    | '/foundations'
     | '/inbox'
     | '/orders'
     | '/projects'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/components'
     | '/customers'
+    | '/foundations'
     | '/inbox'
     | '/orders'
     | '/projects'
@@ -128,6 +140,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   ComponentsRoute: typeof ComponentsRoute
   CustomersRoute: typeof CustomersRoute
+  FoundationsRoute: typeof FoundationsRoute
   InboxRoute: typeof InboxRoute
   OrdersRoute: typeof OrdersRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -162,6 +175,13 @@ declare module '@tanstack/react-router' {
       path: '/customers'
       fullPath: '/customers'
       preLoaderRoute: typeof CustomersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/foundations': {
+      id: '/foundations'
+      path: '/foundations'
+      fullPath: '/foundations'
+      preLoaderRoute: typeof FoundationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/inbox': {
@@ -200,6 +220,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   ComponentsRoute: ComponentsRoute,
   CustomersRoute: CustomersRoute,
+  FoundationsRoute: FoundationsRoute,
   InboxRoute: InboxRoute,
   OrdersRoute: OrdersRoute,
   ProjectsRoute: ProjectsRoute,

@@ -7,6 +7,7 @@ import {
   ShoppingBag,
   Users,
   ChartColumn,
+  BookOpen,
 } from 'lucide-react'
 
 export const navigation = [
@@ -17,6 +18,7 @@ export const navigation = [
   { label: 'Customers', to: '/customers', icon: Users, group: 'Sample admin' },
   { label: 'Inbox', to: '/inbox', icon: Inbox, group: 'Sample admin' },
   { label: 'Components', to: '/components', icon: LayoutGrid, group: 'Resources' },
+  { label: 'Foundations', to: '/foundations', icon: BookOpen, group: 'Resources' },
   { label: 'Settings', to: '/settings', icon: Settings2, group: 'Resources' },
 ] as const
 
