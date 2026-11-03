@@ -21,14 +21,16 @@ test('analytics period updates the metrics, charts, and traffic tables together'
   )
   const sources = page.getByRole('table', { name: 'Traffic sources', exact: true })
   const topPages = page.getByRole('table', { name: 'Top pages', exact: true })
-  const initialVisitors = await visitors.innerText()
+  await expect(visitors.locator('[data-number-state]')).toHaveAttribute('data-number-state', 'idle')
+  const initialVisitors = await visitors.locator('.sr-only').innerText()
   const initialSource = await sources.getByRole('row').nth(1).innerText()
   const initialTopPage = await topPages.getByRole('row').nth(1).innerText()
 
   await page.getByRole('combobox', { name: 'Analytics period' }).click()
   await page.getByRole('option', { name: 'Last 7 days', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Oct 28 – Nov 3, 2026')
-  await expect(visitors).not.toHaveText(initialVisitors)
+  await expect(visitors.locator('[data-number-state]')).toHaveAttribute('data-number-state', 'idle')
+  await expect(visitors.locator('.sr-only')).not.toHaveText(initialVisitors)
   await expect(sources.getByRole('row').nth(1)).not.toHaveText(initialSource, {
     useInnerText: true,
   })
@@ -39,7 +41,8 @@ test('analytics period updates the metrics, charts, and traffic tables together'
 
   await page.getByRole('combobox', { name: 'Analytics period' }).click()
   await page.getByRole('option', { name: 'Last 30 days', exact: true }).click()
-  await expect(visitors).toHaveText(initialVisitors)
+  await expect(visitors.locator('[data-number-state]')).toHaveAttribute('data-number-state', 'idle')
+  await expect(visitors.locator('.sr-only')).toHaveText(initialVisitors)
   await expect(sources.getByRole('row').nth(1)).toHaveText(initialSource, { useInnerText: true })
   await expect(topPages.getByRole('row').nth(1)).toHaveText(initialTopPage, { useInnerText: true })
   await expectNoPageOverflow(page)

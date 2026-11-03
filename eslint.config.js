@@ -15,6 +15,8 @@ export default tseslint.config(
       'playwright-report/**',
       'test-results/**',
       'src/app/routeTree.gen.ts',
+      // Vendored MSW worker: regenerate with `pnpm exec msw init public --save`.
+      'public/mockServiceWorker.js',
       '.husky/_/**',
     ],
   },

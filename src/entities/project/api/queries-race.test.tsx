@@ -76,7 +76,7 @@ describe('project mutation and list concurrency', () => {
       await waitFor(() => {
         expect(result.current.projects.data).toEqual([created, ...seedProjects])
       })
-      expect(queryClient.getQueryData(projectKeys.all)).toEqual([created, ...seedProjects])
+      expect(queryClient.getQueryData(projectKeys.lists())).toEqual([created, ...seedProjects])
     } finally {
       unsubscribe()
       cleanup()

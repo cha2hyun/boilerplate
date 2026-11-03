@@ -1,3 +1,4 @@
-export { analyticsQueryOptions } from './api/queries'
+export { analyticsKeys, analyticsQueryOptions } from './api/queries'
+export { demoAnalytics } from './api/seed'
 export { analyticsSchema } from './model/schema'
 export type { Analytics } from './model/schema'

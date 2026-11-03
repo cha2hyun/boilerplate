@@ -21,10 +21,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:core": "playwright test e2e/workspace.spec.ts e2e/projects.spec.ts",
+    "test:e2e:core": "playwright test e2e/workspace.spec.ts e2e/projects.spec.ts e2e/query-cache.spec.ts",
     "test:e2e:samples": "playwright test e2e/commerce.spec.ts e2e/analytics-inbox.spec.ts",
     "test:e2e:workspace": "playwright test e2e/workspace.spec.ts",
     "test:e2e:projects": "playwright test e2e/projects.spec.ts",
+    "test:e2e:cache": "playwright test e2e/query-cache.spec.ts",
     "test:e2e:commerce": "playwright test e2e/commerce.spec.ts",
     "test:e2e:analytics-inbox": "playwright test e2e/analytics-inbox.spec.ts",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm check:architecture",
@@ -86,6 +87,7 @@
     "husky": "9.1.7",
     "jsdom": "30.1.3",
     "lint-staged": "17.6.0",
+    "msw": "3.0.3",
     "prettier": "3.9.10",
     "prettier-plugin-tailwindcss": "0.8.1",
     "shadcn": "4.23.0",
@@ -100,5 +102,10 @@
   "engines": {
     "node": ">=24.11.0 <27",
     "pnpm": ">=11 <12"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

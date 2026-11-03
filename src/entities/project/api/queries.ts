@@ -5,13 +5,17 @@ import { createDemoProjectAdapter } from './demo'
 import { httpProjectAdapter } from './http'
 
 const adapter = env.dataSource === 'demo' ? createDemoProjectAdapter() : httpProjectAdapter
-export const projectKeys = { all: ['projects'] as const }
+export const projectKeys = {
+  all: ['projects'] as const,
+  lists: () => [...projectKeys.all, 'list'] as const,
+}
 
 export function projectsQueryOptions() {
   return queryOptions({
-    queryKey: projectKeys.all,
+    queryKey: projectKeys.lists(),
     queryFn: ({ signal }) => adapter.list(signal),
-    staleTime: 30_000,
+    staleTime: 60_000,
+    gcTime: 300_000,
   })
 }
 
@@ -21,7 +25,7 @@ export function useCreateProject() {
     mutationFn: (input: ProjectInput) => adapter.create(input),
     onSuccess: async (project) => {
       await queryClient.cancelQueries({ queryKey: projectKeys.all })
-      queryClient.setQueryData<Project[]>(projectKeys.all, (current) =>
+      queryClient.setQueryData<Project[]>(projectKeys.lists(), (current) =>
         current ? [project, ...current.filter((item) => item.id !== project.id)] : undefined,
       )
       return queryClient.invalidateQueries({ queryKey: projectKeys.all })
@@ -35,7 +39,7 @@ export function useUpdateProject() {
     mutationFn: ({ id, input }: { id: string; input: ProjectInput }) => adapter.update(id, input),
     onSuccess: async (updated) => {
       await queryClient.cancelQueries({ queryKey: projectKeys.all })
-      queryClient.setQueryData<Project[]>(projectKeys.all, (current) =>
+      queryClient.setQueryData<Project[]>(projectKeys.lists(), (current) =>
         current?.map((project) => (project.id === updated.id ? updated : project)),
       )
       return queryClient.invalidateQueries({ queryKey: projectKeys.all })
@@ -49,7 +53,7 @@ export function useDeleteProject() {
     mutationFn: (id: string) => adapter.delete(id),
     onSuccess: async (_result, id) => {
       await queryClient.cancelQueries({ queryKey: projectKeys.all })
-      queryClient.setQueryData<Project[]>(projectKeys.all, (current) =>
+      queryClient.setQueryData<Project[]>(projectKeys.lists(), (current) =>
         current?.filter((project) => project.id !== id),
       )
       return queryClient.invalidateQueries({ queryKey: projectKeys.all })

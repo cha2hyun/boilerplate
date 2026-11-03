@@ -10,7 +10,7 @@
 | `pnpm check:ci`         | 정적 검사 + 가드레일 테스트 + 전체 단위 테스트 + production build | Actions quality job |
 | `pnpm test:unit`        | 전체 Vitest 범주                                                  | Actions             |
 | `pnpm test:guardrails`  | 아키텍처 검사기 회귀 테스트                                       | Actions             |
-| `pnpm test:e2e:core`    | 워크스페이스/기존 프로젝트 기능                                   | Actions core job    |
+| `pnpm test:e2e:core`    | 워크스페이스/프로젝트/조회 캐시와 카드 치수                       | Actions core job    |
 | `pnpm test:e2e:samples` | 샘플 운영 페이지                                                  | Actions samples job |
 
 `pnpm test`는 `test:unit`의 기존 호환 명령입니다. `test:watch`, `test:coverage`는 필요할 때 직접 선택하는 도구이며 기본 CI/로컬 검사에 추가하지 않습니다. `pnpm check`는 테스트나 production build를 실행하지 않습니다.
@@ -41,12 +41,13 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 ## 브라우저 범주와 페이지 선택
 
-| CI 범주   | 파일/선택 명령                                         | 확인할 사용자 흐름                          |
-| --------- | ------------------------------------------------------ | ------------------------------------------- |
-| `core`    | `test:e2e:workspace` → `workspace.spec.ts`             | 탐색, 검색, 테마/설정, 컴포넌트, 반응형 셸  |
-| `core`    | `test:e2e:projects` → `projects.spec.ts`               | 프로젝트 생성/수정/삭제, 필터, 오류/빈 상태 |
-| `samples` | `test:e2e:commerce` → `commerce.spec.ts`               | 주문/고객 목록, 필터, 상세 및 선택 흐름     |
-| `samples` | `test:e2e:analytics-inbox` → `analytics-inbox.spec.ts` | 분석 기간/비교와 메시지 탐색/읽음 처리      |
+| CI 범주   | 파일/선택 명령                                         | 확인할 사용자 흐름                                         |
+| --------- | ------------------------------------------------------ | ---------------------------------------------------------- |
+| `core`    | `test:e2e:workspace` → `workspace.spec.ts`             | 탐색, 검색, 테마/설정, 컴포넌트, 반응형 셸                 |
+| `core`    | `test:e2e:cache` → `query-cache.spec.ts`               | 실제 요청 횟수, cold/warm 캐시, background 갱신, 카드 치수 |
+| `core`    | `test:e2e:projects` → `projects.spec.ts`               | 프로젝트 생성/수정/삭제, 필터, 오류/빈 상태                |
+| `samples` | `test:e2e:commerce` → `commerce.spec.ts`               | 주문/고객 목록, 필터, 상세 및 선택 흐름                    |
+| `samples` | `test:e2e:analytics-inbox` → `analytics-inbox.spec.ts` | 분석 기간/비교와 메시지 탐색/읽음 처리                     |
 
 두 범주는 겹치지 않습니다. 같은 시나리오를 dev와 production 두 환경에서 반복하지 않습니다. E2E는 `pnpm build` 결과 `dist/`를 `pnpm preview`로 제공하며 기본적으로 Chromium만 사용합니다.
 
