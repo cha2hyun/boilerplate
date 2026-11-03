@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Circle, FolderKanban, Gauge, Plus } from 'lucide-react'
 import { projectsQueryOptions } from '@/entities/project'
-import { AnimatedNumber } from '@/features/number-motion'
-import { formatNumber, formatPercent } from '@/shared/lib/format'
+import { NumberDisplay } from '@/features/number-motion'
+import { formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
 import { ProjectEditorDialog } from '@/features/project-editor'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -11,8 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { ProjectTable } from '@/widgets/project-table'
 
-const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
-const formatProgress = (value: number) => formatPercent(value, 0)
+const countFormat = { maximumFractionDigits: 0 }
+const progressFormat = { style: 'percent', maximumFractionDigits: 0 } satisfies NumberFormatOptions
 
 export function ProjectsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -30,23 +30,23 @@ export function ProjectsPage() {
     {
       title: 'Total projects',
       value: projects.length,
-      format: formatCount,
+      format: countFormat,
       description: 'Across your workspace',
       Icon: FolderKanban,
     },
     {
       title: 'Active projects',
       value: activeCount,
-      format: formatCount,
+      format: countFormat,
       description: hasData
-        ? `${String(pausedCount)} ${pausedCount === 1 ? 'project' : 'projects'} currently paused`
+        ? `${formatNumber(pausedCount)} ${pausedCount === 1 ? 'project' : 'projects'} currently paused`
         : 'Projects currently paused',
       Icon: Circle,
     },
     {
       title: 'Average progress',
       value: averageProgress,
-      format: formatProgress,
+      format: progressFormat,
       description: 'A shared view of how far you’ve come',
       Icon: Gauge,
     },
@@ -92,7 +92,7 @@ export function ProjectsPage() {
                 {isLoading ? (
                   <Skeleton className="h-8 w-16" />
                 ) : hasData ? (
-                  <AnimatedNumber value={value} format={format} />
+                  <NumberDisplay animate value={value} format={format} />
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}

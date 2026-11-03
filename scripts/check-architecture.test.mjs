@@ -4,6 +4,30 @@ import { checkFile } from './check-architecture.mjs'
 
 const rules = (file, source) => checkFile(file, source).map((issue) => issue.rule)
 
+test('requires the canonical number formatter while preserving date APIs and test fixtures', () => {
+  const independentFormatters = `
+    new Intl.NumberFormat('en-US').format(1234)
+    Intl.NumberFormat('ko-KR').format(1234)
+    value.toFixed(2)
+    value.toPrecision(3)
+  `
+  assert.deepEqual(rules('pages/orders/ui/amount.tsx', independentFormatters), [
+    'number-format',
+    'number-format',
+    'number-format',
+    'number-format',
+  ])
+  assert.deepEqual(rules('shared/lib/format.ts', independentFormatters), [])
+  assert.deepEqual(rules('shared/lib/format.test.ts', independentFormatters), [])
+  assert.deepEqual(
+    rules(
+      'shared/ui/calendar.tsx',
+      `new Intl.DateTimeFormat('en-US').format(date); date.toLocaleString('default', { month: 'short' })`,
+    ),
+    [],
+  )
+})
+
 test('allows public lower-layer imports and private same-slice imports', () => {
   assert.deepEqual(
     rules(

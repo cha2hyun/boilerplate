@@ -15,16 +15,11 @@ import {
 } from 'lucide-react'
 import { analyticsQueryOptions } from '@/entities/analytics'
 import { projectsQueryOptions } from '@/entities/project'
-import { AnimatedNumber } from '@/features/number-motion'
+import { NumberDisplay } from '@/features/number-motion'
 import { ProjectEditorDialog } from '@/features/project-editor'
 import { ProjectTable } from '@/widgets/project-table'
 import { RevenueChart } from '@/widgets/revenue-chart'
-import {
-  formatCurrency,
-  formatNumber,
-  formatPercent,
-  formatRelativeTime,
-} from '@/shared/lib/format'
+import { formatNumber, formatRelativeTime } from '@/shared/lib/format'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -40,7 +35,7 @@ import {
 } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 
-const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
+const countFormat = { maximumFractionDigits: 0 }
 
 const kpiCards = [
   { id: 'revenue', label: 'Total revenue', description: 'vs. previous 30 days', Icon: DollarSign },
@@ -111,14 +106,15 @@ export function OverviewPage() {
                   {isLoading ? (
                     <Skeleton className="h-8 w-28" />
                   ) : kpi ? (
-                    <AnimatedNumber
+                    <NumberDisplay
+                      animate
                       value={kpi.value}
                       format={
                         kpi.format === 'currency'
-                          ? formatCurrency
+                          ? { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }
                           : kpi.format === 'percent'
-                            ? (value) => formatPercent(value, 2)
-                            : formatCount
+                            ? { style: 'percent', maximumFractionDigits: 2 }
+                            : countFormat
                       }
                     />
                   ) : (
@@ -132,9 +128,12 @@ export function OverviewPage() {
                 ) : kpi ? (
                   <Badge variant="secondary" className="justify-center gap-0.5 text-[11px]">
                     <Trend className="size-3" />
-                    {kpi.change > 0 ? '+' : ''}
-                    {kpi.change}
-                    {kpi.format === 'percent' ? ' pp' : '%'}
+                    {formatNumber(kpi.change, {
+                      style: kpi.format === 'percent' ? 'decimal' : 'percent',
+                      maximumFractionDigits: 3,
+                      signDisplay: 'exceptZero',
+                    })}
+                    {kpi.format === 'percent' ? ' pp' : ''}
                   </Badge>
                 ) : (
                   <span className="text-xs text-muted-foreground">No data</span>

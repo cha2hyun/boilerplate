@@ -1,1 +1,1 @@
-export { AnimatedNumber, NUMBER_MOTION_DURATION } from './ui/animated-number'
+export { NumberDisplay, NUMBER_MOTION_DURATION } from './ui/number-display'

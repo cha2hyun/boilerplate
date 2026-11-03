@@ -56,14 +56,14 @@ shadcn 컴포넌트는 `src/shared/ui`에 두며 [shadcn의 CSS 변수 테마 �
 
 CSS 파일은 `src/app/styles/globals.css` 하나입니다. 여기에 Tailwind/폰트 import, shadcn light/dark 토큰, `@theme`, 기본 `@apply`를 둡니다. 화면별 CSS, CSS Modules, Sass, styled-components/Emotion은 사용하지 않습니다. 공식 shadcn 컴포넌트의 차트/사이드바처럼 동적 CSS 변수 또는 내부 style 태그가 필요한 생성 코드만 `shared/ui`에서 허용합니다. 이것은 임의 스타일을 그 폴더로 옮기는 우회 경로가 아닙니다.
 
-Pretendard는 400/500/600 동적 subset만 번들에 포함합니다. 텍스트는 normal/medium/semibold만 사용하고, brand는 neutral primary와 별도 토큰으로 관리합니다. 앱 레이아웃은 md(768px)/xl(1280px)의 세 구간으로 구성하며 생성된 shadcn primitive의 기본 반응형 동작은 유지합니다. 상세 계약은 [디자인 시스템 인덱스](design-system.md)에서 해당 주제만 읽습니다. 가로/세로 배치는 HTML + Tailwind 조합이며 별도 HStack/VStack primitive나 SEED 의존성을 추가하지 않습니다. 국제화 문서는 확장 기준이며 앱 전체 번역/RTL 구현을 뜻하지 않습니다. 로딩·skeleton·숫자 모션은 [로딩과 모션](loading-and-motion.md)이 소유합니다.
+Pretendard는 400/500/600 동적 subset만 번들에 포함합니다. 텍스트는 normal/medium/semibold만 사용하고, brand는 neutral primary와 별도 토큰으로 관리합니다. 앱 레이아웃은 md(768px)/xl(1280px)의 세 구간으로 구성하며 생성된 shadcn primitive의 기본 반응형 동작은 유지합니다. 상세 계약은 [디자인 시스템 인덱스](design-system.md)에서 해당 주제만 읽습니다. 가로/세로 배치는 HTML + Tailwind 조합이며 별도 HStack/VStack primitive나 SEED 의존성을 추가하지 않습니다. 국제화 문서는 확장 기준이며 앱 전체 번역/RTL 구현을 뜻하지 않습니다. 수량·금액·비율 표기는 [숫자 표시](number-formatting.md)의 공통 함수가 소유합니다. 로딩·skeleton·숫자 모션은 [로딩과 모션](loading-and-motion.md)이 소유합니다.
 
 Analytics, Orders, Customers의 조회 데이터는 각각 `entities/traffic`, `entities/order`, `entities/customer`가 Query와 응답 스키마를 소유합니다. 데모에서는 샘플을 반환하며 운영 데이터나 계정이 있다고 표현하지 않도록 Sample 안내를 유지합니다. Inbox의 읽음/보관 상태는 페이지 내부 샘플이며 화면을 떠나면 초기화됩니다. 실제 수신함 연결 시 도메인 계약을 `entities`로, 사용자의 변경 행동을 `features`로 분리합니다. Query 데이터나 샘플 fixture를 Zustand에 복제하지 않습니다.
 
 ## 자동 검사와 한계
 
 - TypeScript strict 및 ESLint typed rules로 타입 경계, 미처리 Promise, React Hooks, Query 사용을 검사합니다. E2E 파일도 별도 TypeScript 프로젝트로 검사하고 비동기 브라우저 동작/검증의 누락된 `await`를 ESLint로 확인합니다.
-- `scripts/check-architecture.mjs`는 TypeScript AST로 FSD import와 JSX 컨트롤/style을 검사합니다. CSS 파일 위치/선택자와 고정 팔레트 유틸리티도 확인합니다.
+- `scripts/check-architecture.mjs`는 TypeScript AST로 FSD import와 JSX 컨트롤/style을 검사합니다. CSS 파일 위치/선택자와 고정 팔레트 유틸리티도 확인합니다. 숫자 포맷 소유 파일과 테스트 밖의 직접 `Intl.NumberFormat`·`toFixed`·`toPrecision` 호출을 거부합니다. 숫자 `toLocaleString`과 수량을 포함한 문자열 등의 전체 사용 규칙은 리뷰로 확인합니다.
 - 가드레일 회귀 테스트는 허용/금지 import, 상대 경로, 동적 import, UI/색상 규칙을 고정합니다.
 - 정적 검사는 shadcn 코드의 출처, 실제 접근성, 런타임 환경, 브라우저 동작을 보증하지 않습니다. 코드 리뷰와 브라우저 검증을 함께 수행합니다.
 

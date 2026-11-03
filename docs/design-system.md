@@ -14,6 +14,7 @@ Blueprint는 **기존 shadcn UI → Tailwind 의미 토큰 → Pretendard 400/50
 | 서비스의 말투와 상황별 표현               | [보이스와 톤](design/voice-and-tone.md)   |
 | 버튼·폼·오류·빈 결과 문구                 | [라이팅](design/writing.md)               |
 | 전환·피드백의 목적, reduced motion        | [모션](design/motion.md)                  |
+| 수량·통화·백분율·축약 표시                | [숫자 표시](number-formatting.md)         |
 | 실제 로딩·skeleton·숫자 전환 구현         | [로딩과 모션 계약](loading-and-motion.md) |
 
 실제 조합은 앱의 **Foundations**, 개별 shadcn 컴포넌트·폰트·색상은 **Components**에서 확인합니다. Foundations는 화면에 적용할 규칙을 보여주는 예시이며, 전체 앱의 번역이나 RTL 지원 완료를 뜻하지 않습니다.

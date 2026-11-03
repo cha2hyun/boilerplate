@@ -8,6 +8,7 @@ import {
   type Project,
   type ProjectInput,
 } from '@/entities/project'
+import { formatNumber } from '@/shared/lib/format'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -143,7 +144,7 @@ function ProjectForm({
           </p>
         ) : (
           <p id={`${formId}-description-hint`} className="text-xs text-muted-foreground">
-            A short summary to keep everyone on the same page. Up to 240 characters.
+            A short summary to keep everyone on the same page. Up to {formatNumber(240)} characters.
           </p>
         )}
       </div>

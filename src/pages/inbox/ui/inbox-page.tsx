@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Archive, ArchiveRestore, ArrowLeft, Inbox, Mail, MailOpen, Search } from 'lucide-react'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { formatDate } from '@/shared/lib/format'
+import { formatDate, formatNumber } from '@/shared/lib/format'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -100,7 +100,7 @@ export function InboxPage() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4 md:px-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Inbox className="size-4" />
-            All messages<Badge variant="outline">{unreadCount} unread</Badge>
+            All messages<Badge variant="outline">{formatNumber(unreadCount)} unread</Badge>
           </div>
           <p className="text-xs text-muted-foreground">
             Sample messages · Changes reset when you leave this page.

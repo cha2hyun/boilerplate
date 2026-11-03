@@ -4,20 +4,23 @@
 
 ## 데이터를 바꾸지 않고 표현을 바꾸기
 
-- 숫자·통화는 `Intl.NumberFormat`, 날짜는 `Intl.DateTimeFormat`, 상대 시간은 `Intl.RelativeTimeFormat`으로 표시합니다. 화면마다 천 단위 구분이나 날짜 문자열을 직접 조합하지 않습니다.
+- 숫자·통화·비율은 [숫자 표시](../number-formatting.md)의 공통 `formatNumber`에 `locale`을 전달합니다. `Intl.NumberFormat`은 이 함수 내부에서만 사용합니다. 날짜는 `Intl.DateTimeFormat`, 상대 시간은 `Intl.RelativeTimeFormat` 기반의 날짜 formatter를 사용하며 화면마다 천 단위 구분이나 날짜 문자열을 직접 조합하지 않습니다.
 - 통화 코드는 API/업무 계약에서 받습니다. 로케일 변경이 USD를 KRW로 환산하지 않습니다. 숫자만 바꾸지 말고 단위·반올림 규칙도 함께 정합니다.
 - 실제 시각은 offset이 있는 ISO timestamp로 저장합니다. 출력에는 제품에서 선택한 IANA 시간대를 지정하고, 기한·내보내기·감사 정보에는 필요하면 시간대도 표시합니다.
 - 날짜만 의미하는 값은 timestamp와 별도로 다룹니다. `2026-11-04` 같은 업무 날짜를 현지 시각으로 변환해 전날로 밀지 않습니다. API 계약부터 정합니다.
 - 상대 시간만으로 정확한 업무 시각을 잃지 않게 상세 화면에서는 절대 날짜를 제공합니다. 고정된 날짜 예시를 현재 시각인 것처럼 표시하지 않습니다.
 
 ```ts
+import { formatNumber } from '@/shared/lib/format'
+
 const locale = 'ko-KR'
 const timeZone = 'Asia/Seoul'
 
-new Intl.NumberFormat(locale, {
+formatNumber(12480, {
+  locale,
   style: 'currency',
   currency: 'USD', // 표시 언어와 통화는 별개
-}).format(12480)
+})
 
 new Intl.DateTimeFormat(locale, {
   dateStyle: 'medium',

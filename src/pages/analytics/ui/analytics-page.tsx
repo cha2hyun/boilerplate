@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Activity, Eye, MousePointer2, Users } from 'lucide-react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { trafficQueryOptions, type TrafficPeriod } from '@/entities/traffic'
-import { AnimatedNumber } from '@/features/number-motion'
-import { formatDate, formatNumber, formatPercent } from '@/shared/lib/format'
+import { NumberDisplay } from '@/features/number-motion'
+import { formatDate, formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -29,7 +29,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
-const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
+const countFormat = { maximumFractionDigits: 0 }
+const percentFormat = { style: 'percent', maximumFractionDigits: 1 } satisfies NumberFormatOptions
 
 const trafficConfig = {
   visitors: { label: 'Visitors', color: 'var(--chart-1)' },
@@ -52,28 +53,28 @@ export function AnalyticsPage() {
     {
       label: 'Visitors',
       value: data?.visitors,
-      format: formatCount,
+      format: countFormat,
       detail: 'Sum of daily sample visitors',
       icon: Users,
     },
     {
       label: 'Sessions',
       value: data?.sessions,
-      format: formatCount,
+      format: countFormat,
       detail: 'Visits across all traffic sources',
       icon: MousePointer2,
     },
     {
       label: 'Page views',
       value: data?.pageViews,
-      format: formatCount,
+      format: countFormat,
       detail: 'Pages viewed across all sessions',
       icon: Eye,
     },
     {
       label: 'Bounce rate',
       value: data?.bounceRate,
-      format: formatPercent,
+      format: percentFormat,
       detail: 'Sessions with a single page view',
       icon: Activity,
     },
@@ -101,9 +102,9 @@ export function AnalyticsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="30">Last 30 days</SelectItem>
-            <SelectItem value="14">Last 14 days</SelectItem>
-            <SelectItem value="7">Last 7 days</SelectItem>
+            <SelectItem value="30">Last {formatNumber(30)} days</SelectItem>
+            <SelectItem value="14">Last {formatNumber(14)} days</SelectItem>
+            <SelectItem value="7">Last {formatNumber(7)} days</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -145,7 +146,7 @@ export function AnalyticsPage() {
                 {isLoading ? (
                   <Skeleton className="h-8 w-28" />
                 ) : metric.value !== undefined ? (
-                  <AnimatedNumber value={metric.value} format={metric.format} />
+                  <NumberDisplay animate value={metric.value} format={metric.format} />
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
@@ -161,7 +162,7 @@ export function AnalyticsPage() {
           <CardHeader>
             <CardTitle>Audience overview</CardTitle>
             <CardDescription>
-              Visitors and sessions over the selected {period} days.
+              Visitors and sessions over the selected {formatNumber(Number(period))} days.
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 md:px-6">
@@ -292,11 +293,11 @@ export function AnalyticsPage() {
                         <Skeleton className="h-4 w-24" />
                       ) : device ? (
                         <>
-                          <AnimatedNumber value={device.sessions} format={formatCount} />{' '}
+                          <NumberDisplay animate value={device.sessions} format={countFormat} />{' '}
                           <span className="ml-1 text-xs font-normal text-muted-foreground">
-                            {formatPercent(
+                            {formatNumber(
                               data.sessions > 0 ? (device.sessions / data.sessions) * 100 : 0,
-                              0,
+                              { style: 'percent', maximumFractionDigits: 0 },
                             )}
                           </span>
                         </>
@@ -355,7 +356,7 @@ export function AnalyticsPage() {
                         {formatNumber(source.sessions)}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground tabular-nums">
-                        {formatPercent(source.share)}
+                        {formatNumber(source.share, percentFormat)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -415,7 +416,7 @@ export function AnalyticsPage() {
                         {formatNumber(page.views)}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground tabular-nums">
-                        {formatPercent(page.share)}
+                        {formatNumber(page.share, percentFormat)}
                       </TableCell>
                     </TableRow>
                   ))

@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import { ordersQueryOptions, orderStatuses, type OrderStatus } from '@/entities/order'
-import { AnimatedNumber } from '@/features/number-motion'
+import { NumberDisplay } from '@/features/number-motion'
 import { formatNumber } from '@/shared/lib/format'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
@@ -38,7 +38,7 @@ import {
 } from '../model/sample-orders'
 
 const pageSize = 6
-const formatCount = (value: number) => formatNumber(value, { maximumFractionDigits: 0 })
+const countFormat = { maximumFractionDigits: 0 }
 
 function OrderStatusBadge({ status }: { status: OrderStatus }) {
   return (
@@ -161,7 +161,7 @@ export function OrdersPage() {
                 {isLoading ? (
                   <Skeleton className="h-8 w-16" />
                 ) : ordersQuery.data ? (
-                  <AnimatedNumber value={value} format={formatCount} />
+                  <NumberDisplay animate value={value} format={countFormat} />
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
@@ -391,12 +391,12 @@ export function OrdersPage() {
                   {isLoading
                     ? 'Loading orders…'
                     : filteredOrders.length
-                      ? `Showing ${String(currentPage * pageSize + 1)}–${String(Math.min((currentPage + 1) * pageSize, filteredOrders.length))} of ${String(filteredOrders.length)} orders`
-                      : '0 orders'}
+                      ? `Showing ${formatNumber(currentPage * pageSize + 1)}–${formatNumber(Math.min((currentPage + 1) * pageSize, filteredOrders.length))} of ${formatNumber(filteredOrders.length)} orders`
+                      : `${formatNumber(0)} orders`}
                 </p>
                 <div className="flex items-center gap-3">
                   <p className="text-xs font-medium tabular-nums">
-                    Page {currentPage + 1} of {pageCount}
+                    Page {formatNumber(currentPage + 1)} of {formatNumber(pageCount)}
                   </p>
                   <div className="flex gap-1">
                     <Button
@@ -469,7 +469,7 @@ export function OrdersPage() {
                       <div className="min-w-0">
                         <p className="font-medium">{item.name}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {item.quantity} × {formatOrderAmount(item.unitPrice)}
+                          {formatNumber(item.quantity)} × {formatOrderAmount(item.unitPrice)}
                         </p>
                       </div>
                       <span className="shrink-0 tabular-nums">
