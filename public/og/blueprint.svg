@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#171717" />
+  <rect x="48" y="48" width="1104" height="534" rx="24" fill="none" stroke="#404040" />
+  <g
+    transform="translate(92 100) scale(2.5)"
+    fill="none"
+    stroke="#fafafa"
+    stroke-width="1.7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      d="M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z"
+    ></path>
+    <path d="m7 16.5-4.74-2.85"></path>
+    <path d="m7 16.5 5-3"></path>
+    <path d="M7 16.5v5.17"></path>
+    <path
+      d="M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z"
+    ></path>
+    <path d="m17 16.5-5-3"></path>
+    <path d="m17 16.5 4.74-2.85"></path>
+    <path d="M17 16.5v5.17"></path>
+    <path
+      d="M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z"
+    ></path>
+    <path d="M12 8 7.26 5.15"></path>
+    <path d="m12 8 4.74-2.85"></path>
+    <path d="M12 13.5V8"></path>
+  </g>
+  <text x="92" y="285" font-family="Pretendard" font-weight="600" font-size="96" fill="#fafafa">
+    blueprint.
+  </text>
+  <text x="96" y="355" font-family="Pretendard" font-weight="400" font-size="34" fill="#a3a3a3">
+    A clear foundation for your next product.
+  </text>
+  <path d="M96 423H1104" stroke="#404040" />
+  <text x="96" y="496" font-family="Pretendard" font-weight="500" font-size="24" fill="#fafafa">
+    React · TypeScript · shadcn/ui
+  </text>
+  <text
+    x="1104"
+    y="496"
+    text-anchor="end"
+    font-family="Pretendard"
+    font-weight="400"
+    font-size="24"
+    fill="#a3a3a3"
+  >
+    Admin workspace starter
+  </text>
+</svg>

@@ -1,0 +1,196 @@
+export const orderStatuses = ['Processing', 'Shipped', 'Delivered', 'Cancelled'] as const
+
+export type OrderStatus = (typeof orderStatuses)[number]
+
+export interface SampleOrder {
+  id: string
+  customer: { name: string; email: string; initials: string }
+  date: string
+  status: OrderStatus
+  payment: 'Paid' | 'Pending' | 'Refunded'
+  city: string
+  country: string
+  shipping: number
+  items: { name: string; quantity: number; unitPrice: number }[]
+}
+
+export const sampleOrders: SampleOrder[] = [
+  {
+    id: 'ORD-1042',
+    customer: { name: 'Olivia Rhye', email: 'olivia@example.com', initials: 'OR' },
+    date: '2026-11-03',
+    status: 'Processing',
+    payment: 'Paid',
+    city: 'New York',
+    country: 'United States',
+    shipping: 800,
+    items: [
+      { name: 'Everyday backpack', quantity: 1, unitPrice: 7900 },
+      { name: 'Canvas pouch', quantity: 2, unitPrice: 1800 },
+    ],
+  },
+  {
+    id: 'ORD-1041',
+    customer: { name: 'Phoenix Baker', email: 'phoenix@example.com', initials: 'PB' },
+    date: '2026-11-03',
+    status: 'Shipped',
+    payment: 'Paid',
+    city: 'London',
+    country: 'United Kingdom',
+    shipping: 1200,
+    items: [{ name: 'Desk organizer', quantity: 2, unitPrice: 3400 }],
+  },
+  {
+    id: 'ORD-1040',
+    customer: { name: 'Lana Steiner', email: 'lana@example.com', initials: 'LS' },
+    date: '2026-11-02',
+    status: 'Delivered',
+    payment: 'Paid',
+    city: 'Berlin',
+    country: 'Germany',
+    shipping: 0,
+    items: [{ name: 'Studio desk lamp', quantity: 1, unitPrice: 14900 }],
+  },
+  {
+    id: 'ORD-1039',
+    customer: { name: 'Demi Wilkinson', email: 'demi@example.com', initials: 'DW' },
+    date: '2026-11-02',
+    status: 'Processing',
+    payment: 'Pending',
+    city: 'Sydney',
+    country: 'Australia',
+    shipping: 1500,
+    items: [{ name: 'Weekly planner', quantity: 3, unitPrice: 2400 }],
+  },
+  {
+    id: 'ORD-1038',
+    customer: { name: 'Drew Cano', email: 'drew@example.com', initials: 'DC' },
+    date: '2026-11-01',
+    status: 'Cancelled',
+    payment: 'Refunded',
+    city: 'Toronto',
+    country: 'Canada',
+    shipping: 1000,
+    items: [{ name: 'Travel tote', quantity: 1, unitPrice: 5800 }],
+  },
+  {
+    id: 'ORD-1037',
+    customer: { name: 'Natali Craig', email: 'natali@example.com', initials: 'NC' },
+    date: '2026-10-31',
+    status: 'Delivered',
+    payment: 'Paid',
+    city: 'Paris',
+    country: 'France',
+    shipping: 1200,
+    items: [
+      { name: 'Ceramic mug', quantity: 4, unitPrice: 2200 },
+      { name: 'Cork coasters', quantity: 1, unitPrice: 1600 },
+    ],
+  },
+  {
+    id: 'ORD-1036',
+    customer: { name: 'Orlando Diggs', email: 'orlando@example.com', initials: 'OD' },
+    date: '2026-10-30',
+    status: 'Shipped',
+    payment: 'Paid',
+    city: 'San Francisco',
+    country: 'United States',
+    shipping: 0,
+    items: [{ name: 'Wireless desk charger', quantity: 3, unitPrice: 6400 }],
+  },
+  {
+    id: 'ORD-1035',
+    customer: { name: 'Andi Lane', email: 'andi@example.com', initials: 'AL' },
+    date: '2026-10-29',
+    status: 'Delivered',
+    payment: 'Paid',
+    city: 'Amsterdam',
+    country: 'Netherlands',
+    shipping: 1200,
+    items: [{ name: 'Linen notebook', quantity: 2, unitPrice: 2800 }],
+  },
+  {
+    id: 'ORD-1034',
+    customer: { name: 'Kate Morrison', email: 'kate@example.com', initials: 'KM' },
+    date: '2026-10-28',
+    status: 'Delivered',
+    payment: 'Paid',
+    city: 'Austin',
+    country: 'United States',
+    shipping: 800,
+    items: [{ name: 'Canvas pouch', quantity: 1, unitPrice: 1800 }],
+  },
+  {
+    id: 'ORD-1033',
+    customer: { name: 'Koray Okumus', email: 'koray@example.com', initials: 'KO' },
+    date: '2026-10-27',
+    status: 'Cancelled',
+    payment: 'Refunded',
+    city: 'Istanbul',
+    country: 'Türkiye',
+    shipping: 1500,
+    items: [{ name: 'Studio desk lamp', quantity: 2, unitPrice: 14900 }],
+  },
+  {
+    id: 'ORD-1032',
+    customer: { name: 'Alex Morgan', email: 'alex@example.com', initials: 'AM' },
+    date: '2026-10-26',
+    status: 'Delivered',
+    payment: 'Paid',
+    city: 'Seoul',
+    country: 'South Korea',
+    shipping: 1500,
+    items: [{ name: 'Everyday backpack', quantity: 2, unitPrice: 7900 }],
+  },
+  {
+    id: 'ORD-1031',
+    customer: { name: 'Kelly Williams', email: 'kelly@example.com', initials: 'KW' },
+    date: '2026-10-25',
+    status: 'Processing',
+    payment: 'Pending',
+    city: 'Dublin',
+    country: 'Ireland',
+    shipping: 1200,
+    items: [{ name: 'Weekly planner', quantity: 1, unitPrice: 2400 }],
+  },
+]
+
+export function orderSubtotal(order: SampleOrder) {
+  return order.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+}
+
+export function orderTotal(order: SampleOrder) {
+  return orderSubtotal(order) + order.shipping
+}
+
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
+export function formatOrderAmount(cents: number) {
+  return currencyFormatter.format(cents / 100)
+}
+
+export function formatOrderDate(date: string) {
+  return dateFormatter.format(new Date(`${date}T00:00:00Z`))
+}
+
+export const orderSortOptions = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'highest', label: 'Total: high to low' },
+  { value: 'lowest', label: 'Total: low to high' },
+] as const
+
+export type OrderSort = (typeof orderSortOptions)[number]['value']
+
+export function compareOrders(left: SampleOrder, right: SampleOrder, sort: OrderSort) {
+  if (sort === 'highest') return orderTotal(right) - orderTotal(left)
+  if (sort === 'lowest') return orderTotal(left) - orderTotal(right)
+  const result = left.date.localeCompare(right.date) || left.id.localeCompare(right.id)
+  return sort === 'oldest' ? result : -result
+}
