@@ -7,3 +7,8 @@ allowBuilds:
 saveExact: true
 engineStrict: true
 strictPeerDependencies: true
+
+# GHSA-g3hv-75wg-m249; remove when upstream consumers resolve a patched version.
+# Compatibility evidence and review criteria: docs/dependency-maintenance.md.
+overrides:
+  minimatch@10.2.6: 11.0.4

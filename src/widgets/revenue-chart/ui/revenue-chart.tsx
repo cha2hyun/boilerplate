@@ -151,7 +151,11 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
                   cursor={false}
                   content={
                     <ChartTooltipContent
-                      labelFormatter={(value) => formatDate(String(value))}
+                      labelFormatter={(value) =>
+                        typeof value === 'string' && !Number.isNaN(Date.parse(value))
+                          ? formatDate(value)
+                          : null
+                      }
                       indicator="dot"
                     />
                   }
@@ -170,7 +174,7 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
                   stroke="var(--color-revenue)"
                   strokeWidth={2}
                 />
-                <ChartLegend content={<ChartLegendContent />} />
+                <ChartLegend position="bottom" content={<ChartLegendContent />} />
               </AreaChart>
             </ChartContainer>
           )}

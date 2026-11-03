@@ -33,7 +33,7 @@ VITE_API_BASE_URL=/api
 
 | 역할            | 구현                                                              |
 | --------------- | ----------------------------------------------------------------- |
-| 앱/빌드         | React 19, TypeScript 5.9 strict, Vite 8, pnpm                     |
+| 앱/빌드         | React 19, TypeScript 6.0 strict, Vite 8, pnpm                     |
 | 구조            | Feature-Sliced Design, 슬라이스 공개 API, 자동 import 경계 검사   |
 | UI              | shadcn/ui, Radix, Tailwind CSS 4, shadcn neutral 의미 토큰        |
 | 아이콘          | lucide-react                                                      |
