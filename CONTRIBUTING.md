@@ -2,6 +2,8 @@
 
 Node.js 24 LTS와 `package.json`의 `packageManager`에 고정된 pnpm을 사용합니다. `pnpm install --frozen-lockfile`로 설치한 뒤 `pnpm dev`로 실행하세요. 의존성을 의도적으로 변경할 때만 `pnpm add`/`pnpm update`를 사용하고 lockfile을 함께 제출합니다.
 
+Dependabot PR·보안 알림의 시작/완료 점검, 정확한 버전 고정, 그룹 업데이트와 임시 보류는 [의존성 유지보수](docs/dependency-maintenance.md)를 따릅니다.
+
 ## 변경 단위
 
 브랜치는 `feat/project-search`, `fix/dialog-focus`, `chore/update-tooling`처럼 목적을 드러내세요. PR은 하나의 사용자 문제 또는 유지보수 목적을 중심으로 작성합니다. FSD 배치와 import 규칙은 [아키텍처](docs/architecture.md)에 정의되어 있습니다.
@@ -35,5 +37,7 @@ pnpm check
 Actions는 품질 검사와 단위 테스트 후 production build를 한 번 생성합니다. `core`와 `samples` 브라우저 job은 같은 번들을 내려받아 Chromium 데스크톱/태블릿/모바일에서 검증합니다. 수동 실행에서는 브라우저 범주를 `all`/`core`/`samples` 중 선택할 수 있습니다. 명령과 비용/범위 정책은 [테스트 가이드](docs/testing.md)를 참고하세요.
 
 PR에는 실제로 실행한 검사와 Actions 결과를 적으세요. UI 변경은 필요한 범위에서 화면 크기, 키보드, 다크 모드, 로딩/오류/빈 상태를 확인합니다. API 변경은 응답 스키마, 캐시 무효화, 취소/실패 동작을 확인합니다. CI 실패를 해결하기 위해 가드레일이나 타입 검사를 약하게 만들지 마세요.
+
+의존성 유지보수는 최신 PR head의 CI 확인에 더해 최종 push/merge 후 최신 `main` SHA의 CI 성공까지 확인해야 완료입니다. 실패하면 원인을 수정해 다시 검증하고, 최종 SHA·실행 링크·남은 PR/보류 사유를 남기세요.
 
 데이터/인증 관련 구현을 바꾸기 전 [API 계약](docs/api-contract.md), 배포 전 [운영 전환](docs/production-readiness.md)을 확인하세요.
