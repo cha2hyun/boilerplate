@@ -29,14 +29,19 @@ test('analytics period updates the metrics, charts, and traffic tables together'
   await page.getByRole('option', { name: 'Last 7 days', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Oct 28 – Nov 3, 2026')
   await expect(visitors).not.toHaveText(initialVisitors)
-  await expect(sources.getByRole('row').nth(1)).not.toHaveText(initialSource)
-  await expect(topPages.getByRole('row').nth(1)).not.toHaveText(initialTopPage)
+  await expect(sources.getByRole('row').nth(1)).not.toHaveText(initialSource, {
+    useInnerText: true,
+  })
+  await expect(topPages.getByRole('row').nth(1)).not.toHaveText(initialTopPage, {
+    useInnerText: true,
+  })
   await expect(page.getByText('Visitors and sessions over the selected 7 days.')).toBeVisible()
 
   await page.getByRole('combobox', { name: 'Analytics period' }).click()
   await page.getByRole('option', { name: 'Last 30 days', exact: true }).click()
   await expect(visitors).toHaveText(initialVisitors)
-  await expect(sources.getByRole('row').nth(1)).toHaveText(initialSource)
+  await expect(sources.getByRole('row').nth(1)).toHaveText(initialSource, { useInnerText: true })
+  await expect(topPages.getByRole('row').nth(1)).toHaveText(initialTopPage, { useInnerText: true })
   await expectNoPageOverflow(page)
 })
 
