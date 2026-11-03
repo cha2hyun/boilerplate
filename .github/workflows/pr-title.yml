@@ -1,0 +1,52 @@
+name: PR Title
+
+# Metadata only: never check out PR code or install repository dependencies here.
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: read
+
+concurrency:
+  group: pr-title-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  title:
+    name: Conventional PR title
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Validate Conventional Commit format
+        uses: amannn/action-semantic-pull-request@7f33ba792281b034f64e96f4c0b5496782dd3b37 # v6.1.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # Keep these types aligned with commitlint.config.cjs.
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          # Korean/uppercase subjects are allowed; a final full stop is not.
+          subjectPattern: '^(?!.*\.$).+$'
+          subjectPatternError: 'Use a non-empty subject without a final period.'
+      - name: Check title length and surrounding whitespace
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          node <<'NODE'
+          const title = process.env.PR_TITLE ?? ''
+          if (title.length > 100 || title !== title.trim()) {
+            console.error('PR titles must be at most 100 characters with no surrounding whitespace.')
+            process.exitCode = 1
+          }
+          NODE
