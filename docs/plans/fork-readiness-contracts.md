@@ -1,6 +1,6 @@
 # 작업 계획: 포크 후 변경과 검증 경계 보강
 
-상태: 구현·정적 검사 완료 · 원격 검증 진행
+상태: 구현 완료 · 원격 검증 기록
 
 ## 문제와 완료 조건
 
@@ -40,4 +40,7 @@
 - HTTP 쓰기 계약과 단위 테스트 범주 완전성 검사를 추가했습니다. .test/.spec TS/TSX를 지원하고 미분류·중복을 실패 처리합니다.
 - CI 분류·gate를 구현하고 수동 부분 실행은 Manual CI result로 구분했습니다. 파일 rename·PR merge base·실패·취소·누락 회귀 검사를 통과했습니다.
 - 관련 단위 검사 33건과 새 가드레일 검사 19건, pnpm check가 통과했습니다. 전체 로컬 테스트·빌드는 실행하지 않았습니다.
-- 코드 PR·main 및 문서 전용 CI, 원격 보호 적용 결과는 후속 완료 기록에 남깁니다.
+- [PR #19](https://github.com/cha2hyun/boilerplate/pull/19)의 [전체 CI](https://github.com/cha2hyun/boilerplate/actions/runs/41859156042)가 통과했습니다. 단위 240건·가드레일 65건·브라우저 88건이 성공했고, 화면 크기와 무관한 메타데이터 중복 2건은 기존 조건대로 제외했습니다.
+- 코드 병합은 `197082f`이며 [main 코드 검증](https://github.com/cha2hyun/boilerplate/actions/runs/41860244780)도 통과했습니다. 문서 전용 실행은 이 완료 기록 PR의 CI에서 changes/gate 성공 및 quality/browser 생략을 대조합니다.
+- main 보호를 적용한 후 API로 재조회했습니다: GitHub Actions(app 15368)의 CI Gate·Conventional PR title 필수, 최신 base 요구, 관리자 포함, PR 필수, 타인 승인 수 0, force push·삭제 차단. PR #19는 보호 우회 없이 병합했습니다.
+- 이 기록은 2026-11-05 확인한 원격 설정입니다. 포크에는 자동 적용되지 않으며 이후 변경 여부는 원격에서 다시 확인해야 합니다.
