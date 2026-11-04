@@ -3,6 +3,11 @@ export default {
   sidebar: 'Sidebar',
   sidebarDescription: 'Displays the mobile sidebar.',
   closeToast: 'Close toast',
+  command: {
+    title: 'Command Palette',
+    description: 'Search for a command to run...',
+    suggestions: 'Suggestions',
+  },
   startup: {
     title: 'Unable to start the demo',
     description: 'The sample data service could not start. Reload this page to try again.',

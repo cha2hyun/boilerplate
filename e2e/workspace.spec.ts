@@ -234,7 +234,8 @@ test('persists the theme and keeps the shell stable through command palette navi
   await expect(search).toBeVisible()
   await expect(page.locator('body')).toHaveAttribute('data-scroll-locked')
   await expectStableShell()
-  await search.getByPlaceholder('Where would you like to go?').fill('Settings')
+  await expect(search.getByRole('listbox', { name: 'Suggestions', exact: true })).toBeVisible()
+  await search.getByRole('combobox', { name: 'Search workspace', exact: true }).fill('Settings')
   await page.keyboard.press('Enter')
   await expect(search).toBeHidden()
   await expect(page).toHaveURL('/settings')
@@ -306,6 +307,7 @@ test('validates, saves and resets workspace preferences across reloads', async (
   await page.getByRole('button', { name: 'Reset preferences', exact: true }).click()
   await expect(name).toHaveValue('Acme Studio')
   await expect(compact).toHaveAttribute('aria-checked', 'false')
+  await expect(save).toBeDisabled()
   await page.reload()
   await expect(name).toHaveValue('Acme Studio')
   await expect(compact).toHaveAttribute('aria-checked', 'false')
@@ -504,7 +506,7 @@ test('recovers from an unknown route and returns focus after closing a component
 
   await page.getByRole('button', { name: 'Search workspace', exact: true }).click()
   const search = page.getByRole('dialog', { name: 'Search workspace' })
-  await search.getByPlaceholder('Where would you like to go?').fill('Components')
+  await search.getByRole('combobox', { name: 'Search workspace', exact: true }).fill('Components')
   await search.getByRole('option', { name: /Components/ }).click()
   await expect(page.getByRole('heading', { name: 'Components', exact: true })).toBeVisible()
 
