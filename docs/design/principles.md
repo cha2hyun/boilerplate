@@ -9,6 +9,14 @@
 - 본문·푸터 텍스트 탐색은 승인된 shadcn 조합인 `TextLink` / `RouterTextLink`를 사용합니다. 외부 새 탭, 밑줄·화살표, native anchor 의미와 접근성은 [텍스트 링크 규칙](text-links.md)이 소유합니다. 이 예외가 다른 custom primitive를 허용하지는 않습니다.
 - CSS는 `src/app/styles/globals.css`의 Tailwind 진입점·의미 토큰·기본 레이어만 둡니다. 화면별 CSS/inline style/고정 팔레트는 추가하지 않습니다. [색상](color.md)과 [타이포그래피](typography.md)를 기준으로 소비합니다.
 
+## 클래스 조합
+
+조건부 클래스와 기본값/소비자 `className`을 합칠 때는 `@/shared/lib/utils`의 `cn()`만 사용합니다. 이 진입점은 shadcn의 `cn` 패키지를 재공개하며, 조건부 문자열·배열·객체 조합과 Tailwind 충돌 정리를 함께 처리합니다. 기본 클래스를 먼저, 소비자가 전달한 클래스를 마지막에 둡니다. [shadcn 공식 설치 안내](https://ui.shadcn.com/docs/installation/manual#add-a-cn-helper)
+
+`clsx`나 `tailwind-merge`를 앱의 직접 의존성으로 다시 추가하거나 별도의 병합 함수를 만들지 않습니다. `clsx`는 CVA·Recharts 등 다른 패키지의 전이 의존성으로 남을 수 있습니다. 이를 없애기 위해 임의 alias/override를 적용하지 않습니다. registry 생성 코드의 직접 `cn` import도 공통 진입점으로 통일합니다.
+
+`cn`은 Tailwind 클래스 충돌을 정리하는 도구이며 [Stack 정렬 규칙](layout.md)을 우회하는 용도가 아닙니다. 패키지 변경 시 `shared/lib/utils.test.ts`의 객체 조건·부분 padding·의미 토큰·반응형·상태/important·임의 값 계약을 확인합니다. 이 파일은 기존 foundations 단위 테스트 범주에 포함됩니다.
+
 ## 아이콘·표면·밀도
 
 장식 아이콘은 `aria-hidden`, 아이콘 버튼은 명확한 접근 가능한 이름을 제공합니다. 글자 옆 아이콘은 보통 `size-4 shrink-0`로 정렬합니다. 아이콘만으로 오류·선택·중요도를 전달하지 않습니다. [레이아웃](layout.md)의 레일 중앙 정렬 규칙을 따릅니다.

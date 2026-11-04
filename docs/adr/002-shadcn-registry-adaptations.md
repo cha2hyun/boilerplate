@@ -10,7 +10,7 @@
 
 컴포넌트의 공개 API와 shadcn 구조를 유지하면서 다음만 보완합니다.
 
-- registry가 추가한 `cn` 패키지 import를 기존 `@/shared/lib/utils`로 통일합니다.
+- registry가 추가한 `cn` 패키지 import를 기존 `@/shared/lib/utils`로 통일합니다. 이 공통 진입점은 공식 `cn`을 재공개하며 `clsx` + `tailwind-merge` 조합을 별도로 유지하지 않습니다. 클래스 조합과 전이 의존성 경계는 [UI 기본 원칙](../design/principles.md#클래스-조합)을 따릅니다.
 - 필요한 type-only import, 명시적 문자열 변환, nullish coalescing을 적용합니다.
 - Recharts payload의 `fill`을 `unknown`에서 검사하고 키를 문자열/숫자에서만 만듭니다. Tooltip formatter에는 Recharts 계약에 맞게 전체 payload 배열을 전달합니다.
 - Progress의 현재 값을 Radix Root에도 전달하여 `aria-valuenow`가 제공되도록 합니다.
