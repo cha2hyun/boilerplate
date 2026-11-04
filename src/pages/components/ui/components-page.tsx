@@ -20,6 +20,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Progress } from '@/shared/ui/progress'
+import { PageHeader } from '@/shared/ui/page-header'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Switch } from '@/shared/ui/switch'
@@ -66,18 +67,18 @@ export function ComponentsPage() {
   const [progress, setProgress] = useState(64)
   return (
     <VStack align="stretch" className="gap-7">
-      <HStack justify="between" wrap className="gap-4">
-        <VStack align="stretch" className="gap-2">
-          <h1 className="text-3xl font-semibold tracking-tight">{t('components.title')}</h1>
-          <p className="text-sm text-muted-foreground">{t('components.description')}</p>
-        </VStack>
-        <Button asChild variant="outline">
-          <a href="https://ui.shadcn.com/docs/components" target="_blank" rel="noreferrer">
-            {t('components.explore')}
-            <ArrowUpRight />
-          </a>
-        </Button>
-      </HStack>
+      <PageHeader
+        title={t('components.title')}
+        description={t('components.description')}
+        actions={
+          <Button asChild variant="outline">
+            <a href="https://ui.shadcn.com/docs/components" target="_blank" rel="noreferrer">
+              {t('components.explore')}
+              <ArrowUpRight />
+            </a>
+          </Button>
+        }
+      />
       <Tabs defaultValue="components">
         <TabsList>
           <TabsTrigger value="components">{t('components.componentsTab')}</TabsTrigger>

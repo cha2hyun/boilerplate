@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/shared/ui/empty'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
@@ -133,15 +134,11 @@ export function OrdersPage() {
 
   return (
     <VStack align="stretch" className="min-w-0 gap-6">
-      <VStack align="stretch" className="gap-1.5">
-        <HStack wrap className="gap-2.5">
-          <h1 className="text-2xl font-semibold tracking-tight">{t('orders.title')}</h1>
-          <Badge variant="outline" className="font-normal text-muted-foreground">
-            {t('common.sample')}
-          </Badge>
-        </HStack>
-        <p className="text-sm text-muted-foreground">{t('orders.intro')}</p>
-      </VStack>
+      <PageHeader
+        title={t('orders.title')}
+        description={t('orders.intro')}
+        badgeLabel={t('common.sample')}
+      />
 
       {ordersQuery.isError && ordersQuery.data && (
         <Alert variant="destructive">

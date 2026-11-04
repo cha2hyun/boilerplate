@@ -107,9 +107,8 @@ test('loads the overview without browser errors and changes the revenue period',
   })
 
   await page.goto('/')
-  await expect(
-    page.getByRole('heading', { name: 'A little clarity. A lot of possibility.' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Overview', level: 1, exact: true })).toBeVisible()
+  await expect(page.getByText('WORKSPACE OVERVIEW', { exact: true })).toHaveCount(0)
   await expect(page.getByText('Active customers', { exact: true })).toBeVisible()
   await expect(page.getByText('Demo workspace', { exact: true })).toHaveCount(0)
   const footer = page.locator('main > footer')
@@ -181,7 +180,7 @@ test('loads the overview without browser errors and changes the revenue period',
   await expect(chart.getByText('Oct 5 – Nov 3 · Revenue in USD', { exact: true })).toBeVisible()
   await expectNoPageOverflow(page)
 
-  await page.getByRole('heading', { name: 'A little clarity. A lot of possibility.' }).click()
+  await page.getByRole('heading', { name: 'Overview', level: 1, exact: true }).click()
   await page.evaluate(() => {
     window.scrollTo(0, 0)
   })
@@ -313,12 +312,100 @@ test('validates, saves and resets workspace preferences across reloads', async (
   await expectNoPageOverflow(page)
 })
 
-test('navigates through the sidebar and closes the mobile drawer after navigation', async ({
+test('keeps page titles and header badges consistent through responsive sidebar navigation', async ({
   page,
   viewport,
 }) => {
   const isMobileLayout = (viewport?.width ?? 1440) < 768
+  let badgeAppearance: Record<string, string> | undefined
+  const expectPageHeader = async (expectedTitle: string, expectedBadgeLabel?: string) => {
+    await test.step(`Check the ${expectedTitle} page header`, async () => {
+      const header = page.locator('header[data-slot="page-header"]')
+      const title = header.locator('h1[data-slot="page-title"]')
+      await expect(header).toHaveCount(1)
+      await expect(page.locator('h1')).toHaveCount(1)
+      await expect(title).toHaveText(expectedTitle)
+      await expect(title).toBeVisible()
+      await page.evaluate(() => document.fonts.ready)
+      const titleStyle = await title.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return {
+          fontSize: style.fontSize,
+          fontWeight: style.fontWeight,
+          lineHeight: style.lineHeight,
+          letterSpacing: style.letterSpacing,
+          overflow: element.scrollWidth - element.clientWidth,
+        }
+      })
+      expect(titleStyle).toMatchObject({
+        fontSize: '24px',
+        fontWeight: '600',
+        lineHeight: '32px',
+        overflow: 0,
+      })
+      expect(Number.parseFloat(titleStyle.letterSpacing)).toBeLessThan(0)
+      expect(await header.evaluate((element) => element.scrollWidth - element.clientWidth)).toBe(0)
+
+      const badge = header.locator('[data-slot="page-header-badge"]')
+      await expect(badge).toHaveCount(expectedBadgeLabel === undefined ? 0 : 1)
+      if (expectedBadgeLabel !== undefined) {
+        await expect(badge).toHaveText(expectedBadgeLabel)
+        await expect(badge).toHaveAttribute('data-variant', 'outline')
+        await expect(badge).toBeVisible()
+        const measurements = await header.evaluate((element) => {
+          const title = element.querySelector('[data-slot="page-title"]')
+          const badge = element.querySelector('[data-slot="page-header-badge"]')
+          const description = element.querySelector('[data-slot="page-description"]')
+          if (!title || !badge || !description) throw new Error('The page header is incomplete.')
+          const titleBox = title.getBoundingClientRect()
+          const badgeBox = badge.getBoundingClientRect()
+          const style = getComputedStyle(badge)
+          return {
+            appearance: Object.fromEntries(
+              [
+                'font-family',
+                'font-size',
+                'font-weight',
+                'line-height',
+                'letter-spacing',
+                'color',
+                'background-color',
+                'border-top-color',
+                'border-top-width',
+                'border-top-style',
+                'border-radius',
+                'padding-top',
+                'padding-right',
+                'padding-bottom',
+                'padding-left',
+              ].map((property) => [property, style.getPropertyValue(property)]),
+            ),
+            mutedColor: getComputedStyle(description).color,
+            gap: badgeBox.left - titleBox.right,
+            centerDelta: Math.abs(
+              titleBox.top + titleBox.height / 2 - badgeBox.top - badgeBox.height / 2,
+            ),
+          }
+        })
+        expect(measurements.appearance).toMatchObject({
+          'font-size': '12px',
+          'font-weight': '500',
+          'line-height': '16px',
+          'border-top-width': '1px',
+          'border-top-style': 'solid',
+          'background-color': 'rgba(0, 0, 0, 0)',
+          color: measurements.mutedColor,
+        })
+        badgeAppearance ??= measurements.appearance
+        expect(measurements.appearance).toEqual(badgeAppearance)
+        expect(measurements.gap).toBeGreaterThan(0)
+        expect(measurements.centerDelta).toBeLessThanOrEqual(1)
+      }
+      await expectNoPageOverflow(page)
+    })
+  }
   await page.goto('/')
+  await expectPageHeader('Overview')
   const sidebarTrigger = page
     .getByRole('main')
     .getByRole('button', { name: 'Toggle Sidebar', exact: true })
@@ -368,7 +455,8 @@ test('navigates through the sidebar and closes the mobile drawer after navigatio
     await sidebarTrigger.click()
   }
   await page.getByRole('link', { name: 'Projects', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible()
+  await expect(page).toHaveURL('/projects')
+  await expectPageHeader('Projects', 'Workspace')
   if (isMobileLayout) {
     await expect(sidebar).toBeHidden()
     await expect(sidebarTrigger).toBeFocused()
@@ -378,12 +466,31 @@ test('navigates through the sidebar and closes the mobile drawer after navigatio
     await expect(sidebar).toBeVisible()
   }
   await page.getByRole('link', { name: 'Settings', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  await expect(page).toHaveURL('/settings')
+  await expectPageHeader('Settings')
   if (isMobileLayout) {
     await expect(sidebar).toBeHidden()
     await expect(sidebarTrigger).toBeFocused()
   }
-  await expectNoPageOverflow(page)
+  for (const { path, link, title, badgeLabel } of [
+    { path: '/analytics', link: 'Analytics', title: 'Analytics', badgeLabel: 'Sample' },
+    { path: '/orders', link: 'Orders', title: 'Orders', badgeLabel: 'Sample' },
+    { path: '/customers', link: 'Customers', title: 'Customers', badgeLabel: 'Sample' },
+    { path: '/inbox', link: 'Inbox', title: 'Inbox', badgeLabel: 'Sample' },
+    { path: '/components', link: 'Components', title: 'Components' },
+    {
+      path: '/foundations',
+      link: 'Foundations',
+      title: 'Foundations',
+      badgeLabel: 'Blueprint standards',
+    },
+  ]) {
+    if (isMobileLayout) await sidebarTrigger.click()
+    await page.getByRole('link', { name: link, exact: true }).click()
+    await expect(page).toHaveURL(path)
+    if (isMobileLayout) await expect(sidebar).toBeHidden()
+    await expectPageHeader(title, badgeLabel)
+  }
 })
 
 test('recovers from an unknown route and returns focus after closing a component dialog', async ({
@@ -393,17 +500,13 @@ test('recovers from an unknown route and returns focus after closing a component
   await expect(page.getByText('404 · PAGE NOT FOUND', { exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Back to overview', exact: true }).click()
   await expect(page).toHaveURL('/')
-  await expect(
-    page.getByRole('heading', { name: 'A little clarity. A lot of possibility.' }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Overview', level: 1, exact: true })).toBeVisible()
 
   await page.getByRole('button', { name: 'Search workspace', exact: true }).click()
   const search = page.getByRole('dialog', { name: 'Search workspace' })
   await search.getByPlaceholder('Where would you like to go?').fill('Components')
   await search.getByRole('option', { name: /Components/ }).click()
-  await expect(
-    page.getByRole('heading', { name: 'The building blocks', exact: true }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Components', exact: true })).toBeVisible()
 
   const trigger = page.getByRole('button', { name: 'Open dialog', exact: true })
   await trigger.click()

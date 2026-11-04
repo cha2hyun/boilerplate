@@ -6,6 +6,7 @@
 
 - 시각적 컨트롤은 `src/shared/ui`의 shadcn, 아이콘은 `lucide-react`를 사용합니다. 새 컨트롤이 필요하면 기존 `components.json` 설정으로 추가합니다. 직접 만든 Button/Input, Radix 직접 사용, 다른 UI 라이브러리나 임의 custom primitive는 도입하지 않습니다. 사용자가 승인한 HStack/VStack의 레이아웃 예외는 [ADR 005](../adr/005-stack-layout.md)를 따릅니다.
 - 행·열 레이아웃은 HStack/VStack으로 통일하며 중앙 정렬 기준은 [레이아웃](layout.md)이 소유합니다. 그리드와 의미 있는 HTML은 유지합니다. 특정 업무에 대한 feature/widget 조합은 허용하며 또 다른 범용 UI API를 만들지 않습니다.
+- 페이지 제목·설명·Sample 등의 헤더 칩은 기존 Stack·shadcn Badge를 조합한 `shared/ui/page-header`로 통일합니다. 페이지는 문구와 액션만 전달하고 개별 크기·variant를 지정하지 않습니다. API와 재발 방지는 [페이지 헤더](page-headers.md)를 따릅니다.
 - 본문·푸터 텍스트 탐색은 승인된 shadcn 조합인 `TextLink` / `RouterTextLink`를 사용합니다. 외부 새 탭, 밑줄·화살표, native anchor 의미와 접근성은 [텍스트 링크 규칙](text-links.md)이 소유합니다. 이 예외가 다른 custom primitive를 허용하지는 않습니다.
 - CSS는 `src/app/styles/globals.css`의 Tailwind 진입점·의미 토큰·기본 레이어만 둡니다. 화면별 CSS/inline style/고정 팔레트는 추가하지 않습니다. [색상](color.md)과 [타이포그래피](typography.md)를 기준으로 소비합니다.
 

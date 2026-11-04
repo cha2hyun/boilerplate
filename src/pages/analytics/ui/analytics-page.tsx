@@ -7,7 +7,6 @@ import { NumberDisplay } from '@/features/number-motion'
 import type { NumberFormatOptions } from '@/shared/lib/format'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
   Card,
@@ -26,6 +25,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/shared/ui/chart'
+import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
@@ -102,34 +102,34 @@ export function AnalyticsPage() {
 
   return (
     <VStack align="stretch" className="gap-6">
-      <HStack justify="between" wrap className="gap-4">
-        <VStack align="stretch" className="gap-2">
-          <HStack className="gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">{t('analytics.title')}</h1>
-            <Badge variant="secondary">{t('common.sample')}</Badge>
-          </HStack>
-          <p className="text-sm text-muted-foreground">{t('analytics.intro')}</p>
-        </VStack>
-        <Select
-          value={period}
-          onValueChange={(value) => {
-            if (value === '7' || value === '14' || value === '30') setPeriod(value)
-          }}
-        >
-          <SelectTrigger aria-label={t('analytics.period')} className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="30">
-              {t('analytics.lastDays', { days: formatNumber(30) })}
-            </SelectItem>
-            <SelectItem value="14">
-              {t('analytics.lastDays', { days: formatNumber(14) })}
-            </SelectItem>
-            <SelectItem value="7">{t('analytics.lastDays', { days: formatNumber(7) })}</SelectItem>
-          </SelectContent>
-        </Select>
-      </HStack>
+      <PageHeader
+        title={t('analytics.title')}
+        description={t('analytics.intro')}
+        badgeLabel={t('common.sample')}
+        actions={
+          <Select
+            value={period}
+            onValueChange={(value) => {
+              if (value === '7' || value === '14' || value === '30') setPeriod(value)
+            }}
+          >
+            <SelectTrigger aria-label={t('analytics.period')} className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30">
+                {t('analytics.lastDays', { days: formatNumber(30) })}
+              </SelectItem>
+              <SelectItem value="14">
+                {t('analytics.lastDays', { days: formatNumber(14) })}
+              </SelectItem>
+              <SelectItem value="7">
+                {t('analytics.lastDays', { days: formatNumber(7) })}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        }
+      />
 
       <HStack className="h-8 text-xs text-muted-foreground" role="status">
         {isLoading

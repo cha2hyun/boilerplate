@@ -16,17 +16,19 @@
 
 ## 크기와 읽기 위계
 
-| 역할           | 기본 조합                                           | 기준                                            |
-| -------------- | --------------------------------------------------- | ----------------------------------------------- |
-| 페이지 제목    | `text-2xl font-semibold tracking-tight md:text-3xl` | 페이지에 h1 하나, 화면 너비에 맞춰 줄바꿈       |
-| 섹션 제목      | `text-lg font-semibold`                             | 의미 있는 h2/h3로 문서 순서 유지                |
-| 본문·표 데이터 | `text-sm font-normal leading-6`                     | 긴 안내는 줄 높이와 읽기 너비 확보              |
-| 레이블·행 제목 | `text-sm font-medium`                               | 입력값과 설명보다 분명한 위계                   |
-| 보조 설명      | `text-xs text-muted-foreground`                     | 중요한 오류/결정 정보를 작은 글자에 숨기지 않음 |
-| KPI            | `text-3xl font-semibold tabular-nums`               | 단위·기간·레이블을 함께 표시                    |
+| 역할           | 기본 조합                                         | 기준                                               |
+| -------------- | ------------------------------------------------- | -------------------------------------------------- |
+| 페이지 제목    | `text-2xl leading-8 font-semibold tracking-tight` | 모든 화면 24px/600, 공통 PageHeader가 h1 하나 제공 |
+| 섹션 제목      | `text-lg font-semibold`                           | 의미 있는 h2/h3로 문서 순서 유지                   |
+| 본문·표 데이터 | `text-sm font-normal leading-6`                   | 긴 안내는 줄 높이와 읽기 너비 확보                 |
+| 레이블·행 제목 | `text-sm font-medium`                             | 입력값과 설명보다 분명한 위계                      |
+| 보조 설명      | `text-xs text-muted-foreground`                   | 중요한 오류/결정 정보를 작은 글자에 숨기지 않음    |
+| KPI            | `text-3xl font-semibold tabular-nums`             | 단위·기간·레이블을 함께 표시                       |
 
 본문 크기는 rem 기반 Tailwind 스케일을 사용합니다. 한글과 영문을 함께 확인하고 줄 수가 늘어도 잘리지 않게 합니다. 고정 높이로 본문을 가두지 않습니다. 목록 제목은 필요한 경우 `min-w-0`와 `truncate`, 상세 본문은 `break-words`를 사용합니다. 금액/식별자/날짜의 생략은 사용자가 전체 값을 확인할 수 있을 때만 허용합니다.
 
 수량·금액·비율의 문자열은 [숫자 표시](../number-formatting.md)의 공통 함수로 만들고, 정렬이 필요한 숫자는 `tabular-nums`를 사용합니다. 숫자 모션과 최종 문자열 너비 예약은 [로딩과 모션](../loading-and-motion.md)을 따릅니다.
 
-소유 코드: `src/app/styles/globals.css`, `vite.config.ts`. 화면 표본: Components → Typography, Foundations → 기본.
+페이지 제목·설명·칩의 조합은 [페이지 헤더 규칙](page-headers.md)이 소유합니다. 페이지에서 h1 크기를 개별 지정하거나 breakpoint에 따라 제목만 키우지 않습니다.
+
+소유 코드: `src/app/styles/globals.css`, `src/shared/ui/page-header.tsx`, `vite.config.ts`. 화면 표본: Components → Typography, Foundations → 기본.

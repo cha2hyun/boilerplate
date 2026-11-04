@@ -6,10 +6,10 @@ import { NumberDisplay } from '@/features/number-motion'
 import type { NumberFormatOptions } from '@/shared/lib/format'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { ProjectEditorDialog } from '@/features/project-editor'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { PageHeader } from '@/shared/ui/page-header'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { ProjectTable } from '@/widgets/project-table'
 
@@ -61,24 +61,20 @@ export function ProjectsPage() {
 
   return (
     <VStack align="stretch" className="gap-6">
-      <HStack justify="between" wrap className="gap-4">
-        <VStack align="stretch" className="gap-1.5">
-          <HStack className="gap-2.5">
-            <h1 className="text-2xl font-semibold tracking-tight">{t('common.projects')}</h1>
-            <Badge variant="outline" className="font-normal text-muted-foreground">
-              {t('common.workspace')}
-            </Badge>
-          </HStack>
-          <p className="text-sm text-muted-foreground">{t('projects.description')}</p>
-        </VStack>
-        <Button
-          onClick={() => {
-            setIsCreateOpen(true)
-          }}
-        >
-          <Plus aria-hidden="true" /> {t('common.newProject')}
-        </Button>
-      </HStack>
+      <PageHeader
+        title={t('common.projects')}
+        description={t('projects.description')}
+        badgeLabel={t('common.workspace')}
+        actions={
+          <Button
+            onClick={() => {
+              setIsCreateOpen(true)
+            }}
+          >
+            <Plus aria-hidden="true" /> {t('common.newProject')}
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         {summaries.map(({ title, value, format, description, Icon }) => (

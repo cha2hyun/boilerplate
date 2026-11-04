@@ -16,6 +16,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Separator } from '@/shared/ui/separator'
+import { PageHeader } from '@/shared/ui/page-header'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -31,10 +32,7 @@ export function SettingsPage() {
     workspaceName !== preferences.workspaceName || compactMode !== preferences.compactMode
   return (
     <VStack align="stretch" className="max-w-4xl gap-7">
-      <VStack align="stretch" className="gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{t('settings.title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('settings.description')}</p>
-      </VStack>
+      <PageHeader title={t('settings.title')} description={t('settings.description')} />
       <Tabs defaultValue="general">
         <TabsList>
           <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>

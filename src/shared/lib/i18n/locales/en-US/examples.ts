@@ -1,6 +1,6 @@
 export default {
   components: {
-    title: 'The building blocks',
+    title: 'Components',
     description: 'One design language. Endless possibilities.',
     explore: 'Explore shadcn/ui',
     componentsTab: 'Components',

@@ -35,6 +35,7 @@ import {
   CardTitle,
 } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { PageHeader } from '@/shared/ui/page-header'
 import { HStack, VStack } from '@/shared/ui/stack'
 
 const countFormat = { maximumFractionDigits: 0 }
@@ -82,24 +83,20 @@ export function OverviewPage() {
   const [createOpen, setCreateOpen] = useState(false)
   return (
     <VStack align="stretch" className="gap-7">
-      <HStack justify="between" wrap className="gap-4">
-        <div>
-          <HStack className="mb-2 gap-2 text-xs font-medium text-muted-foreground">
-            <span className="size-1.5 rounded-full bg-foreground" />
-            {t('overview.eyebrow')}
-          </HStack>
-          <h1 className="text-3xl font-semibold tracking-tight">{t('overview.title')}</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{t('overview.description')}</p>
-        </div>
-        <Button
-          onClick={() => {
-            setCreateOpen(true)
-          }}
-        >
-          <Plus />
-          {t('common.newProject')}
-        </Button>
-      </HStack>
+      <PageHeader
+        title={t('overview.title')}
+        description={t('overview.description')}
+        actions={
+          <Button
+            onClick={() => {
+              setCreateOpen(true)
+            }}
+          >
+            <Plus />
+            {t('common.newProject')}
+          </Button>
+        }
+      />
       {analytics.isError && (
         <Alert variant="destructive">
           <AlertTitle>{t('overview.errorTitle')}</AlertTitle>

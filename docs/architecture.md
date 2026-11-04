@@ -54,7 +54,7 @@ Query 결과를 Zustand에 복제하지 않습니다. 서버 상태의 진실 �
 
 ## UI와 스타일
 
-shadcn 컴포넌트는 `src/shared/ui`에 두며 [shadcn의 CSS 변수 테마 방식](https://ui.shadcn.com/docs/theming)을 사용합니다. 컨트롤은 이 계층에서만 정의합니다. 페이지에서 native button/input 또는 Radix primitive를 직접 조합해 또 다른 UI 시스템을 만들지 않습니다. `main`, `section`, `header`, `h1`, `p`, `a` 등 의미 있는 문서 구조는 일반 HTML을 사용해도 됩니다.
+shadcn 컴포넌트는 `src/shared/ui`에 두며 [shadcn의 CSS 변수 테마 방식](https://ui.shadcn.com/docs/theming)을 사용합니다. 컨트롤은 이 계층에서만 정의합니다. 페이지에서 native button/input 또는 Radix primitive를 직접 조합해 또 다른 UI 시스템을 만들지 않습니다. `main`, `section`, `header`, `p`, `a` 등 의미 있는 문서 구조는 일반 HTML을 사용해도 됩니다. 페이지 최상위 h1과 헤더 칩은 `shared/ui/page-header`가 소유합니다. 기존 Stack·Badge를 사용하는 문서 구조 조합이며 별도 UI primitive나 의존성을 추가하지 않습니다. [페이지 헤더 규칙](design/page-headers.md)을 따릅니다.
 
 본문·푸터의 텍스트 탐색에는 `shared/ui/text-link`의 승인된 shadcn 조합을 사용합니다. `TextLink`는 기존 Button link variant와 anchor를 조합하며 `RouterTextLink`는 TanStack `createLink`로 내부 경로 타입을 보존합니다. Sidebar/Breadcrumb 등의 기존 탐색 컨트롤은 유지합니다. 예외 범위는 [ADR 004](adr/004-text-link-composition.md), 동작/API 계약은 [텍스트 링크 규칙](design/text-links.md)이 소유합니다.
 

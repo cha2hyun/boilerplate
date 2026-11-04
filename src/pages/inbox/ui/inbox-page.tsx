@@ -16,6 +16,7 @@ import {
   EmptyTitle,
 } from '@/shared/ui/empty'
 import { Input } from '@/shared/ui/input'
+import { PageHeader } from '@/shared/ui/page-header'
 import { Separator } from '@/shared/ui/separator'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
@@ -105,13 +106,11 @@ export function InboxPage() {
 
   return (
     <VStack align="stretch" className="gap-6">
-      <VStack align="stretch" className="gap-2">
-        <HStack className="gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight">{t('inbox.title')}</h1>
-          <Badge variant="secondary">{t('common.sample')}</Badge>
-        </HStack>
-        <p className="text-sm text-muted-foreground">{t('inbox.intro')}</p>
-      </VStack>
+      <PageHeader
+        title={t('inbox.title')}
+        description={t('inbox.intro')}
+        badgeLabel={t('common.sample')}
+      />
 
       <Card className="gap-0 overflow-hidden py-0 shadow-xs">
         <HStack justify="between" wrap className="gap-3 border-b p-4 md:px-5">

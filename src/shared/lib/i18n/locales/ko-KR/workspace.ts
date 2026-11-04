@@ -101,8 +101,7 @@ const workspace = {
     pending: '삭제 중…',
   },
   overview: {
-    eyebrow: '워크스페이스 개요',
-    title: '더 선명한 오늘, 더 넓은 가능성.',
+    title: '개요',
     description: '다시 오셨군요. 워크스페이스의 최근 소식을 확인하세요.',
     errorTitle: '분석 데이터를 불러오지 못했습니다',
     noData: '데이터 없음',

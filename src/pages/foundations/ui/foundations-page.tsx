@@ -19,6 +19,7 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Label } from '@/shared/ui/label'
+import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
@@ -610,25 +611,11 @@ export function FoundationsPage() {
   const { t } = useTranslation('examples')
   return (
     <VStack align="stretch" className="min-w-0 gap-7">
-      <VStack
-        asChild
-        align="stretch"
-        className="gap-4 md:flex-row md:items-center md:justify-between"
-      >
-        <header>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-              {t('foundations.title')}
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-              {t('foundations.description')}
-            </p>
-          </div>
-          <Badge variant="outline" className="self-start">
-            {t('foundations.standards')}
-          </Badge>
-        </header>
-      </VStack>
+      <PageHeader
+        title={t('foundations.title')}
+        description={t('foundations.description')}
+        badgeLabel={t('foundations.standards')}
+      />
       <Tabs defaultValue="basics" className="min-w-0">
         <div className="min-w-0 overflow-x-auto pb-1">
           <TabsList aria-label={t('foundations.tabsLabel')}>

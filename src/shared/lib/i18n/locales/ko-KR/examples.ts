@@ -1,6 +1,6 @@
 export default {
   components: {
-    title: '제품을 구성하는 요소',
+    title: '컴포넌트',
     description: '하나의 디자인 언어로 다양한 가능성을 만듭니다.',
     explore: 'shadcn/ui 살펴보기',
     componentsTab: '컴포넌트',

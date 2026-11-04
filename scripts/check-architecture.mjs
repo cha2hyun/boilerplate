@@ -66,6 +66,7 @@ const otherElementVariants = new Set([
   'first-line',
   'backdrop',
 ])
+const pageHeaderProps = new Set(['title', 'description', 'badgeLabel', 'actions', 'key'])
 
 // Follow values that can reach className, rather than arbitrary strings in conditions or callbacks.
 function classStrings(node) {
@@ -170,6 +171,7 @@ function classUtilities(node) {
       return {
         name: token.slice(utilityStart).replace(/^!|!$/g, ''),
         variant: utilityStart > 0,
+        variants,
         targetsElement: variants.every(variantTargetsElement),
       }
     }),
@@ -188,6 +190,99 @@ function internalPath(specifier, importer) {
 
 function location(source, node) {
   return source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1
+}
+
+function unwrapExpression(node) {
+  while (
+    node &&
+    (ts.isParenthesizedExpression(node) ||
+      ts.isAsExpression(node) ||
+      ts.isSatisfiesExpression(node) ||
+      ts.isNonNullExpression(node))
+  ) {
+    node = node.expression
+  }
+  return node
+}
+
+function jsxAttributeValue(node, name) {
+  const attribute = node.attributes.properties.find(
+    (property) => ts.isJsxAttribute(property) && property.name.text === name,
+  )
+  const initializer = attribute?.initializer
+  return unwrapExpression(
+    initializer && ts.isJsxExpression(initializer) ? initializer.expression : initializer,
+  )
+}
+
+// Match the owning module and its value export, including local aliases and namespace imports.
+function componentImports(source, file, module, exportedName) {
+  const names = new Set()
+  for (const statement of source.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteralLike(statement.moduleSpecifier) ||
+      statement.importClause?.isTypeOnly ||
+      internalPath(statement.moduleSpecifier.text, file)?.replace(/\.[cm]?[jt]sx?$/, '') !== module
+    ) {
+      continue
+    }
+    const bindings = statement.importClause?.namedBindings
+    if (bindings && ts.isNamespaceImport(bindings)) {
+      names.add(`${bindings.name.text}.${exportedName}`)
+    } else if (bindings && ts.isNamedImports(bindings)) {
+      for (const binding of bindings.elements) {
+        if (!binding.isTypeOnly && (binding.propertyName ?? binding.name).text === exportedName) {
+          names.add(binding.name.text)
+        }
+      }
+    }
+  }
+  return names
+}
+
+// Only inspect visible object-literal spread keys; this does not prove unknown spreads are safe.
+function literalPropertyNames(node) {
+  node = unwrapExpression(node)
+  if (!node || !ts.isObjectLiteralExpression(node)) return []
+  return node.properties.flatMap((property) => {
+    if (ts.isSpreadAssignment(property)) return literalPropertyNames(property.expression)
+    const name = ts.isComputedPropertyName(property.name)
+      ? unwrapExpression(property.name.expression)
+      : property.name
+    return ts.isIdentifier(name) || ts.isStringLiteralLike(name) ? [name.text] : []
+  })
+}
+
+function isSampleLabel(node) {
+  node = unwrapExpression(node)
+  if (!node) return false
+  if (ts.isJsxExpression(node)) return isSampleLabel(node.expression)
+  if (ts.isJsxText(node) || ts.isStringLiteralLike(node)) {
+    return ['Sample', '샘플'].includes(node.text.trim())
+  }
+  if (ts.isJsxElement(node)) return node.children.some(isSampleLabel)
+  if (ts.isConditionalExpression(node)) {
+    return isSampleLabel(node.whenTrue) || isSampleLabel(node.whenFalse)
+  }
+  if (ts.isBinaryExpression(node)) {
+    if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
+      return isSampleLabel(node.right)
+    }
+    if (
+      [ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(
+        node.operatorToken.kind,
+      )
+    ) {
+      return isSampleLabel(node.left) || isSampleLabel(node.right)
+    }
+  }
+  return (
+    ts.isCallExpression(node) &&
+    node.arguments[0] &&
+    ts.isStringLiteralLike(node.arguments[0]) &&
+    ['common.sample', 'admin:common.sample'].includes(node.arguments[0].text)
+  )
 }
 
 /** Pure entry point used by the guardrail regression tests. Paths are relative to src/. */
@@ -255,6 +350,11 @@ export function checkFile(filename, contents) {
   const sourceLevel = layers.indexOf(sourceLayer)
   const isUi = file.startsWith('shared/ui/')
   const isTest = testFilePattern.test(file)
+  const isPage = sourceLayer === 'pages' && !isTest
+  const pageHeaders = componentImports(source, file, 'shared/ui/page-header', 'PageHeader')
+  const badges = componentImports(source, file, 'shared/ui/badge', 'Badge')
+  let usesPageHeader = false
+  const checkedHeaderAncestors = new Set()
   if (sourceLevel < 0 && !sourceEntrypoints.has(file)) {
     report('unknown-layer', '앱 코드는 app/pages/widgets/features/entities/shared 레이어에 두세요.')
   }
@@ -400,6 +500,99 @@ export function checkFile(filename, contents) {
     }
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = node.tagName.getText(source)
+      if (isPage) {
+        const role = jsxAttributeValue(node, 'role')
+        const level = jsxAttributeValue(node, 'aria-level')
+        if (
+          tag === 'h1' ||
+          (role &&
+            ts.isStringLiteralLike(role) &&
+            role.text === 'heading' &&
+            level &&
+            (ts.isStringLiteralLike(level) || ts.isNumericLiteral(level)) &&
+            level.text === '1')
+        ) {
+          report(
+            'page-header',
+            '페이지 h1은 shared/ui/page-header의 PageHeader가 소유합니다. 직접 제목을 만들지 마세요.',
+            location(source, node),
+          )
+        }
+        if (
+          badges.has(tag) &&
+          (isSampleLabel(jsxAttributeValue(node, 'children')) ||
+            (ts.isJsxOpeningElement(node) && node.parent.children.some(isSampleLabel)))
+        ) {
+          report(
+            'page-header-badge',
+            "Sample 표시는 별도 Badge 대신 PageHeader의 badgeLabel={t('common.sample')}로 전달하세요.",
+            location(source, node),
+          )
+        }
+      }
+      if (!isTest && pageHeaders.has(tag)) {
+        usesPageHeader = true
+        if (
+          ts.isJsxOpeningElement(node) &&
+          node.parent.children.some(
+            (child) =>
+              (ts.isJsxText(child) && child.text.trim()) ||
+              (ts.isJsxExpression(child) ? child.expression : !ts.isJsxText(child)),
+          )
+        ) {
+          report(
+            'page-header-props',
+            'PageHeader 제목·설명은 문자열 props로 전달하고 컨트롤은 actions로 전달하세요. children은 지원하지 않습니다.',
+            location(source, node),
+          )
+        }
+        for (const attribute of node.attributes.properties) {
+          const names = ts.isJsxAttribute(attribute)
+            ? [attribute.name.getText(source)]
+            : literalPropertyNames(attribute.expression)
+          if (names.some((name) => !pageHeaderProps.has(name))) {
+            report(
+              'page-header-props',
+              'PageHeader는 title·description·badgeLabel·actions만 받습니다. 제목 스타일·children·variant를 페이지에서 덮어쓰지 마세요.',
+              location(source, attribute),
+            )
+          }
+        }
+        for (let ancestor = node.parent; ancestor; ancestor = ancestor.parent) {
+          if (
+            !ts.isJsxElement(ancestor) ||
+            ancestor.openingElement === node ||
+            checkedHeaderAncestors.has(ancestor)
+          ) {
+            continue
+          }
+          checkedHeaderAncestors.add(ancestor)
+          const className = jsxAttributeValue(ancestor.openingElement, 'className')
+          if (
+            className &&
+            classUtilities(className).some(
+              ({ name, variants }) =>
+                /^(?:text-|font-|leading-|tracking-|\[(?:font|line-height|letter-spacing))/.test(
+                  name,
+                ) &&
+                !variants.some((variant) => ['before', 'after', 'marker'].includes(variant)) &&
+                variants.some(
+                  (variant) =>
+                    variant.startsWith('[') &&
+                    /[\s_>]h1(?:[:.#][^>_+~\]]*)?\]$|data-slot=['"]?page-title['"]?\](?:[:.#][^>_+~\]]*)?\]$/.test(
+                      variant,
+                    ),
+                ),
+            )
+          ) {
+            report(
+              'page-header-style',
+              '부모 선택자로 PageHeader의 h1 타이포그래피를 덮어쓰지 마세요. 공통 page-header.tsx에서 관리하세요.',
+              location(source, ancestor.openingElement),
+            )
+          }
+        }
+      }
       if (!isUi && nativeControls.has(tag)) {
         report(
           'shadcn-control',
@@ -518,6 +711,12 @@ export function checkFile(filename, contents) {
   }
 
   visit(source)
+  if (isPage && /(?:^|\/)[^/]+-page\.tsx$/.test(file) && !usesPageHeader) {
+    report(
+      'page-header-required',
+      '페이지 진입점은 shared/ui/page-header에서 PageHeader를 value import하여 JSX로 사용하세요.',
+    )
+  }
   return issues
 }
 
@@ -544,7 +743,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     process.exitCode = 1
   } else {
     console.log(
-      'Architecture guardrails passed: FSD boundaries, shadcn controls, Tailwind styles, and design tokens.',
+      'Architecture guardrails passed: FSD boundaries, shadcn controls, page headers, Tailwind styles, and design tokens.',
     )
   }
 }

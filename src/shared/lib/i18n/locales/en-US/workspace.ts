@@ -100,8 +100,7 @@ const workspace = {
     pending: 'Deleting…',
   },
   overview: {
-    eyebrow: 'WORKSPACE OVERVIEW',
-    title: 'A little clarity. A lot of possibility.',
+    title: 'Overview',
     description: "Welcome back. Here's what's happening with your workspace.",
     errorTitle: "Analytics couldn't load",
     noData: 'No data',
