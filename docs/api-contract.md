@@ -1,6 +1,6 @@
 # API 계약과 데이터 모드
 
-`src/shared/config/env.ts`에서 환경 변수를 검증합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. 실제 백엔드 서버는 포함하지 않으며 demo의 조회 HTTP는 MSW가 브라우저에서 처리합니다.
+`src/shared/config/parse-env.ts`가 환경 변수 계약을 소유합니다. Vite가 mode·envDir·process 우선순위를 적용한 값은 `scripts/application-env.ts`에서 dev/build 설정 확정 시 검증하고, 브라우저의 `env.ts`도 같은 parser를 사용합니다. 잘못된 값은 앱 번들을 만들거나 서버를 시작하기 전에 실패합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. 실제 백엔드 서버는 포함하지 않으며 demo의 조회 HTTP는 MSW가 브라우저에서 처리합니다.
 
 ## HTTP 계약
 
