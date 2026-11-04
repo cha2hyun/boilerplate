@@ -182,29 +182,40 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
         const before = await table.evaluate((element) => element.scrollLeft)
         const session = await page.context().newCDPSession(page)
         try {
-          // Real browser touch input, not DOM dispatchEvent or a direct scrollLeft assignment.
-          await session.send('Input.synthesizeScrollGesture', {
-            x: box.x + box.width * 0.8,
-            y: box.y + 100,
-            xDistance: -Math.min(220, box.width * 0.6),
-            yDistance: 0,
-            gestureSourceType: 'touch',
-            preventFling: true,
-            speed: 600,
-          })
+          // Send native touch input explicitly: the aggregate synthetic gesture can be a no-op
+          // in Linux headless Chromium. Ease out the finger movement to avoid release momentum.
+          const swipe = async (startX: number, distance: number) => {
+            const touchPoints = (progress: number) => [
+              {
+                x: startX + distance * (1 - (1 - progress) ** 3),
+                y: box.y + 100,
+                id: 1,
+              },
+            ]
+            await session.send('Input.dispatchTouchEvent', {
+              type: 'touchStart',
+              touchPoints: touchPoints(0),
+            })
+            try {
+              for (let step = 1; step <= 12; step += 1) {
+                await session.send('Input.dispatchTouchEvent', {
+                  type: 'touchMove',
+                  touchPoints: touchPoints(step / 12),
+                })
+                await page.evaluate(
+                  () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+                )
+              }
+            } finally {
+              await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
+            }
+          }
+          await swipe(box.x + box.width * 0.8, -Math.min(220, box.width * 0.6))
           await expect
             .poll(() => table.evaluate((element) => element.scrollLeft))
             .toBeGreaterThan(before + 30)
           const afterSwipe = await table.evaluate((element) => element.scrollLeft)
-          await session.send('Input.synthesizeScrollGesture', {
-            x: box.x + box.width * 0.45,
-            y: box.y + 100,
-            xDistance: Math.min(180, box.width * 0.4),
-            yDistance: 0,
-            gestureSourceType: 'touch',
-            preventFling: true,
-            speed: 600,
-          })
+          await swipe(box.x + box.width * 0.45, Math.min(180, box.width * 0.4))
           await expect
             .poll(() => table.evaluate((element) => element.scrollLeft))
             .toBeLessThan(afterSwipe - 30)
