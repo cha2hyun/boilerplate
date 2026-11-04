@@ -16,7 +16,7 @@ UI는 기존 shadcn 컴포넌트를 먼저 찾고 `components.json`의 alias/reg
 
 저장소에는 `.codex/config.toml`, `.mcp.json`, `.vscode/mcp.json`이 있으며 설치된 로컬 shadcn CLI를 실행합니다. 프로젝트 설정을 허용한 클라이언트에서 새 세션을 시작하거나 재시작한 후 도구 노출을 확인하세요. 이미 열린 채팅의 도구 목록에 설정 변경이 즉시 반영되었다고 가정하지 않습니다.
 
-SEED 공식 문서는 참고 자료이며 패키지·토큰·스타일을 도입할 근거가 아닙니다. 기존 shadcn, Tailwind 의미 토큰, Pretendard 400/500/600을 우선하고 새 custom primitive를 만들지 않습니다. 문서 규칙을 변경하면 해당 topic 문서를 고치며 AGENTS.md에는 경계와 링크만 유지합니다.
+기존 shadcn, Tailwind 의미 토큰, Pretendard 400/500/600을 우선하고 새 custom primitive를 만들지 않습니다. 문서 규칙을 변경하면 해당 topic 문서를 고치며 AGENTS.md에는 경계와 링크만 유지합니다.
 
 FSD의 가장 작은 적절한 책임에 배치하고 슬라이스 공개 API를 유지합니다. Query 데이터와 Zustand UI 상태를 분리합니다. 모든 사용자 입력/API 응답을 신뢰하지 말고 경계에서 검증하세요. 로딩, 실패/재시도, 빈 결과와 키보드/모바일 동작을 구현 범위에 포함합니다. 캐시·무효화는 [Query 캐시](query-cache.md), 지연·skeleton·숫자 전환은 [로딩과 모션](loading-and-motion.md)의 계약을 따르며 화면별 정책을 중복 정의하지 않습니다.
 

@@ -32,6 +32,4 @@ formatNumber(100400, { locale: 'ko-KR', notation: 'compact' })
 
 방향성은 [레이아웃의 logical property 규칙](layout.md#방향과-길이)을 따릅니다. 향후 RTL을 지원할 때는 앱 `dir`, Radix 방향 context, 표/차트, 날짜 입력, 탐색 아이콘, 혼합 문자열과 키보드를 함께 검증합니다.
 
-## 참고 자료의 적용 범위
-
-[SEED International Design](https://seed-design.io/foundations/international-design)은 지역별 표기와 문장 길이를 고려하는 설계 참고입니다. 지원 언어·환율·formatter 동작은 이 저장소의 [국제화 계약](../i18n.md)과 [API 계약](../api-contract.md)을 기준으로 확장합니다.
+지원 언어·환율·formatter 동작은 이 저장소의 [국제화 계약](../i18n.md)과 [API 계약](../api-contract.md)을 기준으로 확장합니다.

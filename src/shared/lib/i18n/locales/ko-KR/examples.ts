@@ -80,9 +80,6 @@ export default {
     layoutTab: '레이아웃',
     contentTab: '문구·국제화',
     feedbackTab: '피드백',
-    footer:
-      'SEED는 설계 관점의 참고 자료입니다. 이 화면은 기존 shadcn·Tailwind·Pretendard로 구성했습니다.',
-    reference: '참고 문서',
     typeTitle: '세 가지 두께, 분명한 위계',
     typeDescription: 'Pretendard · 한글과 영문을 같은 기준으로 읽습니다.',
     typeSampleTitle: '다음 프로젝트를 준비하세요',

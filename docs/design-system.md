@@ -1,6 +1,6 @@
 # 디자인 시스템
 
-Blueprint는 **기존 shadcn UI → Tailwind 의미 토큰 → Pretendard 400/500/600**을 우선합니다. [SEED Foundations](https://seed-design.io/foundations)는 설계 관점을 참고하는 자료입니다. SEED 패키지·토큰·컴포넌트·브랜드 스타일을 설치하거나 복제하지 않습니다.
+Blueprint는 **기존 shadcn UI → Tailwind 의미 토큰 → Pretendard 400/500/600**을 우선합니다.
 
 작업에 해당하는 문서만 읽으세요. 문서 전체를 AGENTS.md나 프롬프트에 붙이지 않습니다.
 
