@@ -130,10 +130,14 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply [scrollbar-width:thin] [scrollbar-color:var(--muted-foreground)_transparent] border-border outline-ring/50;
+  }
+  html {
+    @apply [scrollbar-gutter:stable];
   }
   body {
-    @apply bg-background font-sans font-normal text-foreground antialiased;
+    /* The root gutter already reserves the space that Radix scroll lock compensates for. */
+    @apply bg-background font-sans font-normal text-foreground antialiased supports-[scrollbar-gutter:stable]:data-[scroll-locked]:mr-0!;
     font-synthesis: none;
   }
   b,

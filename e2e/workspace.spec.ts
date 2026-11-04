@@ -191,7 +191,9 @@ test('loads the overview without browser errors and changes the revenue period',
   expect(browserErrors).toEqual([])
 })
 
-test('persists the theme and navigates with the keyboard command palette', async ({ page }) => {
+test('persists the theme and keeps the shell stable through command palette navigation', async ({
+  page,
+}, testInfo) => {
   await page.emulateMedia({ colorScheme: 'light' })
   await page.goto('/')
   await page.getByRole('button', { name: 'Switch to dark theme', exact: true }).click()
@@ -201,20 +203,63 @@ test('persists the theme and navigates with the keyboard command palette', async
     page.getByRole('button', { name: 'Switch to light theme', exact: true }),
   ).toBeVisible()
   await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
+  await page.evaluate(() => document.fonts.ready)
+  const shellBounds = () =>
+    page.locator('main').evaluate((element) => {
+      const header = element.querySelector('header')
+      if (!header) throw new Error('The workspace header is missing.')
+      return [element, header].flatMap((target) => {
+        const { x, width } = target.getBoundingClientRect()
+        return [x, width]
+      })
+    })
+  const initialBounds = await shellBounds()
+  const expectStableShell = async () => {
+    await expect
+      .poll(async () => {
+        const current = await shellBounds()
+        return Math.max(...current.map((value, index) => Math.abs(value - initialBounds[index])))
+      })
+      .toBeLessThanOrEqual(0.5)
+  }
+  // Verify the desktop navigation really crosses from an overflowing page to one that fits.
+  if (testInfo.project.name === 'desktop') {
+    expect(
+      await page.evaluate(() => document.documentElement.scrollHeight > window.innerHeight),
+    ).toBe(true)
+  }
 
   await page.keyboard.press('ControlOrMeta+k')
   const search = page.getByRole('dialog', { name: 'Search workspace' })
   await expect(search).toBeVisible()
+  await expect(page.locator('body')).toHaveAttribute('data-scroll-locked')
+  await expectStableShell()
   await search.getByPlaceholder('Where would you like to go?').fill('Settings')
   await page.keyboard.press('Enter')
   await expect(search).toBeHidden()
   await expect(page).toHaveURL('/settings')
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
   await expect(page.locator('#main-content')).toBeFocused()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  await expectStableShell()
+  if (testInfo.project.name === 'desktop') {
+    expect(
+      await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight),
+    ).toBe(true)
+  }
   await page.getByRole('tab', { name: 'Appearance', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Dark A little easier on the eyes.' }),
   ).toHaveAttribute('aria-pressed', 'true')
+  await page.keyboard.press('ControlOrMeta+k')
+  await expect(search).toBeVisible()
+  await expect(page.locator('body')).toHaveAttribute('data-scroll-locked')
+  await expectStableShell()
+  await page.keyboard.press('Escape')
+  await expect(search).toBeHidden()
+  await expect(page.locator('body')).not.toHaveAttribute('data-scroll-locked')
+  await expectStableShell()
 })
 
 test('returns command palette focus to its button or keyboard opener when dismissed', async ({

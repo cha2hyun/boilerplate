@@ -11,6 +11,7 @@ Blueprint는 **기존 shadcn UI → Tailwind 의미 토큰 → Pretendard 400/50
 | 글꼴·제목·본문·숫자                       | [타이포그래피](design/typography.md)      |
 | neutral/brand, 상태 색상, light/dark      | [색상](design/color.md)                   |
 | HStack/VStack, 중앙 정렬, 간격, 반응형    | [레이아웃](design/layout.md)              |
+| 스크롤바, 문서 너비, 기본 스크롤 입력     | [스크롤](design/scrolling.md)             |
 | 날짜·숫자·통화, 긴 번역, 방향성           | [국제화](design/international-design.md)  |
 | 서비스의 말투와 상황별 표현               | [보이스와 톤](design/voice-and-tone.md)   |
 | 버튼·폼·오류·빈 결과 문구                 | [라이팅](design/writing.md)               |
