@@ -5,6 +5,11 @@ export default {
   sidebar: '사이드바',
   sidebarDescription: '모바일 탐색 메뉴입니다.',
   closeToast: '알림 닫기',
+  command: {
+    title: '명령 팔레트',
+    description: '실행할 명령을 검색하세요.',
+    suggestions: '추천 항목',
+  },
   startup: {
     title: '데모를 시작하지 못했어요',
     description: '샘플 데이터 서비스를 시작하지 못했어요. 새로고침 후 다시 시도해 주세요.',

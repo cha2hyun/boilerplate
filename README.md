@@ -83,6 +83,7 @@ Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이�
 | `pnpm test:coverage`             | 테스트 커버리지 리포트                            |
 | `pnpm test:e2e`                  | Playwright 브라우저 테스트 (`pnpm build` 후 실행) |
 | `pnpm check:architecture`        | FSD, shadcn 컨트롤, 스타일/토큰 규칙 검사         |
+| `pnpm check:unit-categories`     | 단위 테스트의 누락·중복 범주·미지원 이름 검사     |
 | `pnpm check:e2e-categories`      | E2E 범주의 누락·중복·없는 스펙 경로 검사          |
 | `pnpm test:guardrails`           | 구조 검사기, 경로별 HTML, E2E 범주 회귀 테스트    |
 | `pnpm format` / `pnpm lint`      | 포맷 적용 / 린트 검사                             |
@@ -92,7 +93,7 @@ Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이�
 
 전체 단위/E2E 테스트는 **GitHub Actions가 기본 실행 위치**입니다. 명시 요청이나 필요한 결함 재현이 없으면 로컬에서 전체 테스트를 실행하지 않습니다. 필요한 경우 파일·기능·화면 크기만 선택하며 [테스트 실행 정책](docs/testing.md)에 범주별 명령을 정리했습니다.
 
-CI는 production build를 한 번만 만들고 `core`·`samples` 브라우저 job이 같은 번들을 공유합니다. Chromium에서 PC·태블릿·모바일을 확인하며 dev 서버 테스트를 중복 실행하지 않습니다. 브라우저 job은 최대 2개, 각 worker는 2개입니다. 로컬 브라우저 재현이 필요한 경우에만 `pnpm exec playwright install chromium`으로 준비하세요. 실제 Actions 실행과 브랜치 보호 설정은 원격 저장소에서 확인해야 합니다.
+CI는 production build를 한 번만 만들고 `core`·`samples` 브라우저 job이 같은 번들을 공유합니다. Chromium에서 PC·태블릿·모바일을 확인하며 dev 서버 테스트를 중복 실행하지 않습니다. 브라우저 job은 최대 2개, 각 worker는 2개입니다. 로컬 브라우저 재현이 필요한 경우에만 `pnpm exec playwright install chromium`으로 준비하세요. 모든 PR에는 최종 `CI Gate`가 생성되며 문서 전용 변경은 무거운 job을 생략합니다. 포크 후 [main 보호 설정](docs/ci-gate.md)은 원격에서 별도로 적용·확인해야 합니다.
 
 ## 구조와 문서
 

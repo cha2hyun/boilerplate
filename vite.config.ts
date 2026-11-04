@@ -3,9 +3,11 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { defineConfig } from 'vite'
+import { applicationEnvPlugin } from './scripts/application-env.ts'
 import { routeMetadataPlugin } from './scripts/route-metadata.ts'
 export default defineConfig({
   plugins: [
+    applicationEnvPlugin(),
     tanstackRouter({
       target: 'react',
       routesDirectory: './src/app/routes',

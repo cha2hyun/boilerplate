@@ -107,9 +107,9 @@ export function SettingsPage() {
                     type="button"
                     variant="ghost"
                     onClick={() => {
-                      preferences.reset()
-                      setWorkspaceName('Acme Studio')
-                      setCompactMode(false)
+                      const resetPreferences = preferences.reset()
+                      setWorkspaceName(resetPreferences.workspaceName)
+                      setCompactMode(resetPreferences.compactMode)
                       setError(undefined)
                       toast.success(t('settings.resetToast'))
                     }}

@@ -1,1 +1,1 @@
-export { usePreferences, preferencesSchema } from './model/store'
+export { createPreferencesStore, usePreferences, preferencesSchema } from './model/store'

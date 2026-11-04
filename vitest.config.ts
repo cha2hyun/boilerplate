@@ -1,6 +1,7 @@
 import path from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
+import { unitTestCategories } from './scripts/unit-test-categories.ts'
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': path.resolve(import.meta.dirname, './src') } },
@@ -12,29 +13,7 @@ export default defineConfig({
     maxWorkers: 2,
     // Vitest 5 inline projects inherit the alias, plugins and shared test options.
     // Each test file belongs to one category; selecting a category never repeats another.
-    projects: [
-      {
-        test: {
-          name: 'foundations',
-          include: ['src/shared/{api,config,lib}/**/*.test.{ts,tsx}'],
-        },
-      },
-      {
-        test: {
-          name: 'data',
-          include: ['src/{entities,features}/**/*.test.{ts,tsx}'],
-        },
-      },
-      {
-        test: {
-          name: 'ui',
-          include: [
-            'src/{app,pages,widgets}/**/*.test.{ts,tsx}',
-            'src/shared/{ui,hooks}/**/*.test.{ts,tsx}',
-          ],
-        },
-      },
-    ],
+    projects: unitTestCategories.map((test) => ({ test })),
     coverage: {
       provider: 'v8',
       include: [
@@ -42,7 +21,7 @@ export default defineConfig({
         'src/features/**/*.{ts,tsx}',
         'src/shared/api/**/*.ts',
       ],
-      exclude: ['**/index.ts', '**/*.test.*'],
+      exclude: ['**/index.ts', '**/*.{test,spec}.*'],
     },
   },
 })

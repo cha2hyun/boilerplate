@@ -15,20 +15,25 @@ export const preferencesSchema = z.object({
 type Preferences = z.infer<typeof preferencesSchema>
 type PreferencesState = Preferences & {
   save: (value: Preferences) => void
-  reset: () => void
+  reset: () => Preferences
 }
 const defaults: Preferences = { workspaceName: 'Acme Studio', compactMode: false }
 
-export function createPreferencesStore(storage: StateStorage = createPreferenceStorage()) {
+export function createPreferencesStore(
+  storage: StateStorage = createPreferenceStorage(),
+  defaultPreferences: Preferences = defaults,
+) {
+  const initialPreferences = preferencesSchema.parse(defaultPreferences)
   return create<PreferencesState>()(
     persist(
       (set) => ({
-        ...defaults,
+        ...initialPreferences,
         save: (value) => {
           set(preferencesSchema.parse(value))
         },
         reset: () => {
-          set(defaults)
+          set(initialPreferences)
+          return { ...initialPreferences }
         },
       }),
       {
@@ -36,10 +41,10 @@ export function createPreferencesStore(storage: StateStorage = createPreferenceS
         version: 1,
         storage: createJSONStorage<Preferences>(() => storage),
         partialize: ({ workspaceName, compactMode }) => ({ workspaceName, compactMode }),
-        migrate: () => defaults,
+        migrate: () => initialPreferences,
         merge: (persisted, current) => {
           const result = preferencesSchema.safeParse(persisted)
-          return { ...current, ...(result.success ? result.data : defaults) }
+          return { ...current, ...(result.success ? result.data : initialPreferences) }
         },
       },
     ),
