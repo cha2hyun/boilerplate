@@ -25,7 +25,7 @@
 ## 배포와 운영
 
 - [ ] 배포할 커밋의 Actions에서 정적/단위/가드레일 검사와 `core`·`samples` 브라우저 범주가 통과한다. 로컬 전체 테스트를 반복하지 않는다.
-- [ ] `Conventional PR title` 등 실제 workflow의 상태 이름과 경로 필터를 검토하여 브랜치 보호를 설정한다. 코드 CI는 문서만 바뀌면 생략되므로 무조건 required로 지정하면 pending이 남을 수 있다. [테스트 정책](testing.md)의 경로 필터 설명을 따른다. 현재 파일만으로 원격 설정이 자동 적용되지는 않는다.
+- [ ] `CI Gate`와 `Conventional PR title`을 GitHub Actions 제공 필수 검사로 설정하고 관리자에게도 적용한다. 포크 후 원격 설정과 문서 전용 PR 성공을 [CI Gate 절차](ci-gate.md)로 확인한다.
 - [ ] `VITE_SITE_URL`에 실제 공개 origin을 설정한 `dist/`를 정적 호스팅에 배포한다. 알려진 경로는 해당 디렉터리의 HTML(`projects/index.html` 등)을 먼저 제공하고, 없는 경로는 `404.html`과 HTTP 404를 제공한다. 전역 `/index.html` rewrite로 경로별 OG를 덮어쓰지 않도록 [메타데이터 가이드](seo.md)를 따른다.
 - [ ] `/api` 경로는 SPA fallback보다 먼저 API 서버로 연결한다. HTML을 JSON API 응답으로 돌려주지 않는다.
 - [ ] 해시 자산은 장기 캐시, HTML은 재검증 정책을 적용하고 이전 릴리스로 롤백하는 절차를 검증한다.
