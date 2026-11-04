@@ -13,6 +13,7 @@
 | 언어·번역·표시 통화·환율         | [언어와 표시 통화](i18n.md)                                     | `src/shared/lib/i18n`, `src/entities/exchange-rate`, 앱 provider                |
 | 로딩·skeleton·숫자 모션          | [로딩과 모션](loading-and-motion.md)                            | 해당 Query 소비 화면과 모션 기능                                                |
 | 캐시·새로고침·mutation 반영      | [Query 캐시](query-cache.md)                                    | `src/entities/*/api`, QueryClient                                               |
+| 필터·정렬·기간·URL 복원          | [URL 조회 상태](url-state.md)                                   | `src/app/routes`, 해당 `pages/widgets`의 조회 스키마와 UI                       |
 | API·응답·데모 저장               | [API 계약](api-contract.md)                                     | `src/entities/*`, `src/shared/api`                                              |
 | 테스트·CI·최소 로컬 재현         | [테스트 정책](testing.md)                                       | `package.json`, `e2e`, `.github/workflows`                                      |
 | 필수 CI·main 보호·문서 전용 검사 | [CI Gate](ci-gate.md)                                           | `.github/workflows/ci.yml`, `scripts/ci-scope.mjs`, 원격 보호 설정              |

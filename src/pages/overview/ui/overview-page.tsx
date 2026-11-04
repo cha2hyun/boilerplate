@@ -17,9 +17,11 @@ import { analyticsQueryOptions } from '@/entities/analytics'
 import { projectsQueryOptions } from '@/entities/project'
 import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
 import { ProjectEditorDialog } from '@/features/project-editor'
-import { ProjectTable } from '@/widgets/project-table'
+import { ProjectTable, projectTableSearchDefaults } from '@/widgets/project-table'
 import { RevenueChart } from '@/widgets/revenue-chart'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
+import type { OverviewSearch } from '../model/search'
 import { env } from '@/shared/config'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
@@ -73,7 +75,12 @@ const demoActivity = {
   act_4: { title: 'overview.activity4Title', description: 'overview.activity4Description' },
 } as const
 const activityIcons = { project: FolderKanban, member: Users, billing: CreditCard }
-export function OverviewPage() {
+interface OverviewPageProps {
+  search: OverviewSearch
+  onSearchChange: SearchChange<OverviewSearch>
+}
+
+export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
   const { t } = useTranslation('workspace')
   const { formatNumber, formatMoney, formatRelativeTime } = useFormatters()
   const errorMessage = useErrorMessage()
@@ -176,6 +183,8 @@ export function OverviewPage() {
       </div>
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <RevenueChart
+          search={search}
+          onSearchChange={onSearchChange}
           data={analytics.data?.revenue}
           isLoading={isLoading}
           error={analytics.error}
@@ -263,9 +272,14 @@ export function OverviewPage() {
           </Button>
         </HStack>
         <ProjectTable
+          search={{ ...projectTableSearchDefaults, sort: search.sort, order: search.order }}
+          onSearchChange={({ sort = search.sort, order = search.order }, options) => {
+            onSearchChange({ sort, order }, options)
+          }}
           projects={projects.data ?? []}
           hasData={projects.data !== undefined}
           isLoading={projects.isPending}
+          isFetching={projects.isFetching}
           error={projects.error}
           onRetry={() => void projects.refetch()}
           compact

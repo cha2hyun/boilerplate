@@ -5,18 +5,24 @@ import { projectsQueryOptions } from '@/entities/project'
 import { NumberDisplay } from '@/features/number-motion'
 import type { NumberFormatOptions } from '@/shared/lib/format'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
 import { ProjectEditorDialog } from '@/features/project-editor'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { PageHeader } from '@/shared/ui/page-header'
 import { HStack, VStack } from '@/shared/ui/stack'
-import { ProjectTable } from '@/widgets/project-table'
+import { ProjectTable, type ProjectTableSearch } from '@/widgets/project-table'
 
 const countFormat = { maximumFractionDigits: 0 }
 const progressFormat = { style: 'percent', maximumFractionDigits: 0 } satisfies NumberFormatOptions
 
-export function ProjectsPage() {
+interface ProjectsPageProps {
+  search: ProjectTableSearch
+  onSearchChange: SearchChange<ProjectTableSearch>
+}
+
+export function ProjectsPage({ search, onSearchChange }: ProjectsPageProps) {
   const { t } = useTranslation('workspace')
   const { formatNumber } = useFormatters()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -109,8 +115,11 @@ export function ProjectsPage() {
       </div>
 
       <ProjectTable
+        search={search}
+        onSearchChange={onSearchChange}
         projects={projects}
         isLoading={isLoading}
+        isFetching={query.isFetching}
         hasData={hasData}
         error={query.error}
         onRetry={() => {

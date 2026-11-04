@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ChevronLeft,
@@ -18,6 +18,7 @@ import {
   useLocalePreferences,
   useTranslation,
 } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -33,7 +34,8 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
-import { compareCustomers, customerSortOptions, type CustomerSort } from '../model/sample-customers'
+import { compareCustomers, customerSortOptions } from '../model/sample-customers'
+import { customersSearchDefaults, type CustomersSearch } from '../model/search'
 
 const pageSize = 6
 const countFormat = { maximumFractionDigits: 0 }
@@ -47,7 +49,12 @@ function CustomerStatusBadge({ status }: { status: CustomerStatus }) {
   )
 }
 
-export function CustomersPage() {
+interface CustomersPageProps {
+  search: CustomersSearch
+  onSearchChange: SearchChange<CustomersSearch>
+}
+
+export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
   const { t } = useTranslation('admin')
   const errorMessage = useErrorMessage()
   const { formatNumber, formatMoney, formatDate } = useFormatters()
@@ -56,15 +63,12 @@ export function CustomersPage() {
   const customers = customersQuery.data ?? []
   const isLoading = customersQuery.isPending && !customersQuery.data
   const hasLoadError = customersQuery.isError && !customersQuery.data
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<CustomerStatus | 'all'>('all')
-  const [sort, setSort] = useState<CustomerSort>('newest')
-  const [page, setPage] = useState(0)
+  const { q, status, sort, page } = search
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const selectedCustomer = customers.find((item) => item.id === selectedCustomerId)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
-  const query = search.trim().toLowerCase()
+  const query = q.trim().toLowerCase()
   const filteredCustomers = customers
     .filter(
       (customer) =>
@@ -75,12 +79,18 @@ export function CustomersPage() {
     )
     .sort((left, right) => compareCustomers(left, right, sort))
   const pageCount = Math.max(1, Math.ceil(filteredCustomers.length / pageSize))
-  const currentPage = Math.min(page, pageCount - 1)
+  const currentPage = Math.min(page, pageCount) - 1
   const visibleCustomers = filteredCustomers.slice(
     currentPage * pageSize,
     (currentPage + 1) * pageSize,
   )
-  const hasFilters = search !== '' || status !== 'all' || sort !== 'newest'
+  const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
+
+  useEffect(() => {
+    if (customersQuery.isSuccess && !customersQuery.isFetching && page > pageCount) {
+      onSearchChange({ page: pageCount }, { replace: true })
+    }
+  }, [customersQuery.isSuccess, customersQuery.isFetching, page, pageCount, onSearchChange])
 
   // A refreshed response may remove the selected record; keep only valid UI selection.
   if (selectedCustomerId !== null && customersQuery.data && !selectedCustomer) {
@@ -88,10 +98,7 @@ export function CustomersPage() {
   }
 
   function resetFilters() {
-    setSearch('')
-    setStatus('all')
-    setSort('newest')
-    setPage(0)
+    onSearchChange(customersSearchDefaults)
     requestAnimationFrame(() => searchRef.current?.focus())
   }
 
@@ -194,19 +201,21 @@ export function CustomersPage() {
                   id="customers-search"
                   ref={searchRef}
                   placeholder={t('customers.searchPlaceholder')}
-                  value={search}
+                  value={q}
+                  maxLength={200}
                   className="pl-9"
                   onChange={(event) => {
-                    setSearch(event.target.value)
-                    setPage(0)
+                    onSearchChange({ q: event.target.value, page: 1 }, { replace: true })
                   }}
                 />
               </div>
               <Select
                 value={status}
                 onValueChange={(value) => {
-                  setStatus(customerStatuses.find((item) => item === value) ?? 'all')
-                  setPage(0)
+                  onSearchChange({
+                    status: customerStatuses.find((item) => item === value) ?? 'all',
+                    page: 1,
+                  })
                 }}
               >
                 <SelectTrigger aria-label={t('customers.filterStatus')} className="w-full md:w-40">
@@ -224,10 +233,11 @@ export function CustomersPage() {
               <Select
                 value={sort}
                 onValueChange={(value) => {
-                  setSort(
-                    customerSortOptions.find((item) => item.value === value)?.value ?? 'newest',
-                  )
-                  setPage(0)
+                  onSearchChange({
+                    sort:
+                      customerSortOptions.find((item) => item.value === value)?.value ?? 'newest',
+                    page: 1,
+                  })
                 }}
               >
                 <SelectTrigger aria-label={t('customers.sortLabel')} className="w-full md:w-48">
@@ -422,7 +432,7 @@ export function CustomersPage() {
                     aria-label={t('customers.previousPage')}
                     disabled={isLoading || currentPage === 0}
                     onClick={() => {
-                      setPage(currentPage - 1)
+                      onSearchChange({ page: currentPage })
                     }}
                   >
                     <ChevronLeft aria-hidden="true" />
@@ -434,7 +444,7 @@ export function CustomersPage() {
                     aria-label={t('customers.nextPage')}
                     disabled={isLoading || currentPage + 1 >= pageCount}
                     onClick={() => {
-                      setPage(currentPage + 1)
+                      onSearchChange({ page: currentPage + 2 })
                     }}
                   >
                     <ChevronRight aria-hidden="true" />

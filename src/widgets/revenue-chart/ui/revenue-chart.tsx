@@ -1,9 +1,10 @@
-import { useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 import { selectRecentRevenue, type Analytics } from '@/entities/analytics'
 import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
 import { useFormatters, useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
+import { revenueChartSearchSchema, type RevenueChartSearch } from '../model/search'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -29,12 +30,21 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
 
 interface RevenueChartProps {
+  search: RevenueChartSearch
+  onSearchChange: SearchChange<RevenueChartSearch>
   data?: Analytics['revenue']
   isLoading?: boolean
   error?: Error | null
   onRetry?: () => void
 }
-export function RevenueChart({ data, isLoading = false, error, onRetry }: RevenueChartProps) {
+export function RevenueChart({
+  search,
+  onSearchChange,
+  data,
+  isLoading = false,
+  error,
+  onRetry,
+}: RevenueChartProps) {
   const { t } = useTranslation('workspace')
   const { formatNumber, formatMoney, formatDate } = useFormatters()
   const currency = useLocalePreferences((state) => state.currency)
@@ -42,7 +52,7 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
     revenue: { label: t('revenue.thisPeriod'), color: 'var(--chart-2)' },
     previousRevenue: { label: t('revenue.previousPeriod'), color: 'var(--chart-1)' },
   } satisfies ChartConfig
-  const [period, setPeriod] = useState('30')
+  const { period } = search
   const visible = selectRecentRevenue(data ?? [], Number(period))
   const firstDate = visible[0]?.date
   const lastDate = visible.at(-1)?.date
@@ -55,7 +65,13 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
         <CardTitle>{t('revenue.title')}</CardTitle>
         <CardDescription>{t('revenue.description')}</CardDescription>
         <CardAction>
-          <Select value={period} onValueChange={setPeriod} disabled={!data}>
+          <Select
+            value={period}
+            onValueChange={(value) => {
+              onSearchChange({ period: revenueChartSearchSchema.shape.period.parse(value) })
+            }}
+            disabled={!data}
+          >
             <SelectTrigger aria-label={t('revenue.period')} className="w-36">
               <SelectValue />
             </SelectTrigger>

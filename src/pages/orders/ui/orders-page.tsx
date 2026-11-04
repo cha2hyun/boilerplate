@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowLeftRight,
@@ -19,6 +19,7 @@ import {
   useLocalePreferences,
   useTranslation,
 } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -35,13 +36,8 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import {
-  compareOrders,
-  orderSortOptions,
-  orderSubtotal,
-  orderTotal,
-  type OrderSort,
-} from '../model/sample-orders'
+import { compareOrders, orderSortOptions, orderSubtotal, orderTotal } from '../model/sample-orders'
+import { ordersSearchDefaults, type OrdersSearch } from '../model/search'
 
 const pageSize = 6
 const orderTableColumnCount = 12
@@ -61,7 +57,12 @@ function OrderStatusBadge({ status }: { status: OrderStatus }) {
   )
 }
 
-export function OrdersPage() {
+interface OrdersPageProps {
+  search: OrdersSearch
+  onSearchChange: SearchChange<OrdersSearch>
+}
+
+export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   const { t } = useTranslation('admin')
   const errorMessage = useErrorMessage()
   const { formatNumber, formatMoney, formatDate } = useFormatters()
@@ -70,16 +71,13 @@ export function OrdersPage() {
   const orders = ordersQuery.data ?? []
   const isLoading = ordersQuery.isPending && !ordersQuery.data
   const hasLoadError = ordersQuery.isError && !ordersQuery.data
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<OrderStatus | 'all'>('all')
-  const [sort, setSort] = useState<OrderSort>('newest')
-  const [page, setPage] = useState(0)
+  const { q, status, sort, page } = search
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
   const selectedOrder = orders.find((item) => item.id === selectedOrderId)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const scrollHintId = useId()
-  const query = search.trim().toLowerCase()
+  const query = q.trim().toLowerCase()
   const filteredOrders = orders
     .filter(
       (order) =>
@@ -88,9 +86,15 @@ export function OrdersPage() {
     )
     .sort((left, right) => compareOrders(left, right, sort))
   const pageCount = Math.max(1, Math.ceil(filteredOrders.length / pageSize))
-  const currentPage = Math.min(page, pageCount - 1)
+  const currentPage = Math.min(page, pageCount) - 1
   const visibleOrders = filteredOrders.slice(currentPage * pageSize, (currentPage + 1) * pageSize)
-  const hasFilters = search !== '' || status !== 'all' || sort !== 'newest'
+  const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
+
+  useEffect(() => {
+    if (ordersQuery.isSuccess && !ordersQuery.isFetching && page > pageCount) {
+      onSearchChange({ page: pageCount }, { replace: true })
+    }
+  }, [ordersQuery.isSuccess, ordersQuery.isFetching, page, pageCount, onSearchChange])
 
   // A refreshed response may remove the selected record; keep only valid UI selection.
   if (selectedOrderId !== null && ordersQuery.data && !selectedOrder) {
@@ -98,10 +102,7 @@ export function OrdersPage() {
   }
 
   function resetFilters() {
-    setSearch('')
-    setStatus('all')
-    setSort('newest')
-    setPage(0)
+    onSearchChange(ordersSearchDefaults)
     requestAnimationFrame(() => searchRef.current?.focus())
   }
 
@@ -194,8 +195,10 @@ export function OrdersPage() {
             <Tabs
               value={status}
               onValueChange={(value) => {
-                setStatus(orderStatuses.find((item) => item === value) ?? 'all')
-                setPage(0)
+                onSearchChange({
+                  status: orderStatuses.find((item) => item === value) ?? 'all',
+                  page: 1,
+                })
               }}
               className="min-w-0 gap-4"
             >
@@ -232,21 +235,23 @@ export function OrdersPage() {
                         id="orders-search"
                         ref={searchRef}
                         placeholder={t('orders.searchPlaceholder')}
-                        value={search}
+                        value={q}
+                        maxLength={200}
                         className="pl-9"
                         onChange={(event) => {
-                          setSearch(event.target.value)
-                          setPage(0)
+                          onSearchChange({ q: event.target.value, page: 1 }, { replace: true })
                         }}
                       />
                     </div>
                     <Select
                       value={sort}
                       onValueChange={(value) => {
-                        setSort(
-                          orderSortOptions.find((item) => item.value === value)?.value ?? 'newest',
-                        )
-                        setPage(0)
+                        onSearchChange({
+                          sort:
+                            orderSortOptions.find((item) => item.value === value)?.value ??
+                            'newest',
+                          page: 1,
+                        })
                       }}
                     >
                       <SelectTrigger aria-label={t('orders.sortLabel')} className="w-full md:w-48">
@@ -509,7 +514,7 @@ export function OrdersPage() {
                           aria-label={t('orders.previousPage')}
                           disabled={isLoading || currentPage === 0}
                           onClick={() => {
-                            setPage(currentPage - 1)
+                            onSearchChange({ page: currentPage })
                           }}
                         >
                           <ChevronLeft aria-hidden="true" />
@@ -521,7 +526,7 @@ export function OrdersPage() {
                           aria-label={t('orders.nextPage')}
                           disabled={isLoading || currentPage + 1 >= pageCount}
                           onClick={() => {
-                            setPage(currentPage + 1)
+                            onSearchChange({ page: currentPage + 2 })
                           }}
                         >
                           <ChevronRight aria-hidden="true" />

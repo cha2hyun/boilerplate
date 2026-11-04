@@ -189,6 +189,29 @@ for (const sample of pages) {
     const initialNumbers = await cards.locator('[data-number-state] > .sr-only').allTextContents()
     expect(initialNumbers.length).toBeGreaterThan(0)
 
+    if (sample.name === 'Overview') {
+      const revenue = page.getByLabel('Revenue overview', { exact: true })
+      const total = revenue.locator('[data-number-state] > .sr-only').first()
+      const monthlyRevenue = await total.innerText()
+      const periodLoading = await watchForLoadingFallback(page)
+      await page.getByRole('combobox', { name: 'Revenue period' }).click()
+      await page.getByRole('option', { name: 'Last 7 days', exact: true }).click()
+      await expect(page).toHaveURL(
+        (url) => JSON.parse(url.searchParams.get('period') ?? 'null') === '7',
+      )
+      await expectReadyCards(cards, sample.cards)
+      await expect(total).not.toHaveText(monthlyRevenue)
+      expect(requestCount(sample.endpoint)).toBe(1)
+
+      await page.goBack()
+      await expect(page).toHaveURL('/')
+      await expectReadyCards(cards, sample.cards)
+      await expect(total).toHaveText(monthlyRevenue)
+      expect(await periodLoading.evaluate((observer) => observer.finish())).toBe(false)
+      await periodLoading.dispose()
+      expect(requestCount(sample.endpoint)).toBe(1)
+    }
+
     if (sample.name === 'Analytics') {
       const visitors = page.locator(
         '[data-slot="card"][aria-label="Visitors"] [data-number-state] > .sr-only',
