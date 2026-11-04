@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 import { TrendingUp } from 'lucide-react'
-import type { Analytics } from '@/entities/analytics'
+import { selectRecentRevenue, type Analytics } from '@/entities/analytics'
 import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
 import { useFormatters, useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
@@ -42,7 +42,7 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
     previousRevenue: { label: t('revenue.previousPeriod'), color: 'var(--chart-1)' },
   } satisfies ChartConfig
   const [period, setPeriod] = useState('30')
-  const visible = (data ?? []).slice(-Number(period))
+  const visible = selectRecentRevenue(data ?? [], Number(period))
   const firstDate = visible[0]?.date
   const lastDate = visible.at(-1)?.date
   const total = visible.reduce((sum, point) => sum + point.revenue, 0)
@@ -138,13 +138,10 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
               {t('revenue.empty')}
             </div>
           ) : (
-            <ChartContainer
-              config={config}
-              className="aspect-auto h-60 w-full"
-              aria-label={t('revenue.chartLabel')}
-            >
+            <ChartContainer config={config} className="aspect-auto h-60 w-full">
               <AreaChart
                 accessibilityLayer
+                aria-label={t('revenue.chartLabel')}
                 data={visible}
                 margin={{ left: 0, right: 10, top: 10, bottom: 0 }}
               >

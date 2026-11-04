@@ -111,6 +111,9 @@ test('loads the overview without browser errors and changes the revenue period',
     page.getByRole('heading', { name: 'A little clarity. A lot of possibility.' }),
   ).toBeVisible()
   await expect(page.getByText('Active customers', { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('application', { name: 'Revenue compared with previous period', exact: true }),
+  ).toBeVisible()
   const customerMetric = page.locator('[data-slot="card"][aria-label="Active customers"]')
   await expect(customerMetric.locator('[data-number-state] .sr-only')).toHaveText('2,420')
   await expect(customerMetric.locator('[data-number-state]')).toHaveAttribute(

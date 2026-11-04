@@ -65,6 +65,7 @@ export function OrdersPage() {
   const ordersQuery = useQuery(ordersQueryOptions())
   const orders = ordersQuery.data ?? []
   const isLoading = ordersQuery.isPending && !ordersQuery.data
+  const hasLoadError = ordersQuery.isError && !ordersQuery.data
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<OrderStatus | 'all'>('all')
   const [sort, setSort] = useState<OrderSort>('newest')
@@ -359,27 +360,30 @@ export function OrdersPage() {
                   </Table>
                 </div>
               ) : (
-                <Empty className="h-120 rounded-none border-y py-12">
+                <Empty
+                  className="h-120 rounded-none border-y py-12"
+                  role={hasLoadError ? 'alert' : undefined}
+                >
                   <EmptyHeader>
                     <EmptyMedia variant="icon">
                       <Search aria-hidden="true" />
                     </EmptyMedia>
                     <EmptyTitle>
-                      {ordersQuery.isError && !ordersQuery.data
+                      {hasLoadError
                         ? t('orders.loadError')
                         : orders.length
                           ? t('orders.noMatch')
                           : t('orders.empty')}
                     </EmptyTitle>
                     <EmptyDescription>
-                      {ordersQuery.isError && !ordersQuery.data
+                      {hasLoadError
                         ? errorMessage(ordersQuery.error)
                         : orders.length
                           ? t('common.searchHint')
                           : t('orders.emptyHint')}
                     </EmptyDescription>
                   </EmptyHeader>
-                  {ordersQuery.isError && !ordersQuery.data ? (
+                  {hasLoadError ? (
                     <Button variant="outline" onClick={() => void ordersQuery.refetch()}>
                       {t('common.tryAgain')}
                     </Button>
@@ -393,18 +397,23 @@ export function OrdersPage() {
                 </Empty>
               )}
               <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <p className="text-xs text-muted-foreground" aria-live="polite">
+                <p
+                  className="text-xs text-muted-foreground"
+                  aria-live={hasLoadError ? 'off' : 'polite'}
+                >
                   {isLoading
                     ? t('orders.loading')
-                    : filteredOrders.length
-                      ? t('orders.showing', {
-                          start: formatNumber(currentPage * pageSize + 1),
-                          end: formatNumber(
-                            Math.min((currentPage + 1) * pageSize, filteredOrders.length),
-                          ),
-                          total: formatNumber(filteredOrders.length),
-                        })
-                      : t('orders.count', { total: formatNumber(0) })}
+                    : hasLoadError
+                      ? t('orders.loadError')
+                      : filteredOrders.length
+                        ? t('orders.showing', {
+                            start: formatNumber(currentPage * pageSize + 1),
+                            end: formatNumber(
+                              Math.min((currentPage + 1) * pageSize, filteredOrders.length),
+                            ),
+                            total: formatNumber(filteredOrders.length),
+                          })
+                        : t('orders.count', { total: formatNumber(0) })}
                 </p>
                 <div className="flex items-center gap-3">
                   <p className="text-xs font-medium tabular-nums">

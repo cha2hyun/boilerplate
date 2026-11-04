@@ -18,6 +18,8 @@ export default {
   errors: {
     timeoutWrite:
       'The request timed out. Your changes may have been saved. Refresh to check before trying again.',
+    uncertainWrite:
+      'The result could not be confirmed. Your changes may have been saved. Refresh to check before trying again.',
     network: 'Unable to connect. Check your connection and try again.',
     timeout: 'The request timed out. Please try again.',
     invalidResponse: 'The server returned an unexpected response.',

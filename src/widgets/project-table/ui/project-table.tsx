@@ -295,7 +295,9 @@ export function ProjectTable({
         enableGlobalFilter: false,
       },
       {
-        accessorKey: 'updatedAt',
+        id: 'updatedAt',
+        accessorFn: (project) => Date.parse(project.updatedAt),
+        sortingFn: 'basic',
         header: ({ column }) => {
           const direction = column.getIsSorted()
           const Icon =
