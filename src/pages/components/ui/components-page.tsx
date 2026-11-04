@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowUpRight, Bell, Check, LoaderCircle, Plus } from 'lucide-react'
 import { toast } from 'sonner'
-import { formatNumber } from '@/shared/lib/format'
+import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -28,35 +28,37 @@ const tokens = [
   {
     name: 'Background',
     className: 'bg-background text-foreground',
-    description: 'Default page canvas',
+    description: 'components.backgroundDescription',
   },
   {
     name: 'Primary',
     className: 'bg-primary text-primary-foreground',
-    description: 'Main actions · neutral',
+    description: 'components.primaryDescription',
   },
   {
     name: 'Secondary',
     className: 'bg-secondary text-secondary-foreground',
-    description: 'Supporting actions',
+    description: 'components.secondaryDescription',
   },
   {
     name: 'Muted',
     className: 'bg-muted text-muted-foreground',
-    description: 'Supporting information',
+    description: 'components.mutedDescription',
   },
   {
     name: 'Accent',
     className: 'bg-accent text-accent-foreground',
-    description: 'Hover and selected states',
+    description: 'components.accentDescription',
   },
   {
     name: 'Brand · Blueprint Blue',
     className: 'bg-brand text-brand-foreground',
-    description: 'Reserved for brand emphasis',
+    description: 'components.brandDescription',
   },
-]
+] as const
 export function ComponentsPage() {
+  const { t } = useTranslation('examples')
+  const { formatNumber } = useFormatters()
   const [notifications, setNotifications] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [progress, setProgress] = useState(64)
@@ -64,61 +66,59 @@ export function ComponentsPage() {
     <div className="space-y-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">The building blocks</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            One design language. Endless possibilities.
-          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('components.title')}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t('components.description')}</p>
         </div>
         <Button asChild variant="outline">
           <a href="https://ui.shadcn.com/docs/components" target="_blank" rel="noreferrer">
-            Explore shadcn/ui
+            {t('components.explore')}
             <ArrowUpRight />
           </a>
         </Button>
       </div>
       <Tabs defaultValue="components">
         <TabsList>
-          <TabsTrigger value="components">Components</TabsTrigger>
-          <TabsTrigger value="tokens">Theme tokens</TabsTrigger>
-          <TabsTrigger value="typography">Typography</TabsTrigger>
+          <TabsTrigger value="components">{t('components.componentsTab')}</TabsTrigger>
+          <TabsTrigger value="tokens">{t('components.tokensTab')}</TabsTrigger>
+          <TabsTrigger value="typography">{t('components.typographyTab')}</TabsTrigger>
         </TabsList>
         <TabsContent value="components" className="mt-6 grid items-start gap-5 xl:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Actions</CardTitle>
-              <CardDescription>The right emphasis for every interaction.</CardDescription>
+              <CardTitle>{t('components.actionsTitle')}</CardTitle>
+              <CardDescription>{t('components.actionsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-wrap items-center gap-3">
-              <Button onClick={() => toast.success('Ready for your next idea.')}>
+              <Button onClick={() => toast.success(t('components.primaryToast'))}>
                 <Plus />
-                Primary action
+                {t('components.primaryAction')}
               </Button>
-              <Button variant="secondary" onClick={() => toast('A secondary action')}>
-                Secondary
+              <Button variant="secondary" onClick={() => toast(t('components.secondaryToast'))}>
+                {t('components.secondaryAction')}
               </Button>
-              <Button variant="outline" onClick={() => toast.info('An outline action')}>
-                Outline
+              <Button variant="outline" onClick={() => toast.info(t('components.outlineToast'))}>
+                {t('components.outlineAction')}
               </Button>
-              <Button variant="ghost" onClick={() => toast('A subtle action')}>
-                Ghost
+              <Button variant="ghost" onClick={() => toast(t('components.ghostToast'))}>
+                {t('components.ghostAction')}
               </Button>
               <Button disabled>
                 <LoaderCircle className="animate-spin" />
-                Processing
+                {t('components.processing')}
               </Button>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Status & identity</CardTitle>
-              <CardDescription>Little details that make things clear.</CardDescription>
+              <CardTitle>{t('components.statusTitle')}</CardTitle>
+              <CardDescription>{t('components.statusDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex flex-wrap gap-2">
-                <Badge>Active</Badge>
-                <Badge variant="secondary">In progress</Badge>
-                <Badge variant="outline">Draft</Badge>
-                <Badge variant="destructive">Needs attention</Badge>
+                <Badge>{t('components.active')}</Badge>
+                <Badge variant="secondary">{t('components.inProgress')}</Badge>
+                <Badge variant="outline">{t('components.draft')}</Badge>
+                <Badge variant="destructive">{t('components.needsAttention')}</Badge>
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex -space-x-2">
@@ -132,26 +132,26 @@ export function ComponentsPage() {
                     </Avatar>
                   ))}
                 </div>
-                <span className="text-sm text-muted-foreground">Better together.</span>
+                <span className="text-sm text-muted-foreground">{t('components.together')}</span>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Inputs & preferences</CardTitle>
-              <CardDescription>Accessible controls, ready to use.</CardDescription>
+              <CardTitle>{t('components.inputsTitle')}</CardTitle>
+              <CardDescription>{t('components.inputsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="example-name">Project name</Label>
-                <Input id="example-name" placeholder="Your next big idea" />
+                <Label htmlFor="example-name">{t('components.projectName')}</Label>
+                <Input id="example-name" placeholder={t('components.projectPlaceholder')} />
               </div>
               <div className="flex items-center gap-2">
                 <Checkbox id="example-terms" />
-                <Label htmlFor="example-terms">Include in the weekly summary</Label>
+                <Label htmlFor="example-terms">{t('components.weeklySummary')}</Label>
               </div>
               <div className="flex items-center justify-between">
-                <Label htmlFor="example-notifications">Notifications preview</Label>
+                <Label htmlFor="example-notifications">{t('components.notifications')}</Label>
                 <Switch
                   id="example-notifications"
                   checked={notifications}
@@ -159,43 +159,45 @@ export function ComponentsPage() {
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Notifications are {notifications ? 'enabled' : 'disabled'} in this preview.
+                {t(
+                  notifications
+                    ? 'components.notificationsEnabled'
+                    : 'components.notificationsDisabled',
+                )}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Feedback & overlays</CardTitle>
-              <CardDescription>Keep everyone in the loop.</CardDescription>
+              <CardTitle>{t('components.feedbackTitle')}</CardTitle>
+              <CardDescription>{t('components.feedbackDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-5">
               <Alert>
                 <Check />
-                <AlertTitle>Everything is up to date</AlertTitle>
-                <AlertDescription>Your workspace is ready for the next step.</AlertDescription>
+                <AlertTitle>{t('components.upToDate')}</AlertTitle>
+                <AlertDescription>{t('components.workspaceReady')}</AlertDescription>
               </Alert>
               <div className="flex flex-wrap gap-3">
                 <Button
                   variant="outline"
                   onClick={() =>
-                    toast.success('All changes saved', {
-                      description: 'You can keep working with confidence.',
+                    toast.success(t('components.changesSaved'), {
+                      description: t('components.savedDescription'),
                     })
                   }
                 >
                   <Bell />
-                  Show notification
+                  {t('components.showNotification')}
                 </Button>
                 <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="outline">Open dialog</Button>
+                    <Button variant="outline">{t('components.openDialog')}</Button>
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle>Room for your next idea</DialogTitle>
-                      <DialogDescription>
-                        This dialog handles focus, keyboard navigation, and screen readers for you.
-                      </DialogDescription>
+                      <DialogTitle>{t('components.dialogTitle')}</DialogTitle>
+                      <DialogDescription>{t('components.dialogDescription')}</DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                       <Button
@@ -203,7 +205,7 @@ export function ComponentsPage() {
                           setDialogOpen(false)
                         }}
                       >
-                        Got it
+                        {t('components.gotIt')}
                       </Button>
                     </DialogFooter>
                   </DialogContent>
@@ -213,17 +215,17 @@ export function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Progress</CardTitle>
-              <CardDescription>A clear sense of what's ahead.</CardDescription>
+              <CardTitle>{t('components.progressTitle')}</CardTitle>
+              <CardDescription>{t('components.progressDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span>Workspace setup</span>
+                <span>{t('components.workspaceSetup')}</span>
                 <span className="tabular-nums">
                   {formatNumber(progress, { style: 'percent', maximumFractionDigits: 0 })}
                 </span>
               </div>
-              <Progress value={progress} aria-label="Workspace setup" />
+              <Progress value={progress} aria-label={t('components.workspaceSetup')} />
               <Button
                 variant="outline"
                 size="sm"
@@ -231,14 +233,14 @@ export function ComponentsPage() {
                   setProgress((value) => (value >= 100 ? 0 : Math.min(100, value + 12)))
                 }}
               >
-                {progress >= 100 ? 'Reset progress' : 'Advance progress'}
+                {progress >= 100 ? t('components.resetProgress') : t('components.advanceProgress')}
               </Button>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Loading states</CardTitle>
-              <CardDescription>A calm experience while content arrives.</CardDescription>
+              <CardTitle>{t('components.loadingTitle')}</CardTitle>
+              <CardDescription>{t('components.loadingDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="flex items-center gap-4">
               <Skeleton className="size-12 rounded-full" />
@@ -252,10 +254,8 @@ export function ComponentsPage() {
         <TabsContent value="tokens" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Semantic colors</CardTitle>
-              <CardDescription>
-                Neutral surfaces, one reserved brand color, and semantic foreground pairs.
-              </CardDescription>
+              <CardTitle>{t('components.colorsTitle')}</CardTitle>
+              <CardDescription>{t('components.colorsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               {tokens.map((token) => (
@@ -266,27 +266,22 @@ export function ComponentsPage() {
                     Aa
                   </div>
                   <p className="text-sm font-medium">{token.name}</p>
-                  <p className="text-xs text-muted-foreground">{token.description}</p>
+                  <p className="text-xs text-muted-foreground">{t(token.description)}</p>
                 </div>
               ))}
             </CardContent>
           </Card>
           <Alert className="mt-5">
             <Check />
-            <AlertTitle>Color communicates a role</AlertTitle>
-            <AlertDescription>
-              Primary stays neutral. Use brand only for intentional brand emphasis, destructive for
-              errors and destructive actions, and text or icons to explain status.
-            </AlertDescription>
+            <AlertTitle>{t('components.colorRoleTitle')}</AlertTitle>
+            <AlertDescription>{t('components.colorRoleDescription')}</AlertDescription>
           </Alert>
         </TabsContent>
         <TabsContent value="typography" className="mt-6 space-y-5">
           <Card>
             <CardHeader>
-              <CardTitle>Pretendard · three weights</CardTitle>
-              <CardDescription>
-                One typeface for clear, consistent Korean and Latin text.
-              </CardDescription>
+              <CardTitle>{t('components.weightsTitle')}</CardTitle>
+              <CardDescription>{t('components.weightsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6 xl:grid-cols-3">
               {[
@@ -294,19 +289,19 @@ export function ComponentsPage() {
                   weight: '400',
                   name: 'Regular',
                   className: 'font-normal',
-                  role: 'Body text, descriptions, table data.',
+                  role: t('components.regularRole'),
                 },
                 {
                   weight: '500',
                   name: 'Medium',
                   className: 'font-medium',
-                  role: 'Buttons, labels, tabs, navigation.',
+                  role: t('components.mediumRole'),
                 },
                 {
                   weight: '600',
                   name: 'SemiBold',
                   className: 'font-semibold',
-                  role: 'Headings, key metrics, strong emphasis.',
+                  role: t('components.semiboldRole'),
                 },
               ].map((type) => (
                 <div key={type.weight} className="space-y-3">
@@ -317,9 +312,9 @@ export function ComponentsPage() {
                     data-testid={`type-sample-${type.weight}`}
                     className={`${type.className} text-2xl`}
                   >
-                    명확한 시작, 더 나은 제품.
+                    <span lang="ko">명확한 시작, 더 나은 제품.</span>
                     <br />
-                    Build with clarity.
+                    <span lang="en">Build with clarity.</span>
                   </p>
                   <p className="text-sm text-muted-foreground">{type.role}</p>
                 </div>
@@ -328,11 +323,8 @@ export function ComponentsPage() {
           </Card>
           <Alert>
             <Check />
-            <AlertTitle>Keep the hierarchy simple</AlertTitle>
-            <AlertDescription>
-              Use size, spacing, and semantic contrast before adding emphasis. Regular, Medium, and
-              SemiBold are the only weights in this workspace.
-            </AlertDescription>
+            <AlertTitle>{t('components.hierarchyTitle')}</AlertTitle>
+            <AlertDescription>{t('components.hierarchyDescription')}</AlertDescription>
           </Alert>
         </TabsContent>
       </Tabs>

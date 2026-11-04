@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Archive, ArchiveRestore, ArrowLeft, Inbox, Mail, MailOpen, Search } from 'lucide-react'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
-import { formatDate, formatNumber } from '@/shared/lib/format'
+import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -23,12 +23,24 @@ import { sampleMessages, type SampleMessage } from '../model/sample-messages'
 type InboxView = 'all' | 'unread' | 'archived'
 
 export function InboxPage() {
+  const { t } = useTranslation('admin')
+  const { formatDate, formatNumber } = useFormatters()
+  const labelNames: Record<string, string> = {
+    Product: t('inbox.labels.Product'),
+    Design: t('inbox.labels.Design'),
+    Customers: t('inbox.labels.Customers'),
+    Updates: t('inbox.labels.Updates'),
+    Team: t('inbox.labels.Team'),
+  }
   const isMobile = useIsMobile()
   const [messages, setMessages] = useState(sampleMessages)
   const [view, setView] = useState<InboxView>('all')
   const [search, setSearch] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [announcement, setAnnouncement] = useState('')
+  const [announcement, setAnnouncement] = useState<{
+    key: 'markedRead' | 'markedUnread' | 'movedToInbox' | 'archivedMessage'
+    subject: string
+  } | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
   const detailHeadingRef = useRef<HTMLHeadingElement>(null)
   const messageRefs = useRef(new Map<string, HTMLButtonElement>())
@@ -70,7 +82,10 @@ export function InboxPage() {
     setMessages((current) =>
       current.map((item) => (item.id === message.id ? { ...item, unread: !item.unread } : item)),
     )
-    setAnnouncement(`“${message.subject}” marked as ${message.unread ? 'read' : 'unread'}.`)
+    setAnnouncement({
+      key: message.unread ? 'markedRead' : 'markedUnread',
+      subject: message.subject,
+    })
   }
 
   function toggleArchive(message: SampleMessage) {
@@ -80,7 +95,10 @@ export function InboxPage() {
       ),
     )
     setSelectedId(null)
-    setAnnouncement(`“${message.subject}” ${message.archived ? 'moved to inbox' : 'archived'}.`)
+    setAnnouncement({
+      key: message.archived ? 'movedToInbox' : 'archivedMessage',
+      subject: message.subject,
+    })
     requestAnimationFrame(() => searchRef.current?.focus())
   }
 
@@ -88,27 +106,26 @@ export function InboxPage() {
     <div className="space-y-6">
       <div>
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight">Inbox</h1>
-          <Badge variant="secondary">Sample</Badge>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('inbox.title')}</h1>
+          <Badge variant="secondary">{t('common.sample')}</Badge>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          A little space to keep your conversations in order.
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground">{t('inbox.intro')}</p>
       </div>
 
       <Card className="gap-0 overflow-hidden py-0 shadow-xs">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4 md:px-5">
           <div className="flex items-center gap-2 text-sm font-medium">
             <Inbox className="size-4" />
-            All messages<Badge variant="outline">{formatNumber(unreadCount)} unread</Badge>
+            {t('inbox.allMessages')}
+            <Badge variant="outline">
+              {t('inbox.unreadCount', { total: formatNumber(unreadCount) })}
+            </Badge>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Sample messages · Changes reset when you leave this page.
-          </p>
+          <p className="text-xs text-muted-foreground">{t('inbox.sampleHint')}</p>
         </div>
         <div className="grid min-h-[620px] md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
           <section
-            aria-label="Message list"
+            aria-label={t('inbox.messageList')}
             className={cn('min-w-0 md:border-r', selected && 'hidden md:block')}
           >
             <Tabs
@@ -122,17 +139,17 @@ export function InboxPage() {
               }}
             >
               <div className="space-y-4 border-b p-4">
-                <TabsList className="w-full" aria-label="Message views">
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="unread">Unread</TabsTrigger>
-                  <TabsTrigger value="archived">Archived</TabsTrigger>
+                <TabsList className="w-full" aria-label={t('inbox.messageViews')}>
+                  <TabsTrigger value="all">{t('inbox.all')}</TabsTrigger>
+                  <TabsTrigger value="unread">{t('inbox.unread')}</TabsTrigger>
+                  <TabsTrigger value="archived">{t('inbox.archived')}</TabsTrigger>
                 </TabsList>
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
                   <Input
                     ref={searchRef}
-                    aria-label="Search messages"
-                    placeholder="Search messages..."
+                    aria-label={t('inbox.search')}
+                    placeholder={t('inbox.searchPlaceholder')}
                     className="pl-9"
                     value={search}
                     onChange={(event) => {
@@ -156,8 +173,13 @@ export function InboxPage() {
                       'h-auto w-full min-w-0 flex-col items-stretch gap-2 rounded-lg border p-3 text-left whitespace-normal',
                       selectedId === message.id && 'bg-muted',
                     )}
-                    aria-label={`Open message from ${message.sender}: ${message.subject}`}
-                    aria-description={message.unread ? 'Unread message' : 'Read message'}
+                    aria-label={t('inbox.openMessage', {
+                      sender: message.sender,
+                      subject: message.subject,
+                    })}
+                    aria-description={
+                      message.unread ? t('inbox.unreadMessage') : t('inbox.readMessage')
+                    }
                     aria-pressed={selectedId === message.id}
                     onClick={() => {
                       openMessage(message)
@@ -169,7 +191,7 @@ export function InboxPage() {
                         {message.unread && (
                           <span
                             className="size-1.5 shrink-0 rounded-full bg-foreground"
-                            aria-label="Unread"
+                            aria-label={t('inbox.unread')}
                           />
                         )}
                       </span>
@@ -182,7 +204,7 @@ export function InboxPage() {
                       {message.preview}
                     </span>
                     <Badge variant="secondary" className="mt-1 text-[10px]">
-                      {message.label}
+                      {labelNames[message.label] ?? message.label}
                     </Badge>
                   </Button>
                 ))}
@@ -192,13 +214,13 @@ export function InboxPage() {
                       <EmptyMedia variant="icon">
                         <Search />
                       </EmptyMedia>
-                      <EmptyTitle>No messages found</EmptyTitle>
+                      <EmptyTitle>{t('inbox.noMessages')}</EmptyTitle>
                       <EmptyDescription>
                         {query
-                          ? 'Try another name or keyword.'
+                          ? t('inbox.searchHint')
                           : view === 'unread'
-                            ? 'You’re all caught up. There are no unread messages.'
-                            : 'There are no messages in this view.'}
+                            ? t('inbox.caughtUp')
+                            : t('inbox.emptyView')}
                       </EmptyDescription>
                     </EmptyHeader>
                     <EmptyContent>
@@ -212,7 +234,7 @@ export function InboxPage() {
                           searchRef.current?.focus()
                         }}
                       >
-                        Show all messages
+                        {t('inbox.showAll')}
                       </Button>
                     </EmptyContent>
                   </Empty>
@@ -222,7 +244,7 @@ export function InboxPage() {
           </section>
 
           <section
-            aria-label="Message details"
+            aria-label={t('inbox.details')}
             className={cn('min-w-0', !selected && 'hidden md:flex')}
           >
             {selected ? (
@@ -231,7 +253,7 @@ export function InboxPage() {
                   {isMobile && (
                     <Button variant="ghost" size="sm" onClick={closeMessage}>
                       <ArrowLeft />
-                      Back
+                      {t('inbox.back')}
                     </Button>
                   )}
                   <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -243,7 +265,7 @@ export function InboxPage() {
                       }}
                     >
                       {selected.unread ? <MailOpen /> : <Mail />}
-                      {selected.unread ? 'Mark read' : 'Mark unread'}
+                      {selected.unread ? t('inbox.markRead') : t('inbox.markUnread')}
                     </Button>
                     <Button
                       variant="ghost"
@@ -253,15 +275,15 @@ export function InboxPage() {
                       }}
                     >
                       {selected.archived ? <ArchiveRestore /> : <Archive />}
-                      {selected.archived ? 'Move to inbox' : 'Archive'}
+                      {selected.archived ? t('inbox.moveInbox') : t('inbox.archive')}
                     </Button>
                   </div>
                 </div>
                 <div className="space-y-5 p-5 xl:p-6">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{selected.label}</Badge>
-                    {selected.unread && <Badge variant="secondary">Unread</Badge>}
-                    {selected.archived && <Badge variant="secondary">Archived</Badge>}
+                    <Badge variant="outline">{labelNames[selected.label] ?? selected.label}</Badge>
+                    {selected.unread && <Badge variant="secondary">{t('inbox.unread')}</Badge>}
+                    {selected.archived && <Badge variant="secondary">{t('inbox.archived')}</Badge>}
                   </div>
                   <h2
                     id="message-subject"
@@ -291,7 +313,7 @@ export function InboxPage() {
                   ))}
                 </div>
                 <div className="mt-auto border-t p-5 text-xs text-muted-foreground xl:px-6">
-                  This is a sample conversation for exploring the inbox.
+                  {t('inbox.disclaimer')}
                 </div>
               </article>
             ) : (
@@ -300,10 +322,8 @@ export function InboxPage() {
                   <EmptyMedia variant="icon">
                     <Mail />
                   </EmptyMedia>
-                  <EmptyTitle>Select a message</EmptyTitle>
-                  <EmptyDescription>
-                    Choose a conversation to read it and organize your sample inbox.
-                  </EmptyDescription>
+                  <EmptyTitle>{t('inbox.selectMessage')}</EmptyTitle>
+                  <EmptyDescription>{t('inbox.selectHint')}</EmptyDescription>
                 </EmptyHeader>
               </Empty>
             )}
@@ -311,7 +331,7 @@ export function InboxPage() {
         </div>
       </Card>
       <p role="status" className="sr-only">
-        {announcement}
+        {announcement ? t(`inbox.${announcement.key}`, { subject: announcement.subject }) : ''}
       </p>
     </div>
   )

@@ -15,11 +15,12 @@ import {
 } from 'lucide-react'
 import { analyticsQueryOptions } from '@/entities/analytics'
 import { projectsQueryOptions } from '@/entities/project'
-import { NumberDisplay } from '@/features/number-motion'
+import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
 import { ProjectEditorDialog } from '@/features/project-editor'
 import { ProjectTable } from '@/widgets/project-table'
 import { RevenueChart } from '@/widgets/revenue-chart'
-import { formatNumber, formatRelativeTime } from '@/shared/lib/format'
+import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
+import { env } from '@/shared/config'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -38,18 +39,42 @@ import { Skeleton } from '@/shared/ui/skeleton'
 const countFormat = { maximumFractionDigits: 0 }
 
 const kpiCards = [
-  { id: 'revenue', label: 'Total revenue', description: 'vs. previous 30 days', Icon: DollarSign },
-  { id: 'customers', label: 'Active customers', description: 'vs. previous 30 days', Icon: Users },
-  { id: 'orders', label: 'Total orders', description: 'vs. previous 30 days', Icon: ShoppingBag },
+  {
+    id: 'revenue',
+    label: 'overview.revenue',
+    description: 'overview.previous30Days',
+    Icon: DollarSign,
+  },
+  {
+    id: 'customers',
+    label: 'overview.customers',
+    description: 'overview.previous30Days',
+    Icon: Users,
+  },
+  {
+    id: 'orders',
+    label: 'overview.orders',
+    description: 'overview.previous30Days',
+    Icon: ShoppingBag,
+  },
   {
     id: 'conversion',
-    label: 'Conversion rate',
-    description: 'vs. prior period',
+    label: 'overview.conversion',
+    description: 'overview.priorPeriod',
     Icon: MousePointer2,
   },
-]
+] as const
+const demoActivity = {
+  act_1: { title: 'overview.activity1Title', description: 'overview.activity1Description' },
+  act_2: { title: 'overview.activity2Title', description: 'overview.activity2Description' },
+  act_3: { title: 'overview.activity3Title', description: 'overview.activity3Description' },
+  act_4: { title: 'overview.activity4Title', description: 'overview.activity4Description' },
+} as const
 const activityIcons = { project: FolderKanban, member: Users, billing: CreditCard }
 export function OverviewPage() {
+  const { t } = useTranslation('workspace')
+  const { formatNumber, formatMoney, formatRelativeTime } = useFormatters()
+  const errorMessage = useErrorMessage()
   const analytics = useQuery(analyticsQueryOptions())
   const projects = useQuery(projectsQueryOptions())
   const isLoading = analytics.isPending && !analytics.data
@@ -60,14 +85,10 @@ export function OverviewPage() {
         <div>
           <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
             <span className="size-1.5 rounded-full bg-foreground" />
-            WORKSPACE OVERVIEW
+            {t('overview.eyebrow')}
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight">
-            A little clarity. A lot of possibility.
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Welcome back. Here's what's happening with your workspace.
-          </p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t('overview.title')}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t('overview.description')}</p>
         </div>
         <Button
           onClick={() => {
@@ -75,16 +96,16 @@ export function OverviewPage() {
           }}
         >
           <Plus />
-          New project
+          {t('common.newProject')}
         </Button>
       </div>
       {analytics.isError && (
         <Alert variant="destructive">
-          <AlertTitle>Analytics couldn't load</AlertTitle>
+          <AlertTitle>{t('overview.errorTitle')}</AlertTitle>
           <AlertDescription>
-            <p>{analytics.error.message}</p>
+            <p>{errorMessage(analytics.error)}</p>
             <Button variant="outline" size="sm" onClick={() => void analytics.refetch()}>
-              Try again
+              {t('common.retry')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -94,11 +115,9 @@ export function OverviewPage() {
           const kpi = analytics.data?.kpis.find((item) => item.id === id)
           const Trend = (kpi?.change ?? 0) >= 0 ? ArrowUpRight : ArrowDownRight
           return (
-            <Card key={id} className="gap-4 shadow-xs" aria-label={label} aria-busy={isLoading}>
+            <Card key={id} className="gap-4 shadow-xs" aria-label={t(label)} aria-busy={isLoading}>
               <CardHeader className="gap-2">
-                <CardDescription className="text-xs font-medium">
-                  {kpi?.label ?? label}
-                </CardDescription>
+                <CardDescription className="text-xs font-medium">{t(label)}</CardDescription>
                 <CardAction>
                   <Icon className="size-4 text-muted-foreground" />
                 </CardAction>
@@ -106,17 +125,24 @@ export function OverviewPage() {
                   {isLoading ? (
                     <Skeleton className="h-8 w-28" />
                   ) : kpi ? (
-                    <NumberDisplay
-                      animate
-                      value={kpi.value}
-                      format={
-                        kpi.format === 'currency'
-                          ? { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }
-                          : kpi.format === 'percent'
+                    kpi.format === 'currency' ? (
+                      <MoneyDisplay
+                        animate
+                        value={kpi.value}
+                        className="text-2xl 2xl:text-3xl"
+                        format={{ maximumFractionDigits: 0 }}
+                      />
+                    ) : (
+                      <NumberDisplay
+                        animate
+                        value={kpi.value}
+                        format={
+                          kpi.format === 'percent'
                             ? { style: 'percent', maximumFractionDigits: 2 }
                             : countFormat
-                      }
-                    />
+                        }
+                      />
+                    )
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}
@@ -133,14 +159,12 @@ export function OverviewPage() {
                       maximumFractionDigits: 3,
                       signDisplay: 'exceptZero',
                     })}
-                    {kpi.format === 'percent' ? ' pp' : ''}
+                    {kpi.format === 'percent' ? t('overview.percentagePoints') : ''}
                   </Badge>
                 ) : (
-                  <span className="text-xs text-muted-foreground">No data</span>
+                  <span className="text-xs text-muted-foreground">{t('overview.noData')}</span>
                 )}
-                <span className="text-xs text-muted-foreground">
-                  {kpi?.description.replace('percentage points ', '') ?? description}
-                </span>
+                <span className="text-xs text-muted-foreground">{t(description)}</span>
               </CardFooter>
             </Card>
           )
@@ -155,8 +179,8 @@ export function OverviewPage() {
         />
         <Card className="gap-5 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>Recent activity</CardTitle>
-            <CardDescription>The latest from your workspace.</CardDescription>
+            <CardTitle>{t('overview.activity')}</CardTitle>
+            <CardDescription>{t('overview.activityDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="h-114 space-y-6 overflow-y-auto">
             {isLoading ? (
@@ -181,9 +205,21 @@ export function OverviewPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 space-y-1">
-                      <p className="line-clamp-2 text-sm leading-5 font-medium">{activity.title}</p>
+                      <p className="line-clamp-2 text-sm leading-5 font-medium">
+                        {env.dataSource === 'demo' && activity.id in demoActivity
+                          ? t(demoActivity[activity.id as keyof typeof demoActivity].title)
+                          : activity.title}
+                      </p>
                       <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">
-                        {activity.description}
+                        {env.dataSource === 'demo' && activity.id in demoActivity
+                          ? t(demoActivity[activity.id as keyof typeof demoActivity].description, {
+                              progress: formatNumber(72, {
+                                style: 'percent',
+                                maximumFractionDigits: 0,
+                              }),
+                              amount: formatMoney(249),
+                            })
+                          : activity.description}
                       </p>
                       <p className="text-[11px] leading-4 text-muted-foreground">
                         {formatRelativeTime(activity.time)}
@@ -194,14 +230,14 @@ export function OverviewPage() {
               })
             ) : (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {analytics.isError ? 'Activity unavailable' : 'No recent activity'}
+                {t(analytics.isError ? 'overview.activityUnavailable' : 'overview.noActivity')}
               </div>
             )}
           </CardContent>
           <CardFooter className="mt-auto border-t pt-4">
             <Button asChild variant="ghost" size="sm" className="w-full justify-between">
               <Link to="/projects">
-                Explore projects
+                {t('overview.explore')}
                 <ArrowRight className="size-4" />
               </Link>
             </Button>
@@ -212,7 +248,7 @@ export function OverviewPage() {
         <div className="flex justify-end">
           <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
             <Link to="/projects">
-              View all projects
+              {t('overview.viewAll')}
               <ArrowRight className="size-3" />
             </Link>
           </Button>

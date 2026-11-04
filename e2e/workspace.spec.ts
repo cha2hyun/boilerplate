@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures.js'
 import { pageMetadata } from '../src/app/seo/metadata.ts'
 
 test('serves page metadata without JavaScript and updates it during client navigation', async ({
@@ -36,29 +36,29 @@ test('switches shared number formats and keeps compact motion text within its re
   page,
 }) => {
   await page.goto('/foundations')
-  await page.getByRole('tab', { name: '피드백', exact: true }).click()
+  await page.getByRole('tab', { name: 'Feedback', exact: true }).click()
   const number = page.locator('[data-number-state]')
   const finalValue = number.locator('.sr-only')
   await expect(finalValue).toHaveText('100,400')
-  await expect(page.getByRole('switch', { name: '통화 기호', exact: true })).toBeDisabled()
-  await page.getByRole('switch', { name: '천 단위 구분', exact: true }).click()
+  await expect(page.getByRole('switch', { name: 'Currency symbol', exact: true })).toBeDisabled()
+  await page.getByRole('switch', { name: 'Thousands grouping', exact: true }).click()
   await expect(finalValue).toHaveText('100400')
-  await page.getByRole('combobox', { name: '숫자 형식', exact: true }).click()
-  await page.getByRole('option', { name: '미국 달러 · USD', exact: true }).click()
+  await page.getByRole('combobox', { name: 'Number format', exact: true }).click()
+  await page.getByRole('option', { name: 'US dollar · USD', exact: true }).click()
   await expect(finalValue).toHaveText('$100400.00')
-  await page.getByRole('switch', { name: '통화 기호', exact: true }).click()
+  await page.getByRole('switch', { name: 'Currency symbol', exact: true }).click()
   await expect(finalValue).toHaveText('100400.00')
-  await page.getByRole('switch', { name: '축약 표기', exact: true }).click()
+  await page.getByRole('switch', { name: 'Compact notation', exact: true }).click()
   await expect(finalValue).toHaveText('100.4K')
   await page.emulateMedia({ reducedMotion: 'no-preference' })
-  await page.getByRole('switch', { name: '숫자 애니메이션', exact: true }).click()
+  await page.getByRole('switch', { name: 'Number animation', exact: true }).click()
   await expect(number).toHaveAttribute('data-number-state', 'idle')
 
   // Begin measurement in the same browser task as the click, before the first animated frame.
   const measurements = await page.evaluate(async () => {
     await document.fonts.ready
     const changeValue = [...document.querySelectorAll('button')].find(
-      (button) => button.textContent.trim() === '값 변경',
+      (button) => button.textContent.trim() === 'Change value',
     )
     if (!changeValue) throw new Error('The number demo change button is missing.')
     changeValue.click()
@@ -90,8 +90,8 @@ test('switches shared number formats and keeps compact motion text within its re
     0.5,
   )
   await expect(finalValue).toHaveText('1M')
-  await page.getByRole('switch', { name: '숫자 애니메이션', exact: true }).click()
-  await page.getByRole('button', { name: '값 변경', exact: true }).click()
+  await page.getByRole('switch', { name: 'Number animation', exact: true }).click()
+  await page.getByRole('button', { name: 'Change value', exact: true }).click()
   await expect(finalValue).toHaveText('100.4K')
   await expect(number).toHaveAttribute('data-number-state', 'idle')
   await expectNoPageOverflow(page)

@@ -17,6 +17,6 @@ Blueprint는 **기존 shadcn UI → Tailwind 의미 토큰 → Pretendard 400/50
 | 수량·통화·백분율·축약 표시                | [숫자 표시](number-formatting.md)         |
 | 실제 로딩·skeleton·숫자 전환 구현         | [로딩과 모션 계약](loading-and-motion.md) |
 
-실제 조합은 앱의 **Foundations**, 개별 shadcn 컴포넌트·폰트·색상은 **Components**에서 확인합니다. Foundations는 화면에 적용할 규칙을 보여주는 예시이며, 전체 앱의 번역이나 RTL 지원 완료를 뜻하지 않습니다.
+실제 조합은 앱의 **Foundations**, 개별 shadcn 컴포넌트·폰트·색상은 **Components**에서 확인합니다. Foundations는 화면에 적용할 규칙을 보여주는 예시입니다. 앱의 한국어/영어와 USD/KRW 지원 범위는 [언어와 표시 통화](i18n.md)를 따르며 RTL은 포함하지 않습니다.
 
 `pnpm check:architecture`는 금지 weight, 하드코딩 색상, FSD/UI 경계를 검사합니다. 대비·긴 문구·초점·모션은 정적 검사만으로 보장되지 않습니다. 검증 범위는 [테스트 정책](testing.md)을 따릅니다. 데이터/빌드 등 다른 작업은 [문서 지도](README.md)에서 시작하세요.

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { toast } from 'sonner'
 import { preferencesSchema, usePreferences } from '@/features/workspace-preferences'
+import { useTranslation } from '@/shared/lib/i18n'
 import { useTheme } from '@/shared/lib/theme'
 import { Button } from '@/shared/ui/button'
 import {
@@ -19,23 +20,24 @@ import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
 export function SettingsPage() {
+  const { t } = useTranslation('workspace')
   const { theme, setTheme } = useTheme()
   const preferences = usePreferences()
   const [workspaceName, setWorkspaceName] = useState(preferences.workspaceName)
   const [compactMode, setCompactMode] = useState(preferences.compactMode)
-  const [error, setError] = useState<string>()
+  const [error, setError] = useState<'settings.nameTooShort' | 'settings.nameTooLong'>()
   const dirty =
     workspaceName !== preferences.workspaceName || compactMode !== preferences.compactMode
   return (
     <div className="max-w-4xl space-y-7">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-2 text-sm text-muted-foreground">A workspace that feels like yours.</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t('settings.title')}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t('settings.description')}</p>
       </div>
       <Tabs defaultValue="general">
         <TabsList>
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="appearance">Appearance</TabsTrigger>
+          <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
+          <TabsTrigger value="appearance">{t('settings.appearance')}</TabsTrigger>
         </TabsList>
         <TabsContent value="general" className="mt-6">
           <form
@@ -43,23 +45,27 @@ export function SettingsPage() {
               event.preventDefault()
               const result = preferencesSchema.safeParse({ workspaceName, compactMode })
               if (!result.success) {
-                setError(result.error.issues[0]?.message)
+                setError(
+                  workspaceName.trim().length < 2
+                    ? 'settings.nameTooShort'
+                    : 'settings.nameTooLong',
+                )
                 return
               }
               preferences.save(result.data)
               setWorkspaceName(result.data.workspaceName)
               setError(undefined)
-              toast.success('Preferences updated')
+              toast.success(t('settings.updated'))
             }}
           >
             <Card>
               <CardHeader>
-                <CardTitle>Workspace preferences</CardTitle>
-                <CardDescription>Saved in this browser when storage is available.</CardDescription>
+                <CardTitle>{t('settings.preferences')}</CardTitle>
+                <CardDescription>{t('settings.savedInBrowser')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="max-w-md space-y-2">
-                  <Label htmlFor="workspace-name">Workspace name</Label>
+                  <Label htmlFor="workspace-name">{t('settings.workspaceName')}</Label>
                   <Input
                     id="workspace-name"
                     value={workspaceName}
@@ -71,20 +77,20 @@ export function SettingsPage() {
                     maxLength={40}
                   />
                   <p id="workspace-hint" className="text-xs text-muted-foreground">
-                    This name appears in your sidebar.
+                    {t('settings.workspaceHint')}
                   </p>
                   {error && (
                     <p id="workspace-error" role="alert" className="text-sm text-destructive">
-                      {error}
+                      {t(error)}
                     </p>
                   )}
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between gap-5">
                   <div className="space-y-1">
-                    <Label htmlFor="compact-mode">Compact layout</Label>
+                    <Label htmlFor="compact-mode">{t('settings.compact')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      Reduce page spacing to fit more into your workspace.
+                      {t('settings.compactDescription')}
                     </p>
                   </div>
                   <Switch
@@ -103,13 +109,13 @@ export function SettingsPage() {
                     setWorkspaceName('Acme Studio')
                     setCompactMode(false)
                     setError(undefined)
-                    toast.success('Preferences reset')
+                    toast.success(t('settings.resetToast'))
                   }}
                 >
-                  Reset preferences
+                  {t('settings.reset')}
                 </Button>
                 <Button type="submit" disabled={!dirty}>
-                  Save changes
+                  {t('common.save')}
                 </Button>
               </CardFooter>
             </Card>
@@ -118,29 +124,29 @@ export function SettingsPage() {
         <TabsContent value="appearance" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Appearance</CardTitle>
-              <CardDescription>Choose how Blueprint looks on this device.</CardDescription>
+              <CardTitle>{t('settings.appearance')}</CardTitle>
+              <CardDescription>{t('settings.chooseAppearance')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-3 md:grid-cols-3">
                 {[
                   {
                     value: 'light' as const,
-                    label: 'Light',
+                    label: t('settings.light'),
                     icon: Sun,
-                    description: 'A clean, bright workspace.',
+                    description: t('settings.lightDescription'),
                   },
                   {
                     value: 'dark' as const,
-                    label: 'Dark',
+                    label: t('settings.dark'),
                     icon: Moon,
-                    description: 'A little easier on the eyes.',
+                    description: t('settings.darkDescription'),
                   },
                   {
                     value: 'system' as const,
-                    label: 'System',
+                    label: t('settings.system'),
                     icon: Monitor,
-                    description: 'Follow your device settings.',
+                    description: t('settings.systemDescription'),
                   },
                 ].map((option) => (
                   <Button
@@ -160,9 +166,7 @@ export function SettingsPage() {
                   </Button>
                 ))}
               </div>
-              <p className="mt-5 text-xs text-muted-foreground">
-                Your theme preference is applied immediately.
-              </p>
+              <p className="mt-5 text-xs text-muted-foreground">{t('settings.immediate')}</p>
             </CardContent>
           </Card>
         </TabsContent>

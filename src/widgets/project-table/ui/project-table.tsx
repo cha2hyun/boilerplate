@@ -36,7 +36,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Project } from '@/entities/project'
-import { formatNumber } from '@/shared/lib/format'
+import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { ProjectDeleteDialog, ProjectEditorDialog } from '@/features/project-editor'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -69,27 +69,22 @@ interface ProjectTableProps {
   onRetry?: () => void
 }
 
-const statusLabels: Record<Project['status'], string> = {
-  active: 'Active',
-  paused: 'Paused',
-  archived: 'Archived',
-}
+const statusKeys = {
+  active: 'common.active',
+  paused: 'common.paused',
+  archived: 'common.archived',
+} as const
 
-const columnLabels: Record<string, string> = {
-  name: 'Project',
-  status: 'Status',
-  owner: 'Owner',
-  progress: 'Progress',
-  updatedAt: 'Last updated',
-}
-
-const dateFormatter = new Intl.DateTimeFormat('en-US', {
-  month: 'short',
-  day: 'numeric',
-  year: 'numeric',
-})
+const columnKeys = {
+  name: 'table.project',
+  status: 'common.status',
+  owner: 'table.owner',
+  progress: 'table.progress',
+  updatedAt: 'table.updated',
+} as const
 
 function StatusBadge({ status }: { status: Project['status'] }) {
+  const { t } = useTranslation('workspace')
   const Icon = status === 'active' ? Circle : status === 'paused' ? Pause : Archive
   return (
     <Badge
@@ -97,12 +92,15 @@ function StatusBadge({ status }: { status: Project['status'] }) {
       className="gap-1.5 font-normal"
     >
       <Icon aria-hidden="true" className="size-3" />
-      {statusLabels[status]}
+      {t(statusKeys[status])}
     </Badge>
   )
 }
 
-function exportProjects(projects: Project[]) {
+function exportProjects(
+  projects: Project[],
+  labels: { headers: string[]; statuses: Record<Project['status'], string>; success: string },
+) {
   function escapeCell(value: string | number) {
     const text = String(value)
     const safe = /^[=+\-@]/.test(text.trimStart()) ? `'${text}` : text
@@ -112,18 +110,13 @@ function exportProjects(projects: Project[]) {
   const rows = projects.map((project) => [
     project.name,
     project.description,
-    statusLabels[project.status],
+    labels.statuses[project.status],
     project.owner.name,
     project.owner.email,
     project.progress,
     project.updatedAt,
   ])
-  const csv = [
-    ['Project', 'Description', 'Status', 'Owner', 'Owner email', 'Progress (%)', 'Last updated'],
-    ...rows,
-  ]
-    .map((row) => row.map(escapeCell).join(','))
-    .join('\r\n')
+  const csv = [labels.headers, ...rows].map((row) => row.map(escapeCell).join(',')).join('\r\n')
   const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' }))
   const link = document.createElement('a')
   link.href = url
@@ -134,9 +127,7 @@ function exportProjects(projects: Project[]) {
   window.setTimeout(() => {
     URL.revokeObjectURL(url)
   }, 1000)
-  toast.success(
-    `Exported ${formatNumber(projects.length)} ${projects.length === 1 ? 'project' : 'projects'}`,
-  )
+  toast.success(labels.success)
 }
 
 export function ProjectTable({
@@ -147,6 +138,8 @@ export function ProjectTable({
   error,
   onRetry,
 }: ProjectTableProps) {
+  const { t } = useTranslation('workspace')
+  const { formatNumber, formatDate } = useFormatters()
   const showLoading = isLoading && !hasData
   const showError = Boolean(error) && !hasData
   const showRefreshError = Boolean(error) && hasData
@@ -185,7 +178,7 @@ export function ProjectTable({
                   onCheckedChange={(value) => {
                     table.toggleAllPageRowsSelected(Boolean(value))
                   }}
-                  aria-label="Select all projects on this page"
+                  aria-label={t('table.selectAll')}
                 />
               ),
               cell: ({ row }) => (
@@ -195,7 +188,7 @@ export function ProjectTable({
                   onCheckedChange={(value) => {
                     row.toggleSelected(Boolean(value))
                   }}
-                  aria-label={`Select ${row.original.name}`}
+                  aria-label={t('table.selectProject', { name: row.original.name })}
                 />
               ),
               enableSorting: false,
@@ -219,7 +212,7 @@ export function ProjectTable({
                 column.toggleSorting(direction === 'asc')
               }}
             >
-              Project <Icon className="size-3.5" aria-hidden="true" />
+              {t('table.project')} <Icon className="size-3.5" aria-hidden="true" />
             </Button>
           )
         },
@@ -240,7 +233,7 @@ export function ProjectTable({
                 {row.original.name}
               </Button>
               <p className="truncate text-xs text-muted-foreground">
-                {row.original.description || 'No description yet'}
+                {row.original.description || t('table.noDescription')}
               </p>
             </div>
           </div>
@@ -249,7 +242,7 @@ export function ProjectTable({
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: t('common.status'),
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
         filterFn: 'equals',
         enableGlobalFilter: false,
@@ -257,7 +250,7 @@ export function ProjectTable({
       {
         id: 'owner',
         accessorFn: (project) => project.owner.name,
-        header: 'Owner',
+        header: t('table.owner'),
         cell: ({ row }) => (
           <div className="flex items-center gap-2.5">
             <Avatar className="size-7">
@@ -283,7 +276,7 @@ export function ProjectTable({
                 column.toggleSorting(direction === 'asc')
               }}
             >
-              Progress <Icon className="size-3.5" aria-hidden="true" />
+              {t('table.progress')} <Icon className="size-3.5" aria-hidden="true" />
             </Button>
           )
         },
@@ -292,7 +285,7 @@ export function ProjectTable({
             <Progress
               value={row.original.progress}
               className="h-1.5 flex-1"
-              aria-label={`${row.original.name} progress`}
+              aria-label={t('table.projectProgress', { name: row.original.name })}
             />
             <span className="w-8 text-right text-xs text-muted-foreground tabular-nums">
               {formatNumber(row.original.progress, { style: 'percent', maximumFractionDigits: 0 })}
@@ -316,20 +309,20 @@ export function ProjectTable({
                 column.toggleSorting(direction === 'asc')
               }}
             >
-              Last updated <Icon className="size-3.5" aria-hidden="true" />
+              {t('table.updated')} <Icon className="size-3.5" aria-hidden="true" />
             </Button>
           )
         },
         cell: ({ row }) => (
           <span className="text-sm whitespace-nowrap text-muted-foreground">
-            {dateFormatter.format(new Date(row.original.updatedAt))}
+            {formatDate(row.original.updatedAt, { year: 'numeric' })}
           </span>
         ),
         enableGlobalFilter: false,
       },
       {
         id: 'actions',
-        header: () => <span className="sr-only">Actions</span>,
+        header: () => <span className="sr-only">{t('table.actions')}</span>,
         cell: ({ row }) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -337,7 +330,7 @@ export function ProjectTable({
                 variant="ghost"
                 size="icon"
                 className="size-8"
-                aria-label={`Actions for ${row.original.name}`}
+                aria-label={t('table.projectActionsLabel', { name: row.original.name })}
                 onFocus={(event) => {
                   actionTriggerRef.current = event.currentTarget
                 }}
@@ -349,14 +342,14 @@ export function ProjectTable({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Project actions</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('table.projectActions')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onSelect={() => {
                   setEditingProject(row.original)
                 }}
               >
-                <Pencil aria-hidden="true" /> Edit project
+                <Pencil aria-hidden="true" /> {t('common.editProject')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
@@ -365,7 +358,7 @@ export function ProjectTable({
                   setDeletingProject(row.original)
                 }}
               >
-                <Trash2 aria-hidden="true" /> Delete project
+                <Trash2 aria-hidden="true" /> {t('common.deleteProject')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -375,7 +368,7 @@ export function ProjectTable({
         enableGlobalFilter: false,
       },
     ],
-    [compact],
+    [compact, t, formatNumber, formatDate],
   )
 
   // eslint-disable-next-line react-hooks/incompatible-library -- Table v8 owns its state and React Compiler is not enabled.
@@ -429,7 +422,7 @@ export function ProjectTable({
       <Card
         ref={tableRef}
         tabIndex={-1}
-        aria-label={compact ? 'Recent projects' : 'All projects'}
+        aria-label={t(compact ? 'table.recent' : 'table.all')}
         aria-busy={showLoading}
         className="gap-0 overflow-hidden py-0 shadow-none"
       >
@@ -437,7 +430,7 @@ export function ProjectTable({
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
               <CardTitle className="flex h-6 items-center gap-2 text-base">
-                <span className="truncate">{compact ? 'Recent projects' : 'All projects'}</span>
+                <span className="truncate">{t(compact ? 'table.recent' : 'table.all')}</span>
                 <Badge
                   variant="secondary"
                   className="h-5 min-w-6 shrink-0 justify-center font-normal tabular-nums"
@@ -448,14 +441,14 @@ export function ProjectTable({
               <CardDescription className="flex h-8 items-center gap-2" aria-live="polite">
                 <span className="min-w-0 flex-1 truncate">
                   {showRefreshError
-                    ? 'Couldn’t refresh. Showing saved projects.'
+                    ? t('table.refreshError')
                     : compact
-                      ? 'A little progress, every day.'
-                      : 'Your team’s work, organized in one place.'}
+                      ? t('table.recentDescription')
+                      : t('table.allDescription')}
                 </span>
                 {showRefreshError && onRetry && (
                   <Button variant="outline" size="sm" className="shrink-0" onClick={onRetry}>
-                    <RefreshCw aria-hidden="true" /> Try again
+                    <RefreshCw aria-hidden="true" /> {t('common.retry')}
                   </Button>
                 )}
               </CardDescription>
@@ -466,17 +459,35 @@ export function ProjectTable({
                 size="sm"
                 disabled={showLoading || showError || filteredCount === 0}
                 onClick={() => {
-                  exportProjects(
-                    (selectedRows.length ? selectedRows : table.getFilteredRowModel().rows).map(
-                      (row) => row.original,
-                    ),
-                  )
+                  const exportedProjects = (
+                    selectedRows.length ? selectedRows : table.getFilteredRowModel().rows
+                  ).map((row) => row.original)
+                  exportProjects(exportedProjects, {
+                    headers: [
+                      t('table.project'),
+                      t('editor.description'),
+                      t('common.status'),
+                      t('table.owner'),
+                      t('table.ownerEmail'),
+                      t('table.progressPercent'),
+                      t('table.updated'),
+                    ],
+                    statuses: {
+                      active: t('common.active'),
+                      paused: t('common.paused'),
+                      archived: t('common.archived'),
+                    },
+                    success: t('table.exported', {
+                      count: exportedProjects.length,
+                      formattedCount: formatNumber(exportedProjects.length),
+                    }),
+                  })
                 }}
               >
                 <ArrowDownToLine aria-hidden="true" />
                 {selectedRows.length
-                  ? `Export ${formatNumber(selectedRows.length)} selected`
-                  : 'Export'}
+                  ? t('table.exportSelected', { formattedCount: formatNumber(selectedRows.length) })
+                  : t('table.export')}
               </Button>
             )}
           </div>
@@ -489,8 +500,8 @@ export function ProjectTable({
                 />
                 <Input
                   ref={searchRef}
-                  aria-label="Search projects"
-                  placeholder="Search projects…"
+                  aria-label={t('table.search')}
+                  placeholder={t('table.searchPlaceholder')}
                   value={search}
                   onChange={(event) => {
                     setSearch(event.target.value)
@@ -504,15 +515,15 @@ export function ProjectTable({
                   table.getColumn('status')?.setFilterValue(value === 'all' ? undefined : value)
                 }}
               >
-                <SelectTrigger className="w-36" aria-label="Filter by status">
+                <SelectTrigger className="w-36" aria-label={t('table.filterStatus')}>
                   <ListFilter className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                  <SelectValue placeholder="All statuses" />
+                  <SelectValue placeholder={t('table.allStatuses')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="archived">Archived</SelectItem>
+                  <SelectItem value="all">{t('table.allStatuses')}</SelectItem>
+                  <SelectItem value="active">{t('common.active')}</SelectItem>
+                  <SelectItem value="paused">{t('common.paused')}</SelectItem>
+                  <SelectItem value="archived">{t('common.archived')}</SelectItem>
                 </SelectContent>
               </Select>
               <Button
@@ -523,16 +534,16 @@ export function ProjectTable({
                 disabled={!hasFilters}
                 onClick={clearFilters}
               >
-                <X aria-hidden="true" /> Reset
+                <X aria-hidden="true" /> {t('table.reset')}
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" className="ml-auto">
-                    <SlidersHorizontal aria-hidden="true" /> View
+                    <SlidersHorizontal aria-hidden="true" /> {t('table.view')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('table.toggleColumns')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {table
                     .getAllColumns()
@@ -548,7 +559,9 @@ export function ProjectTable({
                           event.preventDefault()
                         }}
                       >
-                        {columnLabels[column.id] ?? column.id}
+                        {column.id in columnKeys
+                          ? t(columnKeys[column.id as keyof typeof columnKeys])
+                          : column.id}
                       </DropdownMenuCheckboxItem>
                     ))}
                 </DropdownMenuContent>
@@ -563,7 +576,7 @@ export function ProjectTable({
             className={`relative overflow-auto [&>[data-slot=table-container]]:overflow-visible ${compact ? 'h-[25rem]' : 'h-[38.5rem]'}`}
           >
             <Table
-              aria-label={compact ? 'Recent projects' : 'Projects'}
+              aria-label={t(compact ? 'table.recent' : 'common.projects')}
               className={compact ? 'min-w-[44rem] table-fixed' : 'min-w-[58rem] table-fixed'}
             >
               <TableHeader className="sticky top-0 z-10 bg-muted">
@@ -672,26 +685,26 @@ export function ProjectTable({
                     </EmptyMedia>
                     <EmptyTitle>
                       {showError
-                        ? 'Projects couldn’t be loaded'
+                        ? t('table.errorTitle')
                         : hasFilters
-                          ? 'No matching projects'
-                          : 'A fresh start for your next idea'}
+                          ? t('table.noMatching')
+                          : t('table.emptyTitle')}
                     </EmptyTitle>
                     <EmptyDescription>
                       {showError
-                        ? 'Try again to load your projects.'
+                        ? t('table.errorDescription')
                         : hasFilters
-                          ? 'Try a different search or clear your filters.'
-                          : 'Create your first project to start bringing your work together.'}
+                          ? t('table.noMatchingDescription')
+                          : t('table.emptyDescription')}
                     </EmptyDescription>
                   </EmptyHeader>
                   {showError && onRetry ? (
                     <Button variant="outline" onClick={onRetry}>
-                      <RefreshCw aria-hidden="true" /> Try again
+                      <RefreshCw aria-hidden="true" /> {t('common.retry')}
                     </Button>
                   ) : hasFilters ? (
                     <Button variant="outline" onClick={clearFilters}>
-                      Clear filters
+                      {t('table.clearFilters')}
                     </Button>
                   ) : null}
                 </Empty>
@@ -702,14 +715,28 @@ export function ProjectTable({
             <div className="flex h-24 flex-col items-start justify-center gap-3 border-t px-5 py-4 text-sm md:h-16 md:flex-row md:items-center md:justify-between md:px-6">
               <p className="min-w-0 truncate text-xs text-muted-foreground" aria-live="polite">
                 {showLoading
-                  ? 'Loading projects…'
+                  ? t('table.loading')
                   : showError
-                    ? 'Projects unavailable'
+                    ? t('table.unavailable')
                     : selectedRows.length
-                      ? `${formatNumber(selectedRows.length)} of ${formatNumber(filteredCount)} selected`
+                      ? t('table.selected', {
+                          selected: formatNumber(selectedRows.length),
+                          total: formatNumber(filteredCount),
+                        })
                       : filteredCount
-                        ? `Showing ${formatNumber(pageIndex * table.getState().pagination.pageSize + 1)}–${formatNumber(Math.min((pageIndex + 1) * table.getState().pagination.pageSize, filteredCount))} of ${formatNumber(filteredCount)} projects`
-                        : `${formatNumber(0)} projects`}
+                        ? t('table.showing', {
+                            start: formatNumber(
+                              pageIndex * table.getState().pagination.pageSize + 1,
+                            ),
+                            end: formatNumber(
+                              Math.min(
+                                (pageIndex + 1) * table.getState().pagination.pageSize,
+                                filteredCount,
+                              ),
+                            ),
+                            total: formatNumber(filteredCount),
+                          })
+                        : t('table.count', { count: 0, formattedCount: formatNumber(0) })}
               </p>
               <div className="flex items-center gap-4 md:gap-6">
                 <div className="hidden items-center gap-2 md:flex">
@@ -717,7 +744,7 @@ export function ProjectTable({
                     htmlFor="projects-page-size"
                     className="text-xs font-normal text-muted-foreground"
                   >
-                    Rows per page
+                    {t('table.rowsPerPage')}
                   </Label>
                   <Select
                     value={String(table.getState().pagination.pageSize)}
@@ -738,7 +765,10 @@ export function ProjectTable({
                   </Select>
                 </div>
                 <p className="text-xs font-medium whitespace-nowrap tabular-nums">
-                  Page {formatNumber(pageIndex + 1)} of {formatNumber(pageCount)}
+                  {t('table.page', {
+                    page: formatNumber(pageIndex + 1),
+                    total: formatNumber(pageCount),
+                  })}
                 </p>
                 <div className="flex items-center gap-1">
                   <Button
@@ -749,7 +779,7 @@ export function ProjectTable({
                       table.setPageIndex(0)
                     }}
                     disabled={!table.getCanPreviousPage() || isLoading}
-                    aria-label="First page"
+                    aria-label={t('table.firstPage')}
                   >
                     <ChevronsLeft aria-hidden="true" />
                   </Button>
@@ -761,7 +791,7 @@ export function ProjectTable({
                       table.previousPage()
                     }}
                     disabled={!table.getCanPreviousPage() || isLoading}
-                    aria-label="Previous page"
+                    aria-label={t('table.previousPage')}
                   >
                     <ChevronLeft aria-hidden="true" />
                   </Button>
@@ -773,7 +803,7 @@ export function ProjectTable({
                       table.nextPage()
                     }}
                     disabled={!table.getCanNextPage() || isLoading}
-                    aria-label="Next page"
+                    aria-label={t('table.nextPage')}
                   >
                     <ChevronRight aria-hidden="true" />
                   </Button>
@@ -785,7 +815,7 @@ export function ProjectTable({
                       table.setPageIndex(table.getPageCount() - 1)
                     }}
                     disabled={!table.getCanNextPage() || isLoading}
-                    aria-label="Last page"
+                    aria-label={t('table.lastPage')}
                   >
                     <ChevronsRight aria-hidden="true" />
                   </Button>

@@ -4,9 +4,11 @@
 
 ## 경로별 동작
 
-현재 `/`, `/projects`, `/analytics`, `/orders`, `/customers`, `/inbox`, `/components`, `/settings`에 고유한 제목과 설명이 있습니다. 기본 공유 이미지는 `/og/blueprint.png`이며 각 항목에 `image`와 `imageAlt`를 추가하면 페이지별 이미지로 바꿀 수 있습니다. 설명에는 샘플/데모 범위만 적으며 프로젝트 이름, 고객 이메일 등 사용자 데이터는 넣지 않습니다.
+현재 `/`, `/projects`, `/analytics`, `/orders`, `/customers`, `/inbox`, `/components`, `/settings`, `/foundations`에 고유한 제목과 설명이 있습니다. 기본 공유 이미지는 `/og/blueprint.png`이며 각 항목에 `image`와 `imageAlt`를 추가하면 페이지별 이미지로 바꿀 수 있습니다. 설명에는 샘플/데모 범위만 적으며 프로젝트 이름, 고객 이메일 등 사용자 데이터는 넣지 않습니다.
 
-`DocumentHead`가 Router의 경로 변경을 구독하여 `data-page-meta` 태그를 교체합니다. 서버가 내보낸 정적 태그와 CSR 태그가 중복되지 않으며 favicon이나 번들 관련 태그는 보존합니다. 제목 변경은 이 모듈이 소유합니다.
+`DocumentHead`가 Router의 경로와 언어 설정을 구독하여 `data-page-meta` 태그를 교체합니다. 서버가 내보낸 정적 태그와 CSR 태그가 중복되지 않으며 favicon이나 번들 관련 태그는 보존합니다. 제목 변경은 이 모듈이 소유합니다.
+
+정적 HTML은 기본 `en-US` 제목/설명과 `og:locale=en_US`를 제공합니다. 브라우저에서는 저장된 언어를 복원하거나 전환하면 제목/설명/이미지 대체 텍스트와 `og:locale`이 `en-US`/`ko-KR`에 맞춰 바뀝니다. URL과 canonical은 같습니다. 공유 봇은 개인의 localStorage 설정을 읽지 않으므로 기본 영어 메타를 받습니다. 언어별 공유 URL이나 `hreflang`은 지원하지 않으며 SSR도 추가하지 않습니다.
 
 Vite의 `transformIndexHtml`/`generateBundle` 훅이 한 번 빌드한 HTML shell을 경로별로 복사하고 head만 변경합니다. JS/CSS는 같은 해시 번들을 참조합니다. 출력 예시는 `dist/index.html`, `dist/orders/index.html`, `dist/settings/index.html`입니다. `dist/404.html`도 같은 앱 shell에 없는 경로용 제목과 `noindex`를 담습니다. 훅과 순서는 [Vite Plugin API](https://vite.dev/guide/api-plugin.html#transformindexhtml)를 따릅니다.
 

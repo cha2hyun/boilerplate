@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test'
+import { expect, test, type Locator, type Page } from './fixtures.js'
 
 const cardSelector = '#main-content [data-slot="card"][aria-busy]'
 const initialTime = new Date('2026-11-04T00:00:00Z').getTime()
@@ -123,6 +123,7 @@ for (const sample of pages) {
     await page.clock.setFixedTime(initialTime)
     await page.goto('/settings')
     await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+    await expect(page.locator('#exchange-rate-status')).toContainText('1 USD = ₩1,350')
     await page.evaluate(async () => {
       await Promise.all(
         ['400', '500', '600'].map((weight) =>

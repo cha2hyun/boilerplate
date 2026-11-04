@@ -8,7 +8,8 @@ import {
   type Project,
   type ProjectInput,
 } from '@/entities/project'
-import { formatNumber } from '@/shared/lib/format'
+import { ApiError } from '@/shared/api'
+import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import {
   Dialog,
@@ -30,7 +31,12 @@ interface ProjectEditorDialogProps {
   onCloseAutoFocus?: (event: Event) => void
 }
 
-type FieldErrors = Partial<Record<keyof ProjectInput, string>>
+type FieldErrorKey =
+  | 'editor.nameTooShort'
+  | 'editor.nameTooLong'
+  | 'editor.descriptionTooLong'
+  | 'editor.invalidStatus'
+type FieldErrors = Partial<Record<keyof ProjectInput, FieldErrorKey>>
 
 function ProjectForm({
   project,
@@ -39,6 +45,9 @@ function ProjectForm({
 }: Pick<ProjectEditorDialogProps, 'project' | 'onOpenChange'> & {
   onPendingChange: (pending: boolean) => void
 }) {
+  const { t } = useTranslation('workspace')
+  const { formatNumber } = useFormatters()
+  const errorMessage = useErrorMessage()
   const formId = useId()
   const createProject = useCreateProject()
   const updateProject = useUpdateProject()
@@ -48,7 +57,7 @@ function ProjectForm({
     status: project?.status ?? 'active',
   })
   const [errors, setErrors] = useState<FieldErrors>({})
-  const [serverError, setServerError] = useState<string | null>(null)
+  const [serverError, setServerError] = useState<Error | null>(null)
   const isPending = createProject.isPending || updateProject.isPending
 
   function updateField<Key extends keyof ProjectInput>(field: Key, value: ProjectInput[Key]) {
@@ -66,7 +75,16 @@ function ProjectForm({
       const nextErrors: FieldErrors = {}
       for (const issue of result.error.issues) {
         const field = issue.path[0] as keyof ProjectInput
-        if (field in input && !nextErrors[field]) nextErrors[field] = issue.message
+        if (field in input && !nextErrors[field]) {
+          nextErrors[field] =
+            field === 'name'
+              ? input.name.trim().length < 2
+                ? 'editor.nameTooShort'
+                : 'editor.nameTooLong'
+              : field === 'description'
+                ? 'editor.descriptionTooLong'
+                : 'editor.invalidStatus'
+        }
       }
       setErrors(nextErrors)
       return
@@ -81,14 +99,12 @@ function ProjectForm({
       } else {
         await createProject.mutateAsync(result.data)
       }
-      toast.success(project ? 'Project updated' : 'Project created', {
-        description: `${result.data.name} is ready in your workspace.`,
+      toast.success(t(project ? 'editor.updated' : 'editor.created'), {
+        description: t('editor.ready', { name: result.data.name }),
       })
       onOpenChange(false)
     } catch (error) {
-      setServerError(
-        error instanceof Error ? error.message : 'Could not save this project. Please try again.',
-      )
+      setServerError(error instanceof Error ? error : new Error())
     } finally {
       onPendingChange(false)
     }
@@ -103,11 +119,11 @@ function ProjectForm({
       className="space-y-5"
     >
       <div className="space-y-2">
-        <Label htmlFor={`${formId}-name`}>Project name</Label>
+        <Label htmlFor={`${formId}-name`}>{t('editor.name')}</Label>
         <Input
           id={`${formId}-name`}
           autoComplete="off"
-          placeholder="e.g. Website redesign"
+          placeholder={t('editor.namePlaceholder')}
           value={input.name}
           onChange={(event) => {
             updateField('name', event.target.value)
@@ -118,17 +134,18 @@ function ProjectForm({
         />
         {errors.name && (
           <p id={`${formId}-name-error`} role="alert" className="text-sm text-destructive">
-            {errors.name}
+            {t(errors.name)}
           </p>
         )}
       </div>
       <div className="space-y-2">
         <Label htmlFor={`${formId}-description`}>
-          Description <span className="font-normal text-muted-foreground">(optional)</span>
+          {t('editor.description')}{' '}
+          <span className="font-normal text-muted-foreground">{t('editor.optional')}</span>
         </Label>
         <Textarea
           id={`${formId}-description`}
-          placeholder="What are you working toward?"
+          placeholder={t('editor.descriptionPlaceholder')}
           value={input.description}
           onChange={(event) => {
             updateField('description', event.target.value)
@@ -140,16 +157,16 @@ function ProjectForm({
         />
         {errors.description ? (
           <p id={`${formId}-description-error`} role="alert" className="text-sm text-destructive">
-            {errors.description}
+            {t(errors.description)}
           </p>
         ) : (
           <p id={`${formId}-description-hint`} className="text-xs text-muted-foreground">
-            A short summary to keep everyone on the same page. Up to {formatNumber(240)} characters.
+            {t('editor.descriptionHint', { limit: formatNumber(240) })}
           </p>
         )}
       </div>
       <div className="space-y-2">
-        <Label htmlFor={`${formId}-status`}>Status</Label>
+        <Label htmlFor={`${formId}-status`}>{t('common.status')}</Label>
         <Select
           value={input.status}
           onValueChange={(value) => {
@@ -163,17 +180,17 @@ function ProjectForm({
             aria-invalid={Boolean(errors.status)}
             aria-describedby={errors.status ? `${formId}-status-error` : undefined}
           >
-            <SelectValue placeholder="Select a status" />
+            <SelectValue placeholder={t('editor.selectStatus')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="paused">Paused</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
+            <SelectItem value="active">{t('common.active')}</SelectItem>
+            <SelectItem value="paused">{t('common.paused')}</SelectItem>
+            <SelectItem value="archived">{t('common.archived')}</SelectItem>
           </SelectContent>
         </Select>
         {errors.status && (
           <p id={`${formId}-status-error`} role="alert" className="text-sm text-destructive">
-            {errors.status}
+            {t(errors.status)}
           </p>
         )}
       </div>
@@ -182,7 +199,11 @@ function ProjectForm({
           role="alert"
           className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
         >
-          {serverError}
+          {serverError instanceof ApiError
+            ? serverError.status === 404
+              ? t('editor.notFound')
+              : errorMessage(serverError)
+            : t('editor.saveError')}
         </div>
       )}
       <DialogFooter className="pt-2">
@@ -194,11 +215,11 @@ function ProjectForm({
             onOpenChange(false)
           }}
         >
-          Cancel
+          {t('common.cancel')}
         </Button>
         <Button type="submit" disabled={isPending}>
           {isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
-          {isPending ? 'Saving…' : project ? 'Save changes' : 'Create project'}
+          {t(isPending ? 'editor.saving' : project ? 'common.save' : 'editor.create')}
         </Button>
       </DialogFooter>
     </form>
@@ -211,6 +232,7 @@ export function ProjectEditorDialog({
   project,
   onCloseAutoFocus,
 }: ProjectEditorDialogProps) {
+  const { t } = useTranslation('workspace')
   const [isPending, setIsPending] = useState(false)
   const triggerRef = useRef<HTMLElement | null>(null)
 
@@ -239,11 +261,9 @@ export function ProjectEditorDialog({
         }
       >
         <DialogHeader>
-          <DialogTitle>{project ? 'Edit project' : 'Create a project'}</DialogTitle>
+          <DialogTitle>{t(project ? 'common.editProject' : 'editor.createTitle')}</DialogTitle>
           <DialogDescription>
-            {project
-              ? 'Update the details and keep your team in the loop.'
-              : 'Give your next big idea a place to take shape.'}
+            {t(project ? 'editor.editDescription' : 'editor.createDescription')}
           </DialogDescription>
         </DialogHeader>
         <ProjectForm

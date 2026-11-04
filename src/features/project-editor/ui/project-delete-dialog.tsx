@@ -1,3 +1,5 @@
+import { ApiError } from '@/shared/api'
+import { useErrorMessage, useTranslation } from '@/shared/lib/i18n'
 import { LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useDeleteProject, type Project } from '@/entities/project'
@@ -25,6 +27,8 @@ export function ProjectDeleteDialog({
   project,
   onCloseAutoFocus,
 }: ProjectDeleteDialogProps) {
+  const { t } = useTranslation('workspace')
+  const errorMessage = useErrorMessage()
   const deleteProject = useDeleteProject()
 
   function handleOpenChange(nextOpen: boolean) {
@@ -37,8 +41,8 @@ export function ProjectDeleteDialog({
     if (!project || deleteProject.isPending) return
     try {
       await deleteProject.mutateAsync(project.id)
-      toast.success('Project deleted', {
-        description: `${project.name} was removed from your workspace.`,
+      toast.success(t('delete.success'), {
+        description: t('delete.successDescription', { name: project.name }),
       })
       onOpenChange(false)
       deleteProject.reset()
@@ -51,10 +55,9 @@ export function ProjectDeleteDialog({
     <AlertDialog open={open} onOpenChange={handleOpenChange}>
       <AlertDialogContent onCloseAutoFocus={onCloseAutoFocus}>
         <AlertDialogHeader>
-          <AlertDialogTitle>Delete this project?</AlertDialogTitle>
+          <AlertDialogTitle>{t('delete.title')}</AlertDialogTitle>
           <AlertDialogDescription>
-            <span className="font-medium text-foreground">{project?.name}</span> will be permanently
-            removed from your workspace. This action cannot be undone.
+            {t('delete.description', { name: project?.name ?? '' })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         {deleteProject.error && (
@@ -62,13 +65,17 @@ export function ProjectDeleteDialog({
             role="alert"
             className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
           >
-            {deleteProject.error instanceof Error
-              ? deleteProject.error.message
-              : 'Could not delete this project. Please try again.'}
+            {deleteProject.error instanceof ApiError
+              ? deleteProject.error.status === 404
+                ? t('editor.notFound')
+                : errorMessage(deleteProject.error)
+              : t('delete.error')}
           </div>
         )}
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={deleteProject.isPending}>Keep project</AlertDialogCancel>
+          <AlertDialogCancel disabled={deleteProject.isPending}>
+            {t('delete.keep')}
+          </AlertDialogCancel>
           <Button
             variant="destructive"
             onClick={() => {
@@ -79,7 +86,7 @@ export function ProjectDeleteDialog({
             {deleteProject.isPending && (
               <LoaderCircle className="animate-spin" aria-hidden="true" />
             )}
-            {deleteProject.isPending ? 'Deleting…' : 'Delete project'}
+            {t(deleteProject.isPending ? 'delete.pending' : 'common.deleteProject')}
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

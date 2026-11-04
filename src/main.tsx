@@ -3,12 +3,14 @@ import { createRoot } from 'react-dom/client'
 import { App } from '@/app/app'
 import { startDemoMocks } from '@/app/mocks/start'
 import { StartupError } from '@/app/mocks/startup-error'
+import { i18nReady } from '@/shared/lib/i18n'
+import { LocalizationProvider } from '@/app/providers/localization-provider'
 import '@/app/styles/globals.css'
 const root = document.getElementById('root')
 if (!root) throw new Error('Application root element is missing')
 const reactRoot = createRoot(root)
 
-void startDemoMocks()
+void Promise.all([i18nReady, startDemoMocks()])
   .then(() => {
     reactRoot.render(
       <StrictMode>
@@ -18,5 +20,9 @@ void startDemoMocks()
   })
   .catch((error: unknown) => {
     console.error('The demo data service failed to start.', error)
-    reactRoot.render(<StartupError />)
+    reactRoot.render(
+      <LocalizationProvider>
+        <StartupError />
+      </LocalizationProvider>,
+    )
   })

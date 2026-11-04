@@ -1,13 +1,13 @@
 # 숫자 표시
 
-이 문서가 숫자·금액·비율의 표시 형식을 소유합니다. 화면의 모든 수량은 `@/shared/lib/format`의 `formatNumber` 한 함수로 표시합니다. 숫자 애니메이션의 시간·접근성·너비 예약은 [로딩과 모션](loading-and-motion.md)이 소유합니다.
+이 문서가 숫자·금액·비율의 표시 형식을 소유합니다. 순수 숫자 형식은 `@/shared/lib/format`의 `formatNumber`가 소유하고 화면은 `@/shared/lib/i18n`의 `useFormatters()`로 선택 언어를 반영합니다. USD/KRW 전환과 실제 환율 계약은 [언어와 표시 통화](i18n.md)를 따릅니다. 숫자 애니메이션의 시간·접근성·너비 예약은 [로딩과 모션](loading-and-motion.md)이 소유합니다.
 
 ## 데이터와 표시를 분리한다
 
 - API 응답, 도메인 모델, 상태, 계산에는 원래 `number`를 유지하고 마지막 표시 경계에서만 포맷합니다. 화면용 문자열을 숫자로 되돌려 계산하지 않습니다.
 - 표 셀, 페이지/선택 개수, 배지, 요약, 차트 축/tooltip, 접근 가능한 이름과 수량을 포함한 문구에도 같은 함수를 사용합니다. 호출부에서 직접 `Intl.NumberFormat`, `toLocaleString`, `toFixed` 또는 천 단위 문자열 조합으로 별도 규칙을 만들지 않습니다.
 - 식별자/주문 번호, 날짜·시각, 전화번호, 버전, 코드 예시는 수량이 아니므로 숫자 formatter를 적용하지 않습니다. 날짜는 날짜 formatter를 사용합니다. API payload, 계산용 원시 CSV, 편집 중인 숫자 입력값에도 표시 포맷을 적용하지 않습니다.
-- 통화 코드와 단위는 데이터/업무 계약을 따릅니다. `USD`를 `KRW`로 바꿔 표시해도 환율을 적용하거나 원래 값을 변환하지 않습니다.
+- 통화 코드와 단위는 데이터/업무 계약을 따릅니다. 순수 `formatNumber`의 통화 옵션은 형식만 바꿉니다. 앱의 선택 통화로 환산하는 금액은 `formatMoney` 또는 `MoneyDisplay`를 사용하며 원본 USD 데이터를 수정하지 않습니다.
 
 ## 공통 함수
 
@@ -24,7 +24,7 @@ formatNumber(12.4, { style: 'percent' }) // '12.4%'
 formatNumber(null) // '—'
 ```
 
-`formatNumber(value: number | null | undefined, options?: NumberFormatOptions): string`이 유일한 숫자 표시 API입니다. 옵션 객체를 `NumberDisplay`의 `format`에도 그대로 전달합니다.
+`formatNumber(value: number | null | undefined, options?: NumberFormatOptions): string`은 모든 숫자 형식을 생성하는 순수 함수입니다. `useFormatters().formatNumber`와 `NumberDisplay`는 이 함수에 선택 언어를 전달합니다. 명시적 `locale`은 선택 언어를 덮어쓰며 형식 비교 예시에만 사용합니다. 환산 금액은 아래의 `formatMoney`/`MoneyDisplay` 경계를 사용합니다.
 
 | 옵션                                             | 의미와 기본값                                                                                              |
 | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
@@ -44,15 +44,20 @@ formatNumber(null) // '—'
 
 ## 정적 표시와 선택적 애니메이션
 
-문자열만 필요한 표·축·문구는 `formatNumber`를 호출합니다. 숫자 표시에서 애니메이션을 켜고 끌 필요가 있으면 공개 컴포넌트를 사용합니다.
+문자열만 필요한 표·축·문구는 `useFormatters()`에서 받은 `formatNumber`를 호출합니다. 환산 금액에는 같은 hook의 `formatMoney(valueUSD, options?)`를 사용합니다. `valueUSD`는 달러 단위이며 주문/고객의 cents는 호출부에서 `/ 100`으로 바꿉니다. KRW는 Query가 제공한 환율을 곱한 뒤 형식을 적용하고 유효한 환율이 없으면 `—`로 표시합니다. USD는 환율에 의존하지 않습니다.
+
+숫자 표시에서 애니메이션을 켜고 끌 필요가 있으면 공개 컴포넌트를 사용합니다.
 
 ```tsx
-import { NumberDisplay } from '@/features/number-motion'
+import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
 
-<NumberDisplay value={total} format={{ style: 'currency', currency: 'USD' }} />
+<MoneyDisplay value={revenueUSD} animate />
+<MoneyDisplay value={orderTotalInCents / 100} />
 <NumberDisplay value={total} format={{ notation: 'compact' }} animate />
 ```
 
+`MoneyDisplay`의 `format`은 `style`/`currency`를 제외한 `MoneyFormatOptions`이며 통화는 저장된 환경 설정을 따릅니다. 변환은 중간 반올림 없이 수행하고 표·차트 축·tooltip·KPI·상세 합계 모두 같은 경계를 사용합니다. `NumberDisplay`는 일반 수량이나 이미 특정 통화 단위인 형식 예시에 사용합니다.
+
 `animate`의 기본값은 `false`이며 `format`에는 콜백 대신 공통 옵션 객체를 전달합니다. 주요 KPI의 모션은 호출부에서 `animate`를 명시합니다. 모션의 완료 시간과 reduced motion은 [로딩과 모션](loading-and-motion.md#숫자-모션은-선택적으로-300ms-동안-실행한다) 한 곳에서 관리합니다.
 
-소유 코드: `src/shared/lib/format.ts`, `src/features/number-motion`. 화면 표본: Foundations → 피드백(형식/구분/기호/축약/모션), 문구·국제화(로케일).
+소유 코드: `src/shared/lib/format.ts`, `src/shared/lib/i18n`, `src/features/number-motion`. 화면 표본: Foundations → 피드백(형식/구분/기호/축약/모션), 문구·국제화(로케일).

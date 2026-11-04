@@ -6,7 +6,8 @@
 | --------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | 레이어/새 기능 배치         | [아키텍처](architecture.md)                                     | `src/app`, `pages`, `widgets`, `features`, `entities`, `shared`                 |
 | UI·레이아웃·폰트·문구       | [디자인 시스템](design-system.md) → 해당 주제                   | `src/shared/ui`, `src/app/styles/globals.css`, 해당 화면                        |
-| 숫자·통화·비율·축약 표시    | [숫자 표시](number-formatting.md)                               | `src/shared/lib/format.ts`, 해당 표시 경계                                      |
+| 숫자·통화·비율·축약 표시    | [숫자 표시](number-formatting.md)                               | `src/shared/lib/format.ts`, `src/shared/lib/i18n`, 해당 표시 경계               |
+| 언어·번역·표시 통화·환율    | [언어와 표시 통화](i18n.md)                                     | `src/shared/lib/i18n`, `src/entities/exchange-rate`, 앱 provider                |
 | 로딩·skeleton·숫자 모션     | [로딩과 모션](loading-and-motion.md)                            | 해당 Query 소비 화면과 모션 기능                                                |
 | 캐시·새로고침·mutation 반영 | [Query 캐시](query-cache.md)                                    | `src/entities/*/api`, QueryClient                                               |
 | API·응답·데모 저장          | [API 계약](api-contract.md)                                     | `src/entities/*`, `src/shared/api`                                              |

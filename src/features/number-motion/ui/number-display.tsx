@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
+import { useLocalePreferences } from '@/shared/lib/i18n/preferences'
 import { cn } from '@/shared/lib/utils'
 
 export const NUMBER_MOTION_DURATION = 300
@@ -18,11 +19,14 @@ interface NumberDisplayProps {
 }
 
 /** New values or an explicit motion toggle restart; formatting never restarts the timeline. */
-export function NumberDisplay({ animate = false, ...props }: NumberDisplayProps) {
+export function NumberDisplay({ animate = false, format, ...props }: NumberDisplayProps) {
+  const locale = useLocalePreferences((state) => state.locale)
+  const localizedFormat = useMemo(() => ({ locale, ...format }), [locale, format])
   return (
     <NumberTransition
       key={`${String(props.value)}:${String(animate)}`}
       animate={animate}
+      format={localizedFormat}
       {...props}
     />
   )

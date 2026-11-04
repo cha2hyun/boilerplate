@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures.js'
 
 async function expectNoPageOverflow(page: Page) {
   const dimensions = await page.evaluate(() => ({

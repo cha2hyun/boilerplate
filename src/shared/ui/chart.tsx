@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { formatNumber } from '@/shared/lib/format'
+import { useFormatters } from '@/shared/lib/i18n/use-formatters'
 import { cn } from '@/shared/lib/utils'
 import * as RechartsPrimitive from 'recharts'
 import type { TooltipValueType } from 'recharts'
@@ -119,6 +119,7 @@ function ChartTooltipContent({
   labelFormatter,
   labelClassName,
   formatter,
+  valueFormatter,
   color,
   nameKey,
   labelKey,
@@ -129,11 +130,13 @@ function ChartTooltipContent({
     indicator?: 'line' | 'dot' | 'dashed'
     nameKey?: string
     labelKey?: string
+    valueFormatter?: (value: number) => string
   } & Omit<
     RechartsPrimitive.DefaultTooltipContentProps<TooltipValueType, TooltipNameType>,
     'accessibilityLayer'
   >) {
   const { config } = useChart()
+  const { formatNumber } = useFormatters()
 
   const tooltipLabel = React.useMemo(() => {
     if (hideLabel || !payload?.length) {
@@ -231,7 +234,7 @@ function ChartTooltipContent({
                       </div>
                       {item.value != null && (
                         <span className="font-mono font-medium text-foreground tabular-nums">
-                          {formatTooltipValue(item.value)}
+                          {formatTooltipValue(item.value, valueFormatter ?? formatNumber)}
                         </span>
                       )}
                     </div>
@@ -303,10 +306,10 @@ function ChartLegendContent({
   )
 }
 
-function formatTooltipValue(value: TooltipValueType): string {
-  if (typeof value === 'number') return formatNumber(value)
+function formatTooltipValue(value: TooltipValueType, format: (value: number) => string): string {
+  if (typeof value === 'number') return format(value)
   if (typeof value === 'string') return value
-  return value.map((item) => (typeof item === 'number' ? formatNumber(item) : item)).join(', ')
+  return value.map((item) => (typeof item === 'number' ? format(item) : item)).join(', ')
 }
 
 function getPayloadKey(value: unknown) {
