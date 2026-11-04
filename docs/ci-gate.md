@@ -29,3 +29,7 @@ Git 파일이나 fork 작업만으로 원격 main 보호가 설정되지 않습�
 현재 저장소의 적용 여부는 파일이 아닌 GitHub 설정/API로 확인합니다. 브랜치 보호 조회와 최종 커밋의 실행 링크를 작업 기록에 남기며, 권한이 부족하면 미적용 상태를 명확히 기록합니다.
 
 [GitHub 필수 검사와 skip 처리](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks), [브랜치 보호 API](https://docs.github.com/en/rest/branches/branch-protection)를 따릅니다.
+
+## 적용 기록
+
+2026-11-05 `cha2hyun/boilerplate`의 main에 위 두 필수 검사를 GitHub Actions 제공 검사로 설정했습니다. 관리자 적용·최신 base 요구·PR 필수·승인 수 0·force push 및 삭제 차단을 API로 다시 확인했고, [PR #19](https://github.com/cha2hyun/boilerplate/pull/19)를 우회 없이 병합했습니다. 전체 검사와 문서 전용 검증 근거는 [작업 기록](plans/fork-readiness-contracts.md)을 따릅니다. 이 과거 기록으로 다른 포크나 현재 원격 설정을 추정하지 않습니다.
