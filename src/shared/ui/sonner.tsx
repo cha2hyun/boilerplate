@@ -7,14 +7,18 @@ import {
 } from 'lucide-react'
 import { useTheme } from '@/shared/lib/theme'
 import { Toaster as Sonner, type ToasterProps } from 'sonner'
+import { useTranslation } from '@/shared/lib/i18n'
 
-const Toaster = ({ ...props }: ToasterProps) => {
+const Toaster = ({ toastOptions, ...props }: ToasterProps) => {
   const { resolvedTheme } = useTheme()
+  const { t } = useTranslation('common')
 
   return (
     <Sonner
       theme={resolvedTheme}
       className="toaster group"
+      containerAriaLabel={t('notifications')}
+      toastOptions={{ closeButtonAriaLabel: t('closeToast'), ...toastOptions }}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,

@@ -1,0 +1,38 @@
+import type en from '../en-US/common'
+type TranslationShape<T> = { [K in keyof T]: T[K] extends string ? string : TranslationShape<T[K]> }
+export default {
+  breadcrumb: '현재 위치',
+  sidebar: '사이드바',
+  sidebarDescription: '모바일 탐색 메뉴입니다.',
+  closeToast: '알림 닫기',
+  startup: {
+    title: '데모를 시작하지 못했어요',
+    description: '샘플 데이터 서비스를 시작하지 못했어요. 새로고침 후 다시 시도해 주세요.',
+    reload: '새로고침',
+  },
+
+  close: '닫기',
+  toggleSidebar: '사이드바 전환',
+  more: '더 보기',
+  previousPage: '이전 페이지로 이동',
+  nextPage: '다음 페이지로 이동',
+  notifications: '알림',
+  errors: {
+    timeoutWrite:
+      '요청 시간이 초과됐어요. 변경 내용이 저장됐을 수 있으니 새로고침으로 확인한 후 다시 시도해 주세요.',
+    network: '연결하지 못했어요. 네트워크를 확인한 후 다시 시도해 주세요.',
+    timeout: '요청 시간이 초과됐어요. 다시 시도해 주세요.',
+    invalidResponse: '서버 응답을 확인하지 못했어요.',
+    notFound: '항목을 찾지 못했어요. 새로고침 후 다시 시도해 주세요.',
+    request: '요청을 완료하지 못했어요. 다시 시도해 주세요.',
+    unexpected: '문제가 발생했어요. 다시 시도해 주세요.',
+  },
+  route: {
+    notFound: '404 · 페이지를 찾을 수 없어요',
+    backTitle: '다시 시작할 수 있도록 도와드릴게요.',
+    back: '개요로 돌아가기',
+    errorTitle: '문제가 발생했어요',
+    errorDescription: '워크스페이스를 불러오지 못했어요. 다시 시도하거나 새로고침해 주세요.',
+    retry: '다시 시도',
+  },
+} satisfies TranslationShape<typeof en>

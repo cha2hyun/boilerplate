@@ -12,7 +12,12 @@ import {
 } from 'lucide-react'
 import { ordersQueryOptions, orderStatuses, type OrderStatus } from '@/entities/order'
 import { NumberDisplay } from '@/features/number-motion'
-import { formatNumber } from '@/shared/lib/format'
+import {
+  useErrorMessage,
+  useFormatters,
+  useLocalePreferences,
+  useTranslation,
+} from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -29,8 +34,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
   compareOrders,
-  formatOrderAmount,
-  formatOrderDate,
   orderSortOptions,
   orderSubtotal,
   orderTotal,
@@ -41,6 +44,7 @@ const pageSize = 6
 const countFormat = { maximumFractionDigits: 0 }
 
 function OrderStatusBadge({ status }: { status: OrderStatus }) {
+  const { t } = useTranslation('admin')
   return (
     <Badge
       variant={
@@ -48,12 +52,16 @@ function OrderStatusBadge({ status }: { status: OrderStatus }) {
       }
       className="font-normal"
     >
-      {status}
+      {t(`orders.status.${status}`)}
     </Badge>
   )
 }
 
 export function OrdersPage() {
+  const { t } = useTranslation('admin')
+  const errorMessage = useErrorMessage()
+  const { formatNumber, formatMoney, formatDate } = useFormatters()
+  const currency = useLocalePreferences((state) => state.currency)
   const ordersQuery = useQuery(ordersQueryOptions())
   const orders = ordersQuery.data ?? []
   const isLoading = ordersQuery.isPending && !ordersQuery.data
@@ -93,27 +101,27 @@ export function OrdersPage() {
 
   const summaries = [
     {
-      title: 'Total orders',
+      title: t('orders.summary.total'),
       value: orders.length,
-      description: 'Oct 25 – Nov 3, 2026',
+      description: t('orders.summary.range'),
       Icon: Package,
     },
     {
-      title: 'Processing',
+      title: t('orders.status.Processing'),
       value: orders.filter((order) => order.status === 'Processing').length,
-      description: 'Preparing for the next step',
+      description: t('orders.summary.processing'),
       Icon: Clock3,
     },
     {
-      title: 'Shipped',
+      title: t('orders.status.Shipped'),
       value: orders.filter((order) => order.status === 'Shipped').length,
-      description: 'On the way to customers',
+      description: t('orders.summary.shipped'),
       Icon: Truck,
     },
     {
-      title: 'Delivered',
+      title: t('orders.status.Delivered'),
       value: orders.filter((order) => order.status === 'Delivered').length,
-      description: 'Completed sample orders',
+      description: t('orders.summary.delivered'),
       Icon: CheckCheck,
     },
   ]
@@ -122,23 +130,21 @@ export function OrdersPage() {
     <div className="min-w-0 space-y-6">
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('orders.title')}</h1>
           <Badge variant="outline" className="font-normal text-muted-foreground">
-            Sample
+            {t('common.sample')}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Explore order activity, fulfillment, and details with read-only sample data.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('orders.intro')}</p>
       </div>
 
       {ordersQuery.isError && ordersQuery.data && (
         <Alert variant="destructive">
-          <AlertTitle>Orders couldn't refresh</AlertTitle>
+          <AlertTitle>{t('orders.refreshError')}</AlertTitle>
           <AlertDescription>
-            <p>{ordersQuery.error.message}</p>
+            <p>{errorMessage(ordersQuery.error)}</p>
             <Button variant="outline" size="sm" onClick={() => void ordersQuery.refetch()}>
-              Try again
+              {t('common.tryAgain')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -174,8 +180,8 @@ export function OrdersPage() {
 
       <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
         <CardHeader className="px-5">
-          <CardTitle className="text-base">All orders</CardTitle>
-          <CardDescription>Browse sample orders. Amounts are shown in USD.</CardDescription>
+          <CardTitle className="text-base">{t('orders.all')}</CardTitle>
+          <CardDescription>{t('orders.browse', { currency })}</CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 space-y-4 px-0">
           <Tabs
@@ -188,15 +194,15 @@ export function OrdersPage() {
           >
             <div className="px-5">
               <TabsList
-                aria-label="Filter orders by status"
+                aria-label={t('orders.filterStatus')}
                 className="max-w-full flex-wrap justify-start group-data-[orientation=horizontal]/tabs:h-auto"
               >
                 <TabsTrigger value="all" className="h-8 flex-none px-3">
-                  All orders
+                  {t('orders.all')}
                 </TabsTrigger>
                 {orderStatuses.map((item) => (
                   <TabsTrigger key={item} value={item} className="h-8 flex-none px-3">
-                    {item}
+                    {t(`orders.status.${item}`)}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -209,12 +215,12 @@ export function OrdersPage() {
                     aria-hidden="true"
                   />
                   <Label htmlFor="orders-search" className="sr-only">
-                    Search orders
+                    {t('orders.search')}
                   </Label>
                   <Input
                     id="orders-search"
                     ref={searchRef}
-                    placeholder="Search orders or customers…"
+                    placeholder={t('orders.searchPlaceholder')}
                     value={search}
                     className="pl-9"
                     onChange={(event) => {
@@ -232,13 +238,13 @@ export function OrdersPage() {
                     setPage(0)
                   }}
                 >
-                  <SelectTrigger aria-label="Sort orders" className="w-full md:w-48">
+                  <SelectTrigger aria-label={t('orders.sortLabel')} className="w-full md:w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {orderSortOptions.map((item) => (
                       <SelectItem key={item.value} value={item.value}>
-                        {item.label}
+                        {t(`orders.sort.${item.value}`)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -246,14 +252,14 @@ export function OrdersPage() {
                 {hasFilters && (
                   <Button variant="ghost" size="sm" onClick={resetFilters}>
                     <X aria-hidden="true" />
-                    Reset
+                    {t('common.reset')}
                   </Button>
                 )}
               </div>
               {isLoading || visibleOrders.length ? (
                 <div
                   role="region"
-                  aria-label="Orders table"
+                  aria-label={t('orders.table')}
                   aria-busy={isLoading}
                   className="h-120 min-w-0 border-y"
                 >
@@ -268,12 +274,12 @@ export function OrdersPage() {
                     </colgroup>
                     <TableHeader>
                       <TableRow className="bg-muted/30 hover:bg-muted/30">
-                        <TableHead className="pl-5">Order</TableHead>
-                        <TableHead>Customer</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Payment</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="pr-5 text-right">Total</TableHead>
+                        <TableHead className="pl-5">{t('orders.order')}</TableHead>
+                        <TableHead>{t('common.customer')}</TableHead>
+                        <TableHead>{t('common.status')}</TableHead>
+                        <TableHead>{t('orders.payment')}</TableHead>
+                        <TableHead>{t('orders.date')}</TableHead>
+                        <TableHead className="pr-5 text-right">{t('orders.total')}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -293,7 +299,7 @@ export function OrdersPage() {
                                 <Button
                                   variant="link"
                                   className="h-auto p-0 font-medium text-foreground"
-                                  aria-label={`View order ${order.id}`}
+                                  aria-label={t('orders.viewOrder', { id: order.id })}
                                   onClick={(event) => {
                                     detailTrigger.current = event.currentTarget
                                     setSelectedOrderId(order.id)
@@ -326,13 +332,13 @@ export function OrdersPage() {
                                 <OrderStatusBadge status={order.status} />
                               </TableCell>
                               <TableCell className="text-muted-foreground">
-                                {order.payment}
+                                {t(`orders.paymentStatus.${order.payment}`)}
                               </TableCell>
                               <TableCell className="text-muted-foreground">
-                                {formatOrderDate(order.date)}
+                                {formatDate(order.date, { year: 'numeric' })}
                               </TableCell>
                               <TableCell className="pr-5 text-right font-medium tabular-nums">
-                                {formatOrderAmount(orderTotal(order))}
+                                {formatMoney(orderTotal(order) / 100)}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -360,27 +366,27 @@ export function OrdersPage() {
                     </EmptyMedia>
                     <EmptyTitle>
                       {ordersQuery.isError && !ordersQuery.data
-                        ? 'Orders couldn’t load'
+                        ? t('orders.loadError')
                         : orders.length
-                          ? 'No matching orders'
-                          : 'No orders yet'}
+                          ? t('orders.noMatch')
+                          : t('orders.empty')}
                     </EmptyTitle>
                     <EmptyDescription>
                       {ordersQuery.isError && !ordersQuery.data
-                        ? ordersQuery.error.message
+                        ? errorMessage(ordersQuery.error)
                         : orders.length
-                          ? 'Try another search or status.'
-                          : 'Orders will appear here when available.'}
+                          ? t('common.searchHint')
+                          : t('orders.emptyHint')}
                     </EmptyDescription>
                   </EmptyHeader>
                   {ordersQuery.isError && !ordersQuery.data ? (
                     <Button variant="outline" onClick={() => void ordersQuery.refetch()}>
-                      Try again
+                      {t('common.tryAgain')}
                     </Button>
                   ) : (
                     orders.length > 0 && (
                       <Button variant="outline" onClick={resetFilters}>
-                        Clear filters
+                        {t('common.clearFilters')}
                       </Button>
                     )
                   )}
@@ -389,21 +395,30 @@ export function OrdersPage() {
               <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
                 <p className="text-xs text-muted-foreground" aria-live="polite">
                   {isLoading
-                    ? 'Loading orders…'
+                    ? t('orders.loading')
                     : filteredOrders.length
-                      ? `Showing ${formatNumber(currentPage * pageSize + 1)}–${formatNumber(Math.min((currentPage + 1) * pageSize, filteredOrders.length))} of ${formatNumber(filteredOrders.length)} orders`
-                      : `${formatNumber(0)} orders`}
+                      ? t('orders.showing', {
+                          start: formatNumber(currentPage * pageSize + 1),
+                          end: formatNumber(
+                            Math.min((currentPage + 1) * pageSize, filteredOrders.length),
+                          ),
+                          total: formatNumber(filteredOrders.length),
+                        })
+                      : t('orders.count', { total: formatNumber(0) })}
                 </p>
                 <div className="flex items-center gap-3">
                   <p className="text-xs font-medium tabular-nums">
-                    Page {formatNumber(currentPage + 1)} of {formatNumber(pageCount)}
+                    {t('common.pageCount', {
+                      current: formatNumber(currentPage + 1),
+                      total: formatNumber(pageCount),
+                    })}
                   </p>
                   <div className="flex gap-1">
                     <Button
                       variant="outline"
                       size="icon"
                       className="size-8"
-                      aria-label="Previous orders page"
+                      aria-label={t('orders.previousPage')}
                       disabled={isLoading || currentPage === 0}
                       onClick={() => {
                         setPage(currentPage - 1)
@@ -415,7 +430,7 @@ export function OrdersPage() {
                       variant="outline"
                       size="icon"
                       className="size-8"
-                      aria-label="Next orders page"
+                      aria-label={t('orders.nextPage')}
                       disabled={isLoading || currentPage + 1 >= pageCount}
                       onClick={() => {
                         setPage(currentPage + 1)
@@ -448,56 +463,62 @@ export function OrdersPage() {
           }}
         >
           <SheetHeader className="border-b p-6 pr-12">
-            <SheetTitle>{selectedOrder ? `Order ${selectedOrder.id}` : 'Order details'}</SheetTitle>
+            <SheetTitle>
+              {selectedOrder ? t('orders.orderId', { id: selectedOrder.id }) : t('orders.details')}
+            </SheetTitle>
             <SheetDescription>
               {selectedOrder
-                ? `Placed ${formatOrderDate(selectedOrder.date)} · Sample order`
-                : 'Read-only sample order details'}
+                ? t('orders.placed', { date: formatDate(selectedOrder.date, { year: 'numeric' }) })
+                : t('orders.detailsHint')}
             </SheetDescription>
           </SheetHeader>
           {selectedOrder && (
             <div className="space-y-6 px-6 pb-6 text-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <OrderStatusBadge status={selectedOrder.status} />
-                <span className="text-muted-foreground">Payment: {selectedOrder.payment}</span>
+                <span className="text-muted-foreground">
+                  {t('orders.paymentValue', {
+                    status: t(`orders.paymentStatus.${selectedOrder.payment}`),
+                  })}
+                </span>
               </div>
-              <section className="space-y-3" aria-label="Order items">
-                <h2 className="font-medium">Items</h2>
+              <section className="space-y-3" aria-label={t('orders.orderItems')}>
+                <h2 className="font-medium">{t('orders.items')}</h2>
                 <ul className="divide-y rounded-lg border px-4">
                   {selectedOrder.items.map((item) => (
                     <li key={item.name} className="flex items-start justify-between gap-3 py-4">
                       <div className="min-w-0">
                         <p className="font-medium">{item.name}</p>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {formatNumber(item.quantity)} × {formatOrderAmount(item.unitPrice)}
+                          {formatNumber(item.quantity)} × {formatMoney(item.unitPrice / 100)}
                         </p>
                       </div>
                       <span className="shrink-0 tabular-nums">
-                        {formatOrderAmount(item.quantity * item.unitPrice)}
+                        {formatMoney((item.quantity * item.unitPrice) / 100)}
                       </span>
                     </li>
                   ))}
                 </ul>
                 <dl className="space-y-2">
                   <div className="flex justify-between gap-3 text-muted-foreground">
-                    <dt>Subtotal</dt>
+                    <dt>{t('orders.subtotal')}</dt>
                     <dd className="tabular-nums">
-                      {formatOrderAmount(orderSubtotal(selectedOrder))}
+                      {formatMoney(orderSubtotal(selectedOrder) / 100)}
                     </dd>
                   </div>
                   <div className="flex justify-between gap-3 text-muted-foreground">
-                    <dt>Shipping</dt>
-                    <dd className="tabular-nums">{formatOrderAmount(selectedOrder.shipping)}</dd>
+                    <dt>{t('orders.shipping')}</dt>
+                    <dd className="tabular-nums">{formatMoney(selectedOrder.shipping / 100)}</dd>
                   </div>
                   <div className="flex justify-between gap-3 pt-2 font-semibold">
-                    <dt>Total (USD)</dt>
-                    <dd className="tabular-nums">{formatOrderAmount(orderTotal(selectedOrder))}</dd>
+                    <dt>{t('orders.currencyTotal', { currency })}</dt>
+                    <dd className="tabular-nums">{formatMoney(orderTotal(selectedOrder) / 100)}</dd>
                   </div>
                 </dl>
               </section>
               <Separator />
-              <section className="space-y-3" aria-label="Order customer">
-                <h2 className="font-medium">Customer</h2>
+              <section className="space-y-3" aria-label={t('orders.orderCustomer')}>
+                <h2 className="font-medium">{t('common.customer')}</h2>
                 <div className="flex items-center gap-3">
                   <Avatar>
                     <AvatarFallback>{selectedOrder.customer.initials}</AvatarFallback>
@@ -510,13 +531,15 @@ export function OrdersPage() {
                   </div>
                 </div>
                 <p className="text-muted-foreground">
-                  Delivery destination: {selectedOrder.city}, {selectedOrder.country}
+                  {t('orders.destination', {
+                    city: selectedOrder.city,
+                    country: selectedOrder.country,
+                  })}
                 </p>
               </section>
               <Separator />
               <p className="text-xs leading-relaxed text-muted-foreground">
-                This is a sample record for exploring the interface. No payment or shipment is
-                processed.
+                {t('orders.disclaimer')}
               </p>
             </div>
           )}

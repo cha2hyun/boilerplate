@@ -115,6 +115,7 @@ describe('HTTP client', () => {
     const rejected = expect(pending).rejects.toMatchObject({
       code: 'TIMEOUT',
       status: null,
+      mayHaveSucceeded: true,
     })
     await vi.advanceTimersByTimeAsync(15_000)
     await rejected
@@ -140,7 +141,11 @@ describe('HTTP client', () => {
     )
 
     const pending = request('/projects', schema)
-    const rejected = expect(pending).rejects.toMatchObject({ code: 'TIMEOUT', status: 200 })
+    const rejected = expect(pending).rejects.toMatchObject({
+      code: 'TIMEOUT',
+      status: 200,
+      mayHaveSucceeded: false,
+    })
     await vi.advanceTimersByTimeAsync(15_000)
     await rejected
     expect(vi.getTimerCount()).toBe(0)

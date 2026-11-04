@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 import type { Analytics } from '@/entities/analytics'
-import { NumberDisplay } from '@/features/number-motion'
-import { formatNumber, formatDate } from '@/shared/lib/format'
+import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
+import { useFormatters, useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -27,10 +27,6 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 
-const config = {
-  revenue: { label: 'This period', color: 'var(--chart-2)' },
-  previousRevenue: { label: 'Previous period', color: 'var(--chart-1)' },
-} satisfies ChartConfig
 interface RevenueChartProps {
   data?: Analytics['revenue']
   isLoading?: boolean
@@ -38,6 +34,13 @@ interface RevenueChartProps {
   onRetry?: () => void
 }
 export function RevenueChart({ data, isLoading = false, error, onRetry }: RevenueChartProps) {
+  const { t } = useTranslation('workspace')
+  const { formatNumber, formatMoney, formatDate } = useFormatters()
+  const currency = useLocalePreferences((state) => state.currency)
+  const config = {
+    revenue: { label: t('revenue.thisPeriod'), color: 'var(--chart-2)' },
+    previousRevenue: { label: t('revenue.previousPeriod'), color: 'var(--chart-1)' },
+  } satisfies ChartConfig
   const [period, setPeriod] = useState('30')
   const visible = (data ?? []).slice(-Number(period))
   const firstDate = visible[0]?.date
@@ -46,25 +49,35 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
   const previous = visible.reduce((sum, point) => sum + point.previousRevenue, 0)
   const change = previous > 0 ? ((total - previous) / previous) * 100 : 0
   return (
-    <Card className="h-full min-w-0 shadow-xs" aria-label="Revenue overview" aria-busy={isLoading}>
+    <Card
+      className="h-full min-w-0 shadow-xs"
+      aria-label={t('revenue.title')}
+      aria-busy={isLoading}
+    >
       <CardHeader className="gap-1">
-        <CardTitle>Revenue overview</CardTitle>
-        <CardDescription>How your business is performing over time.</CardDescription>
+        <CardTitle>{t('revenue.title')}</CardTitle>
+        <CardDescription>{t('revenue.description')}</CardDescription>
         <CardAction>
           <Select value={period} onValueChange={setPeriod} disabled={!data}>
-            <SelectTrigger aria-label="Revenue period" className="w-36">
+            <SelectTrigger aria-label={t('revenue.period')} className="w-36">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="30">Last {formatNumber(30)} days</SelectItem>
-              <SelectItem value="14">Last {formatNumber(14)} days</SelectItem>
-              <SelectItem value="7">Last {formatNumber(7)} days</SelectItem>
+              <SelectItem value="30">
+                {t('revenue.lastDays', { count: 30, formattedCount: formatNumber(30) })}
+              </SelectItem>
+              <SelectItem value="14">
+                {t('revenue.lastDays', { count: 14, formattedCount: formatNumber(14) })}
+              </SelectItem>
+              <SelectItem value="7">
+                {t('revenue.lastDays', { count: 7, formattedCount: formatNumber(7) })}
+              </SelectItem>
             </SelectContent>
           </Select>
         </CardAction>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="flex h-9 min-w-0 items-center gap-3">
+        <div className="flex min-h-9 min-w-0 flex-wrap items-center gap-3">
           {isLoading ? (
             <>
               <Skeleton className="h-9 w-32" aria-hidden="true" />
@@ -72,10 +85,10 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
             </>
           ) : data ? (
             <>
-              <NumberDisplay
+              <MoneyDisplay
                 animate
                 value={total}
-                format={{ style: 'currency', currency: 'USD', maximumFractionDigits: 0 }}
+                format={{ maximumFractionDigits: 0 }}
                 className="text-3xl font-semibold tracking-tight"
               />
               <Badge variant="secondary" className="gap-1">
@@ -98,16 +111,20 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
         </div>
         <div className="h-60 w-full">
           {isLoading ? (
-            <Skeleton className="h-full w-full" role="status" aria-label="Loading revenue" />
+            <Skeleton
+              className="h-full w-full"
+              role="status"
+              aria-label={t('revenue.loadingLabel')}
+            />
           ) : error && !data ? (
             <div className="flex h-full items-center">
               <Alert variant="destructive">
-                <AlertTitle>Revenue couldn't load</AlertTitle>
+                <AlertTitle>{t('revenue.errorTitle')}</AlertTitle>
                 <AlertDescription>
-                  <p>Try loading the revenue data again.</p>
+                  <p>{t('revenue.errorDescription')}</p>
                   {onRetry && (
                     <Button variant="outline" size="sm" onClick={onRetry}>
-                      Try again
+                      {t('common.retry')}
                     </Button>
                   )}
                 </AlertDescription>
@@ -118,13 +135,13 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
               className="flex h-full items-center justify-center text-sm text-muted-foreground"
               role="status"
             >
-              No revenue data for this period.
+              {t('revenue.empty')}
             </div>
           ) : (
             <ChartContainer
               config={config}
               className="aspect-auto h-60 w-full"
-              aria-label="Revenue compared with previous period"
+              aria-label={t('revenue.chartLabel')}
             >
               <AreaChart
                 accessibilityLayer
@@ -163,6 +180,9 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
                           ? formatDate(value)
                           : null
                       }
+                      valueFormatter={(value: number | null | undefined) =>
+                        formatMoney(value, { maximumFractionDigits: 0 })
+                      }
                       indicator="dot"
                     />
                   }
@@ -190,10 +210,14 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
       <CardFooter className="border-t pt-4 text-xs text-muted-foreground">
         <span className="block h-4 min-w-0 truncate">
           {isLoading
-            ? 'Loading revenue…'
+            ? t('revenue.loading')
             : firstDate && lastDate
-              ? `${formatDate(firstDate)} – ${formatDate(lastDate)} · Revenue in USD`
-              : 'Revenue in USD'}
+              ? t('revenue.dateRange', {
+                  start: formatDate(firstDate),
+                  end: formatDate(lastDate),
+                  currency,
+                })
+              : t('revenue.currency', { currency })}
         </span>
       </CardFooter>
     </Card>

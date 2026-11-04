@@ -51,6 +51,10 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 두 범주는 겹치지 않습니다. 같은 시나리오를 dev와 production 두 환경에서 반복하지 않습니다. E2E는 `pnpm build` 결과 `dist/`를 `pnpm preview`로 제공하며 기본적으로 Chromium만 사용합니다.
 
+`core`에는 `e2e/localization.spec.ts`도 포함됩니다. 언어·통화의 독립 전환과 저장 복원, 환산 값, 환율 캐시 재사용, 오류/재시도, 세 화면 구간의 컨트롤 정렬을 확인합니다. 필요한 로컬 재현에서는 이 파일과 `--project`로 범위를 좁힙니다.
+
+모든 브라우저 스펙은 `e2e/fixtures.ts`를 사용합니다. fixture는 외부 Frankfurter 요청만 `BrowserContext.route`로 고정하여 CI가 공급자 가용성에 의존하지 않도록 합니다. 실패 테스트는 같은 경로를 해당 테스트 안에서 재정의합니다. 실제 앱에는 환율 목업이나 고정 환율 fallback을 추가하지 않으며 개발/배포 앱은 공개 API를 직접 호출합니다. 외부 통합 변경 때 실제 응답/CORS 확인과 단위 테스트의 스키마/오류/캐시 검증을 함께 수행합니다.
+
 | Playwright project | viewport    | 입력/환경            |
 | ------------------ | ----------- | -------------------- |
 | `desktop`          | 1440 × 1000 | Chromium 데스크톱    |

@@ -8,13 +8,14 @@
 
 키는 직렬화 가능한 배열이며 `도메인 → 조회 종류 → 응답을 바꾸는 파라미터` 순서입니다. 서버 응답을 바꾸는 기간·검색·정렬·페이지·계정/워크스페이스 식별자는 키에 포함합니다. 순서가 불안정한 문자열 조합이나 화면별 하드코딩 키는 쓰지 않습니다. 이 기준은 [공식 Query Keys 가이드](https://tanstack.com/query/latest/docs/framework/react/guides/query-keys)를 따릅니다.
 
-| 도메인/화면 | 옵션                       | 실제 키                                   |
-| ----------- | -------------------------- | ----------------------------------------- |
-| Overview    | `analyticsQueryOptions()`  | `['analytics', 'summary']`                |
-| Analytics   | `trafficQueryOptions('7')` | `['traffic', 'summary', { period: '7' }]` |
-| Orders      | `ordersQueryOptions()`     | `['orders', 'list']`                      |
-| Customers   | `customersQueryOptions()`  | `['customers', 'list']`                   |
-| Projects    | `projectsQueryOptions()`   | `['projects', 'list']`                    |
+| 도메인/화면 | 옵션                         | 실제 키                                                 |
+| ----------- | ---------------------------- | ------------------------------------------------------- |
+| Overview    | `analyticsQueryOptions()`    | `['analytics', 'summary']`                              |
+| Analytics   | `trafficQueryOptions('7')`   | `['traffic', 'summary', { period: '7' }]`               |
+| Orders      | `ordersQueryOptions()`       | `['orders', 'list']`                                    |
+| Customers   | `customersQueryOptions()`    | `['customers', 'list']`                                 |
+| Projects    | `projectsQueryOptions()`     | `['projects', 'list']`                                  |
+| 환율        | `exchangeRateQueryOptions()` | `['exchange-rates', 'frankfurter', 'v2', 'USD', 'KRW']` |
 
 ```ts
 const options = trafficQueryOptions('7')
@@ -27,7 +28,7 @@ await queryClient.query(options)
 
 ## 수명과 화면 동작
 
-현재 조회는 **staleTime 60초**, **gcTime 5분**입니다. staleTime은 데이터의 신선도, gcTime은 마지막 구독자가 떠난 뒤의 보관 기간입니다. 전역 기본값과 도메인 옵션은 의도적으로 같으며 도메인 요구가 생길 때 옵션에서 바꿉니다. [공식 기본 동작](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults)을 참고하세요.
+업무 샘플 조회의 기본값은 **staleTime 60초**, **gcTime 5분**입니다. staleTime은 데이터의 신선도, gcTime은 마지막 구독자가 떠난 뒤의 보관 기간입니다. 업무 샘플의 도메인 옵션은 전역 기본값과 같습니다. 외부 기준 환율은 일별 갱신 특성에 맞춰 **staleTime 6시간**, **gcTime 24시간**을 사용합니다. 환율 응답·실패·출처 계약은 [언어와 표시 통화](i18n.md)가 소유합니다. [공식 기본 동작](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults)을 참고하세요.
 
 - 신선한 캐시로 다시 들어오면 네트워크 요청 없이 데이터를 즉시 표시합니다. 같은 키를 동시에 조회하면 요청을 공유합니다.
 - 오래된 캐시가 있으면 기존 데이터를 표시하면서 백그라운드 갱신합니다. `isFetching`만으로 카드 전체를 스켈레톤으로 바꾸지 않습니다.
@@ -43,11 +44,11 @@ await queryClient.query(options)
 
 ## 목업으로 확인하기
 
-demo 모드에서 MSW가 `/api/analytics`, `/api/traffic?period=…`, `/api/orders`, `/api/customers`의 실제 fetch를 처리합니다. 목업 응답은 450ms 지연과 `Cache-Control: no-store`를 사용합니다. 브라우저 HTTP 캐시와 Query 캐시를 혼동하지 않기 위한 설정이며, cache hit에 인위적인 지연을 추가하지 않습니다. 실제 API 모드는 worker를 시작하지 않습니다.
+demo 모드에서 MSW가 `/api/analytics`, `/api/traffic?period=…`, `/api/orders`, `/api/customers`의 실제 fetch를 처리합니다. 목업 응답은 450ms 지연과 `Cache-Control: no-store`를 사용합니다. 브라우저 HTTP 캐시와 Query 캐시를 혼동하지 않기 위한 설정이며, cache hit에 인위적인 지연을 추가하지 않습니다. 실제 API 모드는 worker를 시작하지 않습니다. 외부 Frankfurter 환율 요청은 demo에서도 MSW를 통과해 실제 API로 전송됩니다. 고정 환율 fixture는 테스트에만 둡니다.
 
 1. 새로고침 후 한 페이지를 열어 Network의 첫 요청과 초기 스켈레톤을 확인합니다.
 2. 사이드바로 다른 경로에 갔다가 60초 안에 돌아옵니다. 같은 endpoint 요청은 증가하지 않고 데이터가 바로 표시되어야 합니다.
 3. Analytics에서 30일→7일→30일로 바꿉니다. 기간별 키가 따로 생기고 이미 신선한 기간으로 돌아오면 재요청하지 않아야 합니다.
 4. 통합 TanStack Devtools의 Query 패널에서 키·dataUpdatedAt·fetch 상태를 확인합니다. 강제 invalidate 시에는 기존 데이터가 유지되면서 요청이 다시 발생해야 합니다.
 
-네트워크 요청 수/중복 제거/키 분리/무효화/취소는 `src/app/mocks/queries.test.ts`, 실제 production 화면의 cold/warm 탐색과 카드 치수는 `e2e/query-cache.spec.ts`가 검증합니다. 전체 실행 위치는 [테스트 정책](testing.md)을 따릅니다.
+업무 샘플의 네트워크 요청 수/중복 제거/키 분리/무효화/취소는 `src/app/mocks/queries.test.ts`, 외부 환율 응답 검증과 별도 캐시 수명은 `src/entities/exchange-rate/api/queries.test.ts`, 실제 production 화면의 cold/warm 탐색과 카드 치수는 `e2e/query-cache.spec.ts`가 검증합니다. 전체 실행 위치는 [테스트 정책](testing.md)을 따릅니다.

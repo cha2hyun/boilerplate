@@ -4,6 +4,8 @@ import * as React from 'react'
 import { cn } from '@/shared/lib/utils'
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
 import { DayPicker, getDefaultClassNames, type DayButton } from 'react-day-picker'
+import { enUS, ko } from 'react-day-picker/locale'
+import { useLocalePreferences } from '@/shared/lib/i18n/preferences'
 
 import { Button, buttonVariants } from '@/shared/ui/button'
 
@@ -15,14 +17,18 @@ function Calendar({
   buttonVariant = 'ghost',
   formatters,
   components,
+  locale: localeOverride,
   ...props
 }: React.ComponentProps<typeof DayPicker> & {
   buttonVariant?: React.ComponentProps<typeof Button>['variant']
 }) {
   const defaultClassNames = getDefaultClassNames()
+  const appLocale = useLocalePreferences((state) => state.locale)
+  const locale = localeOverride ?? (appLocale === 'ko-KR' ? ko : enUS)
 
   return (
     <DayPicker
+      locale={locale}
       showOutsideDays={showOutsideDays}
       className={cn(
         'group/calendar bg-background p-3 [--cell-size:--spacing(8)] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent',
@@ -32,7 +38,8 @@ function Calendar({
       )}
       captionLayout={captionLayout}
       formatters={{
-        formatMonthDropdown: (date) => date.toLocaleString('default', { month: 'short' }),
+        formatMonthDropdown: (date) =>
+          date.toLocaleString(locale.code ?? appLocale, { month: 'short' }),
         ...formatters,
       }}
       classNames={{

@@ -8,12 +8,19 @@ const REQUEST_TIMEOUT_MS = 15_000
 export class ApiError extends Error {
   readonly code: ApiErrorCode
   readonly status: number | null
+  readonly mayHaveSucceeded: boolean
 
-  constructor(message: string, code: ApiErrorCode, status: number | null = null) {
+  constructor(
+    message: string,
+    code: ApiErrorCode,
+    status: number | null = null,
+    mayHaveSucceeded = false,
+  ) {
     super(message)
     this.name = 'ApiError'
     this.code = code
     this.status = status
+    this.mayHaveSucceeded = mayHaveSucceeded
   }
 }
 
@@ -107,6 +114,7 @@ export function createApiClient(baseUrl: string) {
             : 'The request timed out. Your changes may have been saved. Refresh to check before trying again.',
           'TIMEOUT',
           status,
+          !readOnly,
         )
       }
       throw error

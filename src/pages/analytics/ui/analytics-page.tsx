@@ -4,7 +4,8 @@ import { Activity, Eye, MousePointer2, Users } from 'lucide-react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { trafficQueryOptions, type TrafficPeriod } from '@/entities/traffic'
 import { NumberDisplay } from '@/features/number-motion'
-import { formatDate, formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
+import type { NumberFormatOptions } from '@/shared/lib/format'
+import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -32,50 +33,68 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 const countFormat = { maximumFractionDigits: 0 }
 const percentFormat = { style: 'percent', maximumFractionDigits: 1 } satisfies NumberFormatOptions
 
-const trafficConfig = {
-  visitors: { label: 'Visitors', color: 'var(--chart-1)' },
-  sessions: { label: 'Sessions', color: 'var(--chart-3)' },
-} satisfies ChartConfig
-const deviceConfig = {
-  sessions: { label: 'Sessions', color: 'var(--chart-1)' },
-} satisfies ChartConfig
 const deviceColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)'] as const
 
 export function AnalyticsPage() {
+  const { t } = useTranslation('admin')
+  const errorMessage = useErrorMessage()
+  const { formatDate, formatNumber } = useFormatters()
+  const trafficConfig = {
+    visitors: { label: t('analytics.visitors'), color: 'var(--chart-1)' },
+    sessions: { label: t('analytics.sessions'), color: 'var(--chart-3)' },
+  } satisfies ChartConfig
+  const deviceConfig = {
+    sessions: { label: t('analytics.sessions'), color: 'var(--chart-1)' },
+  } satisfies ChartConfig
+  const deviceLabels: Record<string, string> = {
+    Desktop: t('analytics.devices.Desktop'),
+    Mobile: t('analytics.devices.Mobile'),
+    Tablet: t('analytics.devices.Tablet'),
+  }
+  const sourceLabels: Record<string, string> = {
+    'Organic search': t('analytics.sources.organic'),
+    Direct: t('analytics.sources.direct'),
+    Referral: t('analytics.sources.referral'),
+    Social: t('analytics.sources.social'),
+    Email: t('analytics.sources.email'),
+  }
   const [period, setPeriod] = useState<TrafficPeriod>('30')
   const traffic = useQuery(trafficQueryOptions(period))
   const data = traffic.data
   const isLoading = traffic.isPending && !data
   const firstDate = data?.days[0]?.date
   const lastDate = data?.days.at(-1)?.date
-  const range = `${firstDate ? formatDate(firstDate) : ''} – ${lastDate ? formatDate(lastDate) : ''}, 2026`
+  const range = t('analytics.dateRange', {
+    start: firstDate ? formatDate(firstDate) : '',
+    end: lastDate ? formatDate(lastDate, { year: 'numeric' }) : '',
+  })
   const metrics = [
     {
-      label: 'Visitors',
+      label: t('analytics.visitors'),
       value: data?.visitors,
       format: countFormat,
-      detail: 'Sum of daily sample visitors',
+      detail: t('analytics.visitorsHint'),
       icon: Users,
     },
     {
-      label: 'Sessions',
+      label: t('analytics.sessions'),
       value: data?.sessions,
       format: countFormat,
-      detail: 'Visits across all traffic sources',
+      detail: t('analytics.sessionsHint'),
       icon: MousePointer2,
     },
     {
-      label: 'Page views',
+      label: t('analytics.pageViews'),
       value: data?.pageViews,
       format: countFormat,
-      detail: 'Pages viewed across all sessions',
+      detail: t('analytics.pageViewsHint'),
       icon: Eye,
     },
     {
-      label: 'Bounce rate',
+      label: t('analytics.bounceRate'),
       value: data?.bounceRate,
       format: percentFormat,
-      detail: 'Sessions with a single page view',
+      detail: t('analytics.bounceRateHint'),
       icon: Activity,
     },
   ]
@@ -85,12 +104,10 @@ export function AnalyticsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">Analytics</h1>
-            <Badge variant="secondary">Sample</Badge>
+            <h1 className="text-3xl font-semibold tracking-tight">{t('analytics.title')}</h1>
+            <Badge variant="secondary">{t('common.sample')}</Badge>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Understand your audience and where they find you.
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('analytics.intro')}</p>
         </div>
         <Select
           value={period}
@@ -98,32 +115,36 @@ export function AnalyticsPage() {
             if (value === '7' || value === '14' || value === '30') setPeriod(value)
           }}
         >
-          <SelectTrigger aria-label="Analytics period" className="w-40">
+          <SelectTrigger aria-label={t('analytics.period')} className="w-40">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="30">Last {formatNumber(30)} days</SelectItem>
-            <SelectItem value="14">Last {formatNumber(14)} days</SelectItem>
-            <SelectItem value="7">Last {formatNumber(7)} days</SelectItem>
+            <SelectItem value="30">
+              {t('analytics.lastDays', { days: formatNumber(30) })}
+            </SelectItem>
+            <SelectItem value="14">
+              {t('analytics.lastDays', { days: formatNumber(14) })}
+            </SelectItem>
+            <SelectItem value="7">{t('analytics.lastDays', { days: formatNumber(7) })}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="flex h-8 items-center text-xs text-muted-foreground" role="status">
         {isLoading
-          ? 'Loading sample analytics…'
+          ? t('analytics.loading')
           : data
-            ? `${range} · Fixed sample data for the selected period.`
-            : 'Sample analytics are unavailable.'}
+            ? t('analytics.rangeHint', { range })
+            : t('analytics.unavailable')}
       </div>
 
       {traffic.isError && (
         <Alert variant="destructive">
-          <AlertTitle>Analytics couldn't {data ? 'refresh' : 'load'}</AlertTitle>
+          <AlertTitle>{t(data ? 'analytics.refreshError' : 'analytics.loadError')}</AlertTitle>
           <AlertDescription>
-            <p>{traffic.error.message}</p>
+            <p>{errorMessage(traffic.error)}</p>
             <Button variant="outline" size="sm" onClick={() => void traffic.refetch()}>
-              Try again
+              {t('common.tryAgain')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -160,19 +181,19 @@ export function AnalyticsPage() {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>Audience overview</CardTitle>
+            <CardTitle>{t('analytics.audience')}</CardTitle>
             <CardDescription>
-              Visitors and sessions over the selected {formatNumber(Number(period))} days.
+              {t('analytics.audienceHint', { days: formatNumber(Number(period)) })}
             </CardDescription>
           </CardHeader>
           <CardContent className="px-3 md:px-6">
             {isLoading ? (
-              <Skeleton className="h-72 w-full" aria-label="Loading audience chart" />
+              <Skeleton className="h-72 w-full" aria-label={t('analytics.loadingAudience')} />
             ) : data?.days.length ? (
               <ChartContainer
                 config={trafficConfig}
                 className="aspect-auto h-72 w-full"
-                aria-label="Daily visitors and sessions"
+                aria-label={t('analytics.dailyAudience')}
               >
                 <AreaChart
                   accessibilityLayer
@@ -230,29 +251,29 @@ export function AnalyticsPage() {
               </ChartContainer>
             ) : (
               <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">
-                {traffic.isError ? 'Audience data unavailable' : 'No audience data'}
+                {traffic.isError ? t('analytics.audienceUnavailable') : t('analytics.noAudience')}
               </div>
             )}
           </CardContent>
         </Card>
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>Sessions by device</CardTitle>
-            <CardDescription>How your audience visits your site.</CardDescription>
+            <CardTitle>{t('analytics.deviceSessions')}</CardTitle>
+            <CardDescription>{t('analytics.deviceHint')}</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <Skeleton className="h-48 w-full" aria-label="Loading device chart" />
+              <Skeleton className="h-48 w-full" aria-label={t('analytics.loadingDevices')} />
             ) : data?.devices.length ? (
               <ChartContainer
                 config={deviceConfig}
                 className="aspect-auto h-48 w-full"
-                aria-label="Sessions by desktop, mobile, and tablet"
+                aria-label={t('analytics.deviceChart')}
               >
                 <BarChart
                   accessibilityLayer
                   data={data.devices.map(({ device, sessions }, index) => ({
-                    device,
+                    device: deviceLabels[device] ?? device,
                     sessions,
                     fill: deviceColors[index % deviceColors.length],
                   }))}
@@ -274,7 +295,7 @@ export function AnalyticsPage() {
               </ChartContainer>
             ) : (
               <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-                {traffic.isError ? 'Device data unavailable' : 'No device data'}
+                {traffic.isError ? t('analytics.devicesUnavailable') : t('analytics.noDevices')}
               </div>
             )}
             <dl className="mt-3 space-y-3 text-sm">
@@ -286,7 +307,13 @@ export function AnalyticsPage() {
                     className="flex h-5 items-center justify-between gap-3"
                   >
                     <dt className="text-muted-foreground">
-                      {device?.device ?? (isLoading ? <Skeleton className="h-4 w-16" /> : '—')}
+                      {device ? (
+                        (deviceLabels[device.device] ?? device.device)
+                      ) : isLoading ? (
+                        <Skeleton className="h-4 w-16" />
+                      ) : (
+                        '—'
+                      )}
                     </dt>
                     <dd className="font-medium tabular-nums">
                       {isLoading ? (
@@ -316,11 +343,15 @@ export function AnalyticsPage() {
       <div className="grid gap-5 xl:grid-cols-2">
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>Traffic sources</CardTitle>
-            <CardDescription>Where your sessions come from.</CardDescription>
+            <CardTitle>{t('analytics.trafficSources')}</CardTitle>
+            <CardDescription>{t('analytics.sourcesHint')}</CardDescription>
           </CardHeader>
           <CardContent className="h-60 overflow-y-auto">
-            <Table aria-label="Traffic sources" aria-busy={isLoading} className="table-fixed">
+            <Table
+              aria-label={t('analytics.trafficSources')}
+              aria-busy={isLoading}
+              className="table-fixed"
+            >
               <colgroup>
                 <col className="w-1/2" />
                 <col className="w-1/4" />
@@ -328,9 +359,9 @@ export function AnalyticsPage() {
               </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Source</TableHead>
-                  <TableHead className="text-right">Sessions</TableHead>
-                  <TableHead className="text-right">Share</TableHead>
+                  <TableHead>{t('analytics.source')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.sessions')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.share')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -351,7 +382,9 @@ export function AnalyticsPage() {
                 ) : data?.sources.length ? (
                   data.sources.map((source) => (
                     <TableRow key={source.source} className="h-10">
-                      <TableCell className="truncate font-medium">{source.source}</TableCell>
+                      <TableCell className="truncate font-medium">
+                        {sourceLabels[source.source] ?? source.source}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatNumber(source.sessions)}
                       </TableCell>
@@ -366,7 +399,9 @@ export function AnalyticsPage() {
                       colSpan={3}
                       className="text-center whitespace-normal text-muted-foreground"
                     >
-                      {traffic.isError ? 'Traffic sources unavailable' : 'No traffic sources yet'}
+                      {traffic.isError
+                        ? t('analytics.sourcesUnavailable')
+                        : t('analytics.noSources')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -376,11 +411,15 @@ export function AnalyticsPage() {
         </Card>
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>Top pages</CardTitle>
-            <CardDescription>The pages your audience explores most.</CardDescription>
+            <CardTitle>{t('analytics.topPages')}</CardTitle>
+            <CardDescription>{t('analytics.pagesHint')}</CardDescription>
           </CardHeader>
           <CardContent className="h-60 overflow-y-auto">
-            <Table aria-label="Top pages" aria-busy={isLoading} className="table-fixed">
+            <Table
+              aria-label={t('analytics.topPages')}
+              aria-busy={isLoading}
+              className="table-fixed"
+            >
               <colgroup>
                 <col className="w-1/2" />
                 <col className="w-1/4" />
@@ -388,9 +427,9 @@ export function AnalyticsPage() {
               </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Page</TableHead>
-                  <TableHead className="text-right">Views</TableHead>
-                  <TableHead className="text-right">Share</TableHead>
+                  <TableHead>{t('analytics.page')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.views')}</TableHead>
+                  <TableHead className="text-right">{t('analytics.share')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -426,7 +465,7 @@ export function AnalyticsPage() {
                       colSpan={3}
                       className="text-center whitespace-normal text-muted-foreground"
                     >
-                      {traffic.isError ? 'Top pages unavailable' : 'No top pages yet'}
+                      {traffic.isError ? t('analytics.pagesUnavailable') : t('analytics.noPages')}
                     </TableCell>
                   </TableRow>
                 )}

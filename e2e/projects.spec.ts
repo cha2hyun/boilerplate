@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures.js'
 
 async function createProject(page: Page, name: string, description = '') {
   await page.getByRole('button', { name: 'New project', exact: true }).click()

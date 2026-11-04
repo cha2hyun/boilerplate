@@ -55,6 +55,41 @@ export const pageMetadata = {
 } as const satisfies Record<string, PageMetadata>
 
 export type PagePath = keyof typeof pageMetadata
+const koreanPageMetadata: Record<PagePath, PageMetadata> = {
+  '/': {
+    title: '개요',
+    description: 'Blueprint의 샘플 지표, 최근 활동과 프로젝트를 한눈에 확인하세요.',
+  },
+  '/projects': {
+    title: '프로젝트',
+    description: 'Blueprint 데모 워크스페이스에서 프로젝트를 관리하고 진행 상황을 확인하세요.',
+  },
+  '/analytics': {
+    title: '분석',
+    description: '방문자 추이, 유입 경로와 페이지 성과를 샘플 데이터로 살펴보세요.',
+  },
+  '/orders': {
+    title: '주문',
+    description: '샘플 주문을 검색하고 처리 상태와 주문 상세 정보를 확인하세요.',
+  },
+  '/customers': {
+    title: '고객',
+    description: '샘플 고객의 프로필, 구매 내역과 활동을 살펴보세요.',
+  },
+  '/inbox': { title: '받은 편지함', description: '샘플 대화를 확인하고 메시지를 정리해 보세요.' },
+  '/components': {
+    title: '컴포넌트',
+    description: '접근성을 갖춘 UI 컴포넌트, 의미 기반 테마 토큰과 Pretendard 글꼴을 확인하세요.',
+  },
+  '/settings': {
+    title: '설정',
+    description: 'Blueprint 워크스페이스의 테마, 레이아웃과 환경 설정을 변경하세요.',
+  },
+  '/foundations': {
+    title: '디자인 기준',
+    description: 'Blueprint의 디자인 기준, 레이아웃, 문구와 접근 가능한 피드백을 살펴보세요.',
+  },
+}
 export const pagePaths = Object.keys(pageMetadata) as PagePath[]
 
 export interface HeadTag {
@@ -94,15 +129,22 @@ export function normalizePagePath(pathname: string): string {
 export function createPageHead(
   pathname: string,
   siteUrl?: string,
-  { indexable = true }: { indexable?: boolean } = {},
+  { indexable = true, locale = 'en-US' }: { indexable?: boolean; locale?: 'en-US' | 'ko-KR' } = {},
 ): HeadTag[] {
   const origin = parseSiteUrl(siteUrl)
   const requestedPath = normalizePagePath(pathname)
   const path = pagePaths.find((route) => route.toLowerCase() === requestedPath.toLowerCase())
   const known = path !== undefined
   const page: PageMetadata = known
-    ? pageMetadata[path]
-    : { title: 'Page not found', description: 'This page could not be found in Blueprint.' }
+    ? locale === 'ko-KR'
+      ? koreanPageMetadata[path]
+      : pageMetadata[path]
+    : locale === 'ko-KR'
+      ? {
+          title: '페이지를 찾을 수 없어요',
+          description: 'Blueprint에서 이 페이지를 찾을 수 없어요.',
+        }
+      : { title: 'Page not found', description: 'This page could not be found in Blueprint.' }
   const title = `${page.title} · Blueprint`
   const tags: HeadTag[] = [
     { tag: 'title', attributes: {}, text: title },
@@ -116,7 +158,7 @@ export function createPageHead(
     },
     { tag: 'meta', attributes: { property: 'og:type', content: 'website' } },
     { tag: 'meta', attributes: { property: 'og:site_name', content: 'Blueprint' } },
-    { tag: 'meta', attributes: { property: 'og:locale', content: 'en_US' } },
+    { tag: 'meta', attributes: { property: 'og:locale', content: locale.replace('-', '_') } },
     { tag: 'meta', attributes: { property: 'og:title', content: title } },
     { tag: 'meta', attributes: { property: 'og:description', content: page.description } },
     {
@@ -133,7 +175,10 @@ export function createPageHead(
     const url = new URL(path, `${origin}/`).href
     const image = new URL(page.image ?? '/og/blueprint.png', `${origin}/`).href
     const imageAlt =
-      page.imageAlt ?? 'Blueprint workspace — a clear foundation for your next product.'
+      page.imageAlt ??
+      (locale === 'ko-KR'
+        ? 'Blueprint 워크스페이스 — 다음 제품을 위한 기반.'
+        : 'Blueprint workspace — a clear foundation for your next product.')
     tags.push(
       { tag: 'link', attributes: { rel: 'canonical', href: url } },
       { tag: 'meta', attributes: { property: 'og:url', content: url } },

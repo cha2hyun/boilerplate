@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page } from './fixtures.js'
 
 // The browser suite consumes HTTP payloads, independently of Vite's application module graph.
 type CommerceRecord =

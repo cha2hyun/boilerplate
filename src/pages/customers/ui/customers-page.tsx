@@ -11,8 +11,13 @@ import {
   X,
 } from 'lucide-react'
 import { customersQueryOptions, customerStatuses, type CustomerStatus } from '@/entities/customer'
-import { NumberDisplay } from '@/features/number-motion'
-import { formatNumber } from '@/shared/lib/format'
+import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
+import {
+  useErrorMessage,
+  useFormatters,
+  useLocalePreferences,
+  useTranslation,
+} from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -26,26 +31,25 @@ import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
-import {
-  compareCustomers,
-  customerSortOptions,
-  formatCustomerAmount,
-  formatCustomerDate,
-  type CustomerSort,
-} from '../model/sample-customers'
+import { compareCustomers, customerSortOptions, type CustomerSort } from '../model/sample-customers'
 
 const pageSize = 6
 const countFormat = { maximumFractionDigits: 0 }
 
 function CustomerStatusBadge({ status }: { status: CustomerStatus }) {
+  const { t } = useTranslation('admin')
   return (
     <Badge variant={status === 'Active' ? 'secondary' : 'outline'} className="font-normal">
-      {status}
+      {t(`customers.status.${status}`)}
     </Badge>
   )
 }
 
 export function CustomersPage() {
+  const { t } = useTranslation('admin')
+  const errorMessage = useErrorMessage()
+  const { formatNumber, formatMoney, formatDate } = useFormatters()
+  const currency = useLocalePreferences((state) => state.currency)
   const customersQuery = useQuery(customersQueryOptions())
   const customers = customersQuery.data ?? []
   const isLoading = customersQuery.isPending && !customersQuery.data
@@ -90,27 +94,27 @@ export function CustomersPage() {
 
   const summaries = [
     {
-      title: 'Total customers',
+      title: t('customers.summary.total'),
       value: customers.length,
-      description: 'Across the sample directory',
+      description: t('customers.summary.totalHint'),
       Icon: Users,
     },
     {
-      title: 'Active customers',
+      title: t('customers.summary.active'),
       value: customers.filter((customer) => customer.status === 'Active').length,
-      description: 'With an active sample profile',
+      description: t('customers.summary.activeHint'),
       Icon: UserCheck,
     },
     {
-      title: 'Returning customers',
+      title: t('customers.summary.returning'),
       value: customers.filter((customer) => customer.orders > 1).length,
-      description: 'More than one sample order',
+      description: t('customers.summary.returningHint'),
       Icon: Repeat2,
     },
     {
-      title: 'First-time customers',
+      title: t('customers.summary.firstTime'),
       value: customers.filter((customer) => customer.orders === 1).length,
-      description: 'One sample order so far',
+      description: t('customers.summary.firstTimeHint'),
       Icon: UserRoundPlus,
     },
   ]
@@ -119,23 +123,21 @@ export function CustomersPage() {
     <div className="min-w-0 space-y-6">
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-2.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('customers.title')}</h1>
           <Badge variant="outline" className="font-normal text-muted-foreground">
-            Sample
+            {t('common.sample')}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Get to know your customer directory with read-only sample profiles.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('customers.intro')}</p>
       </div>
 
       {customersQuery.isError && customersQuery.data && (
         <Alert variant="destructive">
-          <AlertTitle>Customers couldn't refresh</AlertTitle>
+          <AlertTitle>{t('customers.refreshError')}</AlertTitle>
           <AlertDescription>
-            <p>{customersQuery.error.message}</p>
+            <p>{errorMessage(customersQuery.error)}</p>
             <Button variant="outline" size="sm" onClick={() => void customersQuery.refetch()}>
-              Try again
+              {t('common.tryAgain')}
             </Button>
           </AlertDescription>
         </Alert>
@@ -171,10 +173,8 @@ export function CustomersPage() {
 
       <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
         <CardHeader className="px-5">
-          <CardTitle className="text-base">Customer directory</CardTitle>
-          <CardDescription>
-            Search profiles, compare order activity, and view customer details.
-          </CardDescription>
+          <CardTitle className="text-base">{t('customers.directory')}</CardTitle>
+          <CardDescription>{t('customers.directoryHint')}</CardDescription>
         </CardHeader>
         <CardContent className="min-w-0 space-y-4 px-0">
           <div className="flex flex-wrap items-center gap-2 px-5">
@@ -184,12 +184,12 @@ export function CustomersPage() {
                 aria-hidden="true"
               />
               <Label htmlFor="customers-search" className="sr-only">
-                Search customers
+                {t('customers.search')}
               </Label>
               <Input
                 id="customers-search"
                 ref={searchRef}
-                placeholder="Search name, email, or location…"
+                placeholder={t('customers.searchPlaceholder')}
                 value={search}
                 className="pl-9"
                 onChange={(event) => {
@@ -205,14 +205,14 @@ export function CustomersPage() {
                 setPage(0)
               }}
             >
-              <SelectTrigger aria-label="Filter customers by status" className="w-full md:w-40">
+              <SelectTrigger aria-label={t('customers.filterStatus')} className="w-full md:w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="all">{t('customers.allStatuses')}</SelectItem>
                 {customerStatuses.map((item) => (
                   <SelectItem key={item} value={item}>
-                    {item}
+                    {t(`customers.status.${item}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -224,13 +224,13 @@ export function CustomersPage() {
                 setPage(0)
               }}
             >
-              <SelectTrigger aria-label="Sort customers" className="w-full md:w-48">
+              <SelectTrigger aria-label={t('customers.sortLabel')} className="w-full md:w-48">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 {customerSortOptions.map((item) => (
                   <SelectItem key={item.value} value={item.value}>
-                    {item.label}
+                    {t(`customers.sort.${item.value}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -238,14 +238,14 @@ export function CustomersPage() {
             {hasFilters && (
               <Button variant="ghost" size="sm" onClick={resetFilters}>
                 <X aria-hidden="true" />
-                Reset
+                {t('common.reset')}
               </Button>
             )}
           </div>
           {isLoading || visibleCustomers.length ? (
             <div
               role="region"
-              aria-label="Customers table"
+              aria-label={t('customers.table')}
               aria-busy={isLoading}
               className="h-120 min-w-0 border-y"
             >
@@ -260,12 +260,12 @@ export function CustomersPage() {
                 </colgroup>
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="pl-5">Customer</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Location</TableHead>
-                    <TableHead className="text-right">Orders</TableHead>
-                    <TableHead className="text-right">Total spent</TableHead>
-                    <TableHead className="pr-5">Joined</TableHead>
+                    <TableHead className="pl-5">{t('common.customer')}</TableHead>
+                    <TableHead>{t('common.status')}</TableHead>
+                    <TableHead>{t('customers.location')}</TableHead>
+                    <TableHead className="text-right">{t('customers.orders')}</TableHead>
+                    <TableHead className="text-right">{t('customers.spent')}</TableHead>
+                    <TableHead className="pr-5">{t('customers.joined')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -293,7 +293,7 @@ export function CustomersPage() {
                                   variant="link"
                                   className="block h-auto max-w-full truncate p-0 text-left font-medium text-foreground"
                                   title={customer.name}
-                                  aria-label={`View customer ${customer.name}`}
+                                  aria-label={t('customers.viewCustomer', { name: customer.name })}
                                   onClick={(event) => {
                                     detailTrigger.current = event.currentTarget
                                     setSelectedCustomerId(customer.id)
@@ -320,10 +320,10 @@ export function CustomersPage() {
                             {formatNumber(customer.orders)}
                           </TableCell>
                           <TableCell className="text-right font-medium tabular-nums">
-                            {formatCustomerAmount(customer.spent)}
+                            {formatMoney(customer.spent / 100)}
                           </TableCell>
                           <TableCell className="pr-5 text-muted-foreground">
-                            {formatCustomerDate(customer.joined)}
+                            {formatDate(customer.joined, { year: 'numeric' })}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -351,27 +351,27 @@ export function CustomersPage() {
                 </EmptyMedia>
                 <EmptyTitle>
                   {customersQuery.isError && !customersQuery.data
-                    ? 'Customers couldn’t load'
+                    ? t('customers.loadError')
                     : customers.length
-                      ? 'No matching customers'
-                      : 'No customers yet'}
+                      ? t('customers.noMatch')
+                      : t('customers.empty')}
                 </EmptyTitle>
                 <EmptyDescription>
                   {customersQuery.isError && !customersQuery.data
-                    ? customersQuery.error.message
+                    ? errorMessage(customersQuery.error)
                     : customers.length
-                      ? 'Try another search or status.'
-                      : 'Customers will appear here when available.'}
+                      ? t('common.searchHint')
+                      : t('customers.emptyHint')}
                 </EmptyDescription>
               </EmptyHeader>
               {customersQuery.isError && !customersQuery.data ? (
                 <Button variant="outline" onClick={() => void customersQuery.refetch()}>
-                  Try again
+                  {t('common.tryAgain')}
                 </Button>
               ) : (
                 customers.length > 0 && (
                   <Button variant="outline" onClick={resetFilters}>
-                    Clear filters
+                    {t('common.clearFilters')}
                   </Button>
                 )
               )}
@@ -380,21 +380,30 @@ export function CustomersPage() {
           <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <p className="text-xs text-muted-foreground" aria-live="polite">
               {isLoading
-                ? 'Loading customers…'
+                ? t('customers.loading')
                 : filteredCustomers.length
-                  ? `Showing ${formatNumber(currentPage * pageSize + 1)}–${formatNumber(Math.min((currentPage + 1) * pageSize, filteredCustomers.length))} of ${formatNumber(filteredCustomers.length)} customers`
-                  : `${formatNumber(0)} customers`}
+                  ? t('customers.showing', {
+                      start: formatNumber(currentPage * pageSize + 1),
+                      end: formatNumber(
+                        Math.min((currentPage + 1) * pageSize, filteredCustomers.length),
+                      ),
+                      total: formatNumber(filteredCustomers.length),
+                    })
+                  : t('customers.count', { total: formatNumber(0) })}
             </p>
             <div className="flex items-center gap-3">
               <p className="text-xs font-medium tabular-nums">
-                Page {formatNumber(currentPage + 1)} of {formatNumber(pageCount)}
+                {t('common.pageCount', {
+                  current: formatNumber(currentPage + 1),
+                  total: formatNumber(pageCount),
+                })}
               </p>
               <div className="flex gap-1">
                 <Button
                   variant="outline"
                   size="icon"
                   className="size-8"
-                  aria-label="Previous customers page"
+                  aria-label={t('customers.previousPage')}
                   disabled={isLoading || currentPage === 0}
                   onClick={() => {
                     setPage(currentPage - 1)
@@ -406,7 +415,7 @@ export function CustomersPage() {
                   variant="outline"
                   size="icon"
                   className="size-8"
-                  aria-label="Next customers page"
+                  aria-label={t('customers.nextPage')}
                   disabled={isLoading || currentPage + 1 >= pageCount}
                   onClick={() => {
                     setPage(currentPage + 1)
@@ -438,12 +447,12 @@ export function CustomersPage() {
         >
           <SheetHeader className="border-b p-6 pr-12">
             <SheetTitle className="break-words">
-              {selectedCustomer?.name ?? 'Customer details'}
+              {selectedCustomer?.name ?? t('customers.details')}
             </SheetTitle>
             <SheetDescription>
               {selectedCustomer
-                ? `${selectedCustomer.id} · Sample customer profile`
-                : 'Read-only sample customer details'}
+                ? t('customers.sampleProfile', { id: selectedCustomer.id })
+                : t('customers.detailsHint')}
             </SheetDescription>
           </SheetHeader>
           {selectedCustomer && (
@@ -463,7 +472,7 @@ export function CustomersPage() {
                 <Card className="gap-2 py-4 shadow-none">
                   <CardHeader className="px-4">
                     <CardTitle className="text-xs font-normal text-muted-foreground">
-                      Lifetime orders
+                      {t('customers.lifetimeOrders')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-2xl font-semibold tabular-nums">
@@ -473,51 +482,48 @@ export function CustomersPage() {
                 <Card className="gap-2 py-4 shadow-none">
                   <CardHeader className="px-4">
                     <CardTitle className="text-xs font-normal text-muted-foreground">
-                      Total spent (USD)
+                      {t('customers.currencySpent', { currency })}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-xl font-semibold tabular-nums">
-                    <NumberDisplay
-                      animate
-                      value={selectedCustomer.spent / 100}
-                      format={{ style: 'currency', currency: 'USD' }}
-                    />
+                    <MoneyDisplay animate value={selectedCustomer.spent / 100} />
                   </CardContent>
                 </Card>
               </div>
-              <section className="space-y-4" aria-label="Customer information">
-                <h2 className="font-medium">Customer information</h2>
+              <section className="space-y-4" aria-label={t('customers.information')}>
+                <h2 className="font-medium">{t('customers.information')}</h2>
                 <dl className="space-y-4">
                   <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">Location</dt>
+                    <dt className="text-xs text-muted-foreground">{t('customers.location')}</dt>
                     <dd>
                       {selectedCustomer.city}, {selectedCustomer.country}
                     </dd>
                   </div>
                   <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">Customer since</dt>
-                    <dd>{formatCustomerDate(selectedCustomer.joined)}</dd>
+                    <dt className="text-xs text-muted-foreground">{t('customers.since')}</dt>
+                    <dd>{formatDate(selectedCustomer.joined, { year: 'numeric' })}</dd>
                   </div>
                   <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">Last order</dt>
+                    <dt className="text-xs text-muted-foreground">{t('customers.lastOrder')}</dt>
                     <dd>
                       {selectedCustomer.lastOrder
-                        ? formatCustomerDate(selectedCustomer.lastOrder)
-                        : 'No orders yet'}
+                        ? formatDate(selectedCustomer.lastOrder, { year: 'numeric' })
+                        : t('customers.noOrders')}
                     </dd>
                   </div>
                   <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">Customer type</dt>
+                    <dt className="text-xs text-muted-foreground">{t('customers.type')}</dt>
                     <dd>
-                      {selectedCustomer.orders > 1 ? 'Returning customer' : 'First-time customer'}
+                      {selectedCustomer.orders > 1
+                        ? t('customers.returningCustomer')
+                        : t('customers.firstTimeCustomer')}
                     </dd>
                   </div>
                 </dl>
               </section>
               <Separator />
               <p className="text-xs leading-relaxed text-muted-foreground">
-                Sample lifetime totals illustrate a customer profile and are independent of the
-                sample orders list. No customer account or email action is connected.
+                {t('customers.disclaimer')}
               </p>
             </div>
           )}

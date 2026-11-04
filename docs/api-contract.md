@@ -63,11 +63,13 @@ Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`,
 
 API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니다. Traffic의 기기 항목은 `device`와 `sessions`만 포함하며, 화면이 로컬 의미 토큰으로 색상을 지정합니다. 응답에 알 수 없는 스타일 필드가 있어도 스키마 검증 결과에서 제거되므로 화면에 전달하지 않습니다.
 
+금액의 원본 통화는 USD입니다. Analytics KPI/수익 차트는 달러 단위, Order 상품 가격·배송비와 Customer 누적 금액은 cents입니다. 선택 통화로 변환하기 전에 cents 호출부는 `/ 100`을 적용합니다. 외부 `https://api.frankfurter.dev/v2/rate/USD/KRW` 요청은 `VITE_API_BASE_URL`이나 demo 데이터 모드와 별개이며 `entities/exchange-rate`가 응답을 검증합니다. 공급자·변환·캐시 계약은 [언어와 표시 통화](i18n.md)를 따릅니다.
+
 ## 목업 HTTP와 시작 경계
 
 `app/mocks/start.ts`는 demo에서만 MSW를 동적으로 가져와 worker 준비를 기다린 뒤 React 앱을 시작합니다. 운영 API 모드에서는 해당 import/worker 시작을 수행하지 않습니다. 실패하면 shadcn 오류 화면과 Reload 버튼을 제공하며 가짜 성공 데이터로 바꾸지 않습니다. worker에는 secure context(HTTPS 또는 localhost)가 필요합니다.
 
-핸들러는 위 네 개 조회 endpoint만 처리합니다. 프로젝트는 기존 demo 저장 어댑터를 유지하고, 그 외 요청은 통과시킵니다. 고정된 450ms 지연과 `Cache-Control: no-store`로 Query 캐시의 동작을 구분할 수 있습니다. HTTP 목업은 dev와 production demo preview에서 동일하게 동작합니다. 실제 API의 인증/권한/백엔드를 제공하는 기능은 아닙니다.
+핸들러는 위 네 개 조회 endpoint만 처리합니다. 프로젝트는 기존 demo 저장 어댑터를 유지하고, 그 외 요청은 통과시킵니다. 따라서 외부 환율은 demo에서도 실제 API를 사용하며 런타임 샘플 환율을 주입하지 않습니다. 고정된 450ms 지연과 `Cache-Control: no-store`로 Query 캐시의 동작을 구분할 수 있습니다. HTTP 목업은 dev와 production demo preview에서 동일하게 동작합니다. 실제 API의 인증/권한/백엔드를 제공하는 기능은 아닙니다.
 
 `public/mockServiceWorker.js`는 MSW CLI가 생성하는 자산이며 내용/무결성 코드를 직접 편집하지 않습니다. MSW 버전을 바꾸면 `pnpm exec msw init public --save`로 재생성합니다. formatter/ESLint는 이 생성 파일 하나만 제외합니다. 정적 호스트는 이 파일을 SPA fallback보다 먼저 JavaScript로 제공해야 합니다. Query 키/캐시 수명·검증 방법은 [Query 캐시](query-cache.md)가 소유합니다.
 
@@ -75,7 +77,7 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 공통 transport는 `Accept: application/json`을 설정하고 body가 있으면 JSON으로 직렬화합니다. 응답 body는 Zod 스키마로 검증합니다. `204`는 `null`로 처리합니다. 네트워크 실패는 `ApiError`의 `NETWORK_ERROR`, 비정상 HTTP 상태는 `HTTP_ERROR`, 읽을 수 없거나 스키마에 맞지 않는 응답은 `INVALID_RESPONSE`가 됩니다. HTTP 응답이 있으면 `status`도 전달합니다. 서버의 임의 오류 body를 사용자에게 그대로 출력하지 않습니다.
 
-HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. mutation timeout은 서버에서 변경이 적용되지 않았다는 뜻이 아니므로 새로고침으로 결과를 확인한 뒤 재시도하도록 안내하며 mutation을 자동 재시도하지 않습니다.
+HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. `ApiError.mayHaveSucceeded`는 기본 `false`이며 읽기 전용이 아닌 요청의 timeout에서 `true`로 설정합니다. `useErrorMessage`는 이 구조화된 값으로 언어를 바꿔도 저장 성공 가능성 안내를 유지하며 영어 오류 문자열을 해석하지 않습니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. mutation timeout은 서버에서 변경이 적용되지 않았다는 뜻이 아니므로 새로고침으로 결과를 확인한 뒤 재시도하도록 안내하며 mutation을 자동 재시도하지 않습니다.
 
 GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취소한 요청은 timeout 오류나 별도 `ApiError`로 감싸지 않습니다. 프로젝트 mutation이 성공하면 진행 중인 목록 요청을 먼저 취소하고 Query 캐시를 갱신한 뒤 목록을 무효화합니다. 따라서 초기 조회가 늦게 도착해 이미 성공한 변경을 가리지 않습니다. 서버가 거부한 mutation을 성공으로 표시하지 않습니다.
 
@@ -90,5 +92,7 @@ GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취�
 데모 데이터 전체를 초기화하려면 브라우저 개발자 도구의 저장소 화면에서 해당 키만 삭제한 뒤 새로고침하세요. API 모드에서는 데모 저장소가 실제 서버 데이터로 업로드되거나 마이그레이션되지 않습니다.
 
 Zustand 워크스페이스 환경 설정도 검증된 저장소를 사용합니다. 손상된 값/지원하지 않는 버전은 기본 설정으로 복구하며 저장소 거부/용량 부족 시 세션 내 메모리로 계속 동작합니다. 이 경우 새로고침 후 설정 보존을 보장하지 않습니다.
+
+언어와 표시 통화는 별도 `blueprint-locale-preferences` 키의 검증된 Zustand 환경 설정이며 상세 저장 형식은 [언어와 표시 통화](i18n.md)가 소유합니다. 환율 응답은 영구 저장하지 않습니다.
 
 테마는 별도 `blueprint-theme` 키에 `light`, `dark`, `system` 중 하나로 저장합니다. 잘못된 값이나 읽기 실패는 기본 system 테마로 처리하고, 쓰기 실패 시에도 현재 세션에서 테마를 변경할 수 있습니다.

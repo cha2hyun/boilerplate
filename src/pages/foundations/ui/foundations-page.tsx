@@ -13,7 +13,8 @@ import {
   Settings,
 } from 'lucide-react'
 import { NumberDisplay } from '@/features/number-motion'
-import { formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
+import { formatNumber as formatPreviewNumber, type NumberFormatOptions } from '@/shared/lib/format'
+import { useFormatters, useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -26,84 +27,84 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
 const railItems = [
-  { label: '대시보드', icon: LayoutDashboard },
-  { label: '받은편지함', icon: Inbox },
-  { label: '설정', icon: Settings },
-]
+  { id: 'dashboard', label: 'foundations.railDashboard', icon: LayoutDashboard },
+  { id: 'inbox', label: 'foundations.railInbox', icon: Inbox },
+  { id: 'settings', label: 'foundations.railSettings', icon: Settings },
+] as const
 const sampleTimestamp = new Date('2026-11-04T06:30:00Z')
 
 function BasicsExamples() {
+  const { t } = useTranslation('examples')
+  const { formatNumber } = useFormatters()
   return (
     <div className="grid min-w-0 gap-5 md:grid-cols-2">
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>세 가지 두께, 분명한 위계</h2>
+            <h2>{t('foundations.typeTitle')}</h2>
           </CardTitle>
-          <CardDescription>Pretendard · 한글과 영문을 같은 기준으로 읽습니다.</CardDescription>
+          <CardDescription>{t('foundations.typeDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <div>
-            <p className="text-2xl font-semibold tracking-tight">다음 프로젝트를 준비하세요</p>
+            <p className="text-2xl font-semibold tracking-tight">
+              {t('foundations.typeSampleTitle')}
+            </p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              필요한 정보를 먼저 보여주고, 설명은 짧게 이어갑니다. Plan your next project.
+              {t('foundations.typeSampleDescription')}
             </p>
           </div>
           <dl className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-4 text-sm">
             <dt className="text-muted-foreground">{formatNumber(400)} · Regular</dt>
-            <dd className="font-normal">본문과 입력값</dd>
+            <dd className="font-normal">{t('foundations.regularRole')}</dd>
             <dt className="text-muted-foreground">{formatNumber(500)} · Medium</dt>
-            <dd className="font-medium">레이블과 버튼</dd>
+            <dd className="font-medium">{t('foundations.mediumRole')}</dd>
             <dt className="text-muted-foreground">{formatNumber(600)} · SemiBold</dt>
-            <dd className="font-semibold">제목과 핵심 수치</dd>
+            <dd className="font-semibold">{t('foundations.semiboldRole')}</dd>
           </dl>
         </CardContent>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>색상은 역할에 맞게</h2>
+            <h2>{t('foundations.colorTitle')}</h2>
           </CardTitle>
-          <CardDescription>주요 행동은 neutral, 브랜드는 정체성을 나타냅니다.</CardDescription>
+          <CardDescription>{t('foundations.colorDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="grid gap-3 xl:grid-cols-2">
             <div className="rounded-lg bg-primary p-4 text-primary-foreground">
               <p className="text-sm font-medium">Primary</p>
-              <p className="mt-1 text-xs">가장 중요한 행동</p>
+              <p className="mt-1 text-xs">{t('foundations.primaryRole')}</p>
             </div>
             <div className="rounded-lg bg-brand p-4 text-brand-foreground">
               <p className="text-sm font-medium">Blueprint Blue</p>
-              <p className="mt-1 text-xs">브랜드 정체성</p>
+              <p className="mt-1 text-xs">{t('foundations.brandRole')}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Badge>
               <Check aria-hidden="true" />
-              완료
+              {t('foundations.complete')}
             </Badge>
-            <Badge variant="secondary">진행 중</Badge>
-            <Badge variant="outline">초안</Badge>
+            <Badge variant="secondary">{t('foundations.inProgress')}</Badge>
+            <Badge variant="outline">{t('foundations.draft')}</Badge>
           </div>
-          <p className="text-sm leading-6 text-muted-foreground">
-            일반 상태는 텍스트와 아이콘으로 구분합니다. 오류와 삭제에는 destructive를 사용합니다.
-          </p>
+          <p className="text-sm leading-6 text-muted-foreground">{t('foundations.statusHelp')}</p>
         </CardContent>
       </Card>
       <Card className="min-w-0 md:col-span-2">
         <CardHeader>
           <CardTitle>
-            <h2>같은 기본값으로 조합하기</h2>
+            <h2>{t('foundations.compositionTitle')}</h2>
           </CardTitle>
-          <CardDescription>
-            컴포넌트의 형태를 유지하고 화면의 목적에 맞춰 배치합니다.
-          </CardDescription>
+          <CardDescription>{t('foundations.compositionDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[
-            ['shadcn UI', '버튼·폼·탭·대화상자는 설치된 컴포넌트를 사용합니다.'],
-            ['Tailwind', '의미 토큰과 레이아웃 클래스로 화면을 조합합니다.'],
-            ['접근성', '이름·레이블·초점과 키보드 동작을 함께 유지합니다.'],
+            ['shadcn UI', t('foundations.shadcnDescription')],
+            ['Tailwind', t('foundations.tailwindDescription')],
+            [t('foundations.accessibility'), t('foundations.accessibilityDescription')],
           ].map(([title, description]) => (
             <div key={title} className="rounded-lg border p-4">
               <h3 className="text-sm font-medium">{title}</h3>
@@ -117,7 +118,9 @@ function BasicsExamples() {
 }
 
 function LayoutExamples() {
-  const [railSelection, setRailSelection] = useState('대시보드')
+  const { t } = useTranslation('examples')
+  const { formatNumber } = useFormatters()
+  const [railSelection, setRailSelection] = useState<(typeof railItems)[number]>(railItems[0])
   return (
     <div className="grid min-w-0 gap-5 md:grid-cols-2">
       <Card className="min-w-0">
@@ -125,31 +128,31 @@ function LayoutExamples() {
           <CardTitle>
             <h2 className="flex items-center gap-2">
               <ArrowRight className="size-4" aria-hidden="true" />
-              가로 묶음
+              {t('foundations.horizontalTitle')}
             </h2>
           </CardTitle>
-          <CardDescription>아이콘과 액션은 유지하고 텍스트가 남은 폭을 사용합니다.</CardDescription>
+          <CardDescription>{t('foundations.horizontalDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex items-center gap-3 rounded-lg border p-4">
             <Folder className="size-5 shrink-0" aria-hidden="true" />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium" title="2026년 하반기 글로벌 운영 보고서">
-                2026년 하반기 글로벌 운영 보고서
+              <p className="truncate text-sm font-medium" title={t('foundations.reportName')}>
+                {t('foundations.reportName')}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                긴 제목도 액션을 밀어내지 않습니다.
+                {t('foundations.reportDescription')}
               </p>
             </div>
             <Badge variant="outline" className="shrink-0">
-              초안
+              {t('foundations.draft')}
             </Badge>
           </div>
           <code className="rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
             flex items-center gap-3 · min-w-0 flex-1 · shrink-0
           </code>
           <p className="text-sm leading-6 text-muted-foreground">
-            가로축은 justify, 세로축은 items로 정렬합니다.
+            {t('foundations.alignmentHelp')}
           </p>
         </CardContent>
       </Card>
@@ -158,21 +161,21 @@ function LayoutExamples() {
           <CardTitle>
             <h2 className="flex items-center gap-2">
               <ArrowDown className="size-4" aria-hidden="true" />
-              세로 묶음
+              {t('foundations.verticalTitle')}
             </h2>
           </CardTitle>
-          <CardDescription>제목·설명·상태 사이의 간격을 부모가 소유합니다.</CardDescription>
+          <CardDescription>{t('foundations.verticalDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col items-start gap-3 rounded-lg border p-4">
-            <p className="text-sm font-medium">출시 준비</p>
+            <p className="text-sm font-medium">{t('foundations.launchTitle')}</p>
             <p className="text-sm leading-6 text-muted-foreground">
-              담당자와 기한을 확인하고 다음 작업을 진행하세요.
+              {t('foundations.launchDescription')}
             </p>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">디자인 검토</Badge>
-              <Badge variant="outline">문구 확인</Badge>
-              <Badge variant="outline">접근성 확인</Badge>
+              <Badge variant="secondary">{t('foundations.designReview')}</Badge>
+              <Badge variant="outline">{t('foundations.copyReview')}</Badge>
+              <Badge variant="outline">{t('foundations.accessibilityReview')}</Badge>
             </div>
           </div>
           <code className="rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
@@ -183,41 +186,39 @@ function LayoutExamples() {
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>가운데 정렬된 아이콘 레일</h2>
+            <h2>{t('foundations.railTitle')}</h2>
           </CardTitle>
-          <CardDescription>같은 너비 안에 아이콘을 배치하고 이름은 유지합니다.</CardDescription>
+          <CardDescription>{t('foundations.railDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center gap-6">
           <div
             className="flex w-14 shrink-0 flex-col items-center gap-2 rounded-lg border bg-muted/30 py-3"
-            aria-label="탐색 레일 예시"
+            aria-label={t('foundations.railLabel')}
           >
-            {railItems.map(({ label, icon: Icon }) => (
-              <Tooltip key={label}>
+            {railItems.map((item) => (
+              <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
                   <Button
                     size="icon"
-                    variant={railSelection === label ? 'secondary' : 'ghost'}
-                    aria-label={label}
-                    aria-pressed={railSelection === label}
+                    variant={railSelection.id === item.id ? 'secondary' : 'ghost'}
+                    aria-label={t(item.label)}
+                    aria-pressed={railSelection.id === item.id}
                     onClick={() => {
-                      setRailSelection(label)
+                      setRailSelection(item)
                     }}
                   >
-                    <Icon className="shrink-0" aria-hidden="true" />
+                    <item.icon className="shrink-0" aria-hidden="true" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">{label}</TooltipContent>
+                <TooltipContent side="right">{t(item.label)}</TooltipContent>
               </Tooltip>
             ))}
           </div>
           <div className="min-w-0 flex-1 space-y-2">
             <p className="text-sm font-medium" aria-live="polite">
-              선택: {railSelection}
+              {t('foundations.railSelected', { label: t(railSelection.label) })}
             </p>
-            <p className="text-sm leading-6 text-muted-foreground">
-              배지나 감춘 텍스트 때문에 아이콘 중심이 움직이지 않게 합니다.
-            </p>
+            <p className="text-sm leading-6 text-muted-foreground">{t('foundations.railHelp')}</p>
             <code className="text-xs break-words text-muted-foreground">
               items-center justify-center
             </code>
@@ -227,28 +228,39 @@ function LayoutExamples() {
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>세 가지 화면 구간</h2>
+            <h2>{t('foundations.breakpointsTitle')}</h2>
           </CardTitle>
-          <CardDescription>화면을 줄여도 읽기 순서와 콘텐츠를 유지합니다.</CardDescription>
+          <CardDescription>{t('foundations.breakpointsDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <dl className="space-y-3 text-sm">
             <div className="flex items-center justify-between gap-3">
-              <dt>모바일</dt>
+              <dt>{t('foundations.mobile')}</dt>
               <dd className="text-muted-foreground">
-                {formatNumber(768)}px 미만 · {formatNumber(1)}열
+                {t('foundations.mobileRange', {
+                  width: formatNumber(768),
+                  columns: formatNumber(1),
+                })}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt>태블릿</dt>
+              <dt>{t('foundations.tablet')}</dt>
               <dd className="text-muted-foreground">
-                {formatNumber(768)}px부터 · {formatNumber(1)}–{formatNumber(2)}열
+                {t('foundations.tabletRange', {
+                  width: formatNumber(768),
+                  min: formatNumber(1),
+                  max: formatNumber(2),
+                })}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <dt>PC</dt>
+              <dt>{t('foundations.desktop')}</dt>
               <dd className="text-muted-foreground">
-                {formatNumber(1280)}px부터 · {formatNumber(2)}–{formatNumber(4)}열
+                {t('foundations.desktopRange', {
+                  width: formatNumber(1280),
+                  min: formatNumber(2),
+                  max: formatNumber(4),
+                })}
               </dd>
             </div>
           </dl>
@@ -256,7 +268,7 @@ function LayoutExamples() {
             grid gap-4 md:grid-cols-2 xl:grid-cols-3
           </code>
           <p className="text-sm leading-6 text-muted-foreground">
-            필터는 줄바꿈하고 표는 영역 안에서 스크롤합니다.
+            {t('foundations.breakpointsHelp')}
           </p>
         </CardContent>
       </Card>
@@ -265,27 +277,43 @@ function LayoutExamples() {
 }
 
 function ContentExamples() {
-  const [locale, setLocale] = useState('ko-KR')
-  const [timeZone, setTimeZone] = useState('Asia/Seoul')
+  const { t } = useTranslation('examples')
+  const globalLocale = useLocalePreferences((state) => state.locale)
+  const [previewLocale, setPreviewLocale] = useState<string | null>(null)
+  const [timeZone, setTimeZone] = useState('UTC')
+  const locale = previewLocale ?? globalLocale
+  const { formatDate } = useFormatters()
   return (
     <div className="grid min-w-0 gap-5 md:grid-cols-2">
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>행동과 결과가 보이는 문구</h2>
+            <h2>{t('foundations.writingTitle')}</h2>
           </CardTitle>
-          <CardDescription>운영자가 다음 행동을 판단하는 데 필요한 내용을 씁니다.</CardDescription>
+          <CardDescription>{t('foundations.writingDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           {[
-            ['행동', '변경 사항 저장', '버튼은 할 일을 구체적으로 말합니다.'],
-            ['성공', '프로젝트 이름을 변경했어요.', '실제로 끝난 결과만 알립니다.'],
             [
-              '오류',
-              '저장하지 못했어요. 다시 시도해 주세요.',
-              '실패한 작업과 다음 행동을 연결합니다.',
+              t('foundations.actionLabel'),
+              t('foundations.actionExample'),
+              t('foundations.actionHelp'),
             ],
-            ['빈 결과', '일치하는 프로젝트가 없어요.', '검색어나 필터를 바꿀 수 있게 안내합니다.'],
+            [
+              t('foundations.successLabel'),
+              t('foundations.successExample'),
+              t('foundations.successHelp'),
+            ],
+            [
+              t('foundations.errorLabel'),
+              t('foundations.errorExample'),
+              t('foundations.errorHelp'),
+            ],
+            [
+              t('foundations.emptyLabel'),
+              t('foundations.emptyExample'),
+              t('foundations.emptyHelp'),
+            ],
           ].map(([label, example, description]) => (
             <div key={label} className="flex items-start gap-3">
               <Badge variant="outline" className="shrink-0">
@@ -304,28 +332,28 @@ function ContentExamples() {
           <CardTitle>
             <h2 className="flex items-center gap-2">
               <Globe className="size-4" aria-hidden="true" />
-              같은 데이터, 다른 표기
+              {t('foundations.localeTitle')}
             </h2>
           </CardTitle>
-          <CardDescription>언어와 시간대를 선택해 표시 형식을 비교하세요.</CardDescription>
+          <CardDescription>{t('foundations.localeDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="grid gap-3 xl:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="foundation-locale">표시 언어</Label>
-              <Select value={locale} onValueChange={setLocale}>
+              <Label htmlFor="foundation-locale">{t('foundations.previewLocale')}</Label>
+              <Select value={locale} onValueChange={setPreviewLocale}>
                 <SelectTrigger id="foundation-locale" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ko-KR">한국어</SelectItem>
-                  <SelectItem value="en-US">English (US)</SelectItem>
-                  <SelectItem value="de-DE">Deutsch</SelectItem>
+                  <SelectItem value="ko-KR">{t('foundations.korean')}</SelectItem>
+                  <SelectItem value="en-US">{t('foundations.english')}</SelectItem>
+                  <SelectItem value="de-DE">{t('foundations.german')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="foundation-timezone">시간대</Label>
+              <Label htmlFor="foundation-timezone">{t('foundations.timeZone')}</Label>
               <Select value={timeZone} onValueChange={setTimeZone}>
                 <SelectTrigger id="foundation-timezone" className="w-full">
                   <SelectValue />
@@ -340,26 +368,28 @@ function ContentExamples() {
           </div>
           <dl className="space-y-4 rounded-lg border p-4" aria-live="polite">
             <div>
-              <dt className="text-xs text-muted-foreground">금액 · USD</dt>
+              <dt className="text-xs text-muted-foreground">
+                {t('foundations.amount', { currency: 'USD' })}
+              </dt>
               <dd className="mt-1 text-2xl font-semibold break-words tabular-nums">
-                {formatNumber(12480.5, { locale, style: 'currency', currency: 'USD' })}
+                {formatPreviewNumber(12480.5, { locale, style: 'currency', currency: 'USD' })}
               </dd>
             </div>
             <div>
-              <dt className="text-xs text-muted-foreground">예시 시각 · {timeZone}</dt>
+              <dt className="text-xs text-muted-foreground">
+                {t('foundations.sampleTime', { timeZone })}
+              </dt>
               <dd className="mt-1 text-sm">
-                {new Intl.DateTimeFormat(locale, {
+                {formatDate(sampleTimestamp, {
+                  locale,
                   dateStyle: 'medium',
                   timeStyle: 'short',
                   timeZone,
-                }).format(sampleTimestamp)}
+                })}
               </dd>
             </div>
           </dl>
-          <p className="text-xs leading-5 text-muted-foreground">
-            표시 언어를 바꿔도 통화는 USD입니다. 이 예시는 앱 전체 번역이나 RTL 지원을 의미하지
-            않습니다.
-          </p>
+          <p className="text-xs leading-5 text-muted-foreground">{t('foundations.localeHelp')}</p>
         </CardContent>
       </Card>
     </div>
@@ -367,6 +397,8 @@ function ContentExamples() {
 }
 
 function FeedbackExamples() {
+  const { t } = useTranslation('examples')
+  const { formatNumber } = useFormatters()
   const [value, setValue] = useState(100400)
   const [numberStyle, setNumberStyle] = useState('decimal')
   const [useGrouping, setUseGrouping] = useState(true)
@@ -387,36 +419,40 @@ function FeedbackExamples() {
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>같은 숫자, 필요한 표현</h2>
+            <h2>{t('foundations.numberTitle')}</h2>
           </CardTitle>
-          <CardDescription>구분 기호, 통화, 축약과 움직임을 선택해 비교하세요.</CardDescription>
+          <CardDescription>{t('foundations.numberDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div className="rounded-lg border p-5">
             <p className="text-sm text-muted-foreground">
-              {numberStyle === 'decimal' ? '일반 숫자' : `금액 · ${numberStyle}`} · 예시 데이터
+              {numberStyle === 'decimal'
+                ? t('foundations.decimalSample')
+                : t('foundations.currencySample', { currency: numberStyle })}
             </p>
             <div className="mt-2 flex h-9 items-center text-3xl font-semibold tracking-tight">
               <NumberDisplay key={replay} value={value} format={format} animate={animate} />
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">원래 값: {formatNumber(value)}</p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {t('foundations.originalValue', { value: formatNumber(value) })}
+            </p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="foundation-number-style">숫자 형식</Label>
+            <Label htmlFor="foundation-number-style">{t('foundations.numberFormat')}</Label>
             <Select value={numberStyle} onValueChange={setNumberStyle}>
               <SelectTrigger id="foundation-number-style" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="decimal">일반 숫자</SelectItem>
-                <SelectItem value="USD">미국 달러 · USD</SelectItem>
-                <SelectItem value="KRW">대한민국 원 · KRW</SelectItem>
+                <SelectItem value="decimal">{t('foundations.decimal')}</SelectItem>
+                <SelectItem value="USD">{t('foundations.usd')}</SelectItem>
+                <SelectItem value="KRW">{t('foundations.krw')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid gap-4 xl:grid-cols-2">
             <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-grouping">천 단위 구분</Label>
+              <Label htmlFor="foundation-number-grouping">{t('foundations.grouping')}</Label>
               <Switch
                 id="foundation-number-grouping"
                 checked={useGrouping}
@@ -424,7 +460,7 @@ function FeedbackExamples() {
               />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-compact">축약 표기</Label>
+              <Label htmlFor="foundation-number-compact">{t('foundations.compact')}</Label>
               <Switch
                 id="foundation-number-compact"
                 checked={compact}
@@ -432,7 +468,7 @@ function FeedbackExamples() {
               />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-currency">통화 기호</Label>
+              <Label htmlFor="foundation-number-currency">{t('foundations.currencySymbol')}</Label>
               <Switch
                 id="foundation-number-currency"
                 checked={showCurrency}
@@ -441,7 +477,9 @@ function FeedbackExamples() {
               />
             </div>
             <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-animation">숫자 애니메이션</Label>
+              <Label htmlFor="foundation-number-animation">
+                {t('foundations.numberAnimation')}
+              </Label>
               <Switch
                 id="foundation-number-animation"
                 checked={animate}
@@ -455,7 +493,7 @@ function FeedbackExamples() {
                 setValue((current) => (current === 100400 ? 1000000 : 100400))
               }}
             >
-              값 변경
+              {t('foundations.changeValue')}
             </Button>
             <Button
               variant="outline"
@@ -465,39 +503,34 @@ function FeedbackExamples() {
               }}
             >
               <RotateCcw aria-hidden="true" />
-              다시 재생
+              {t('foundations.replay')}
             </Button>
           </div>
           <p className="text-xs leading-5 text-muted-foreground">
-            애니메이션은 {formatNumber(300)}ms 동안 표시됩니다. 움직임 줄이기를 켜면 즉시 최종 값을
-            보여주며, 화면낭독기에도 최종 값만 제공합니다. 통화 선택은 환율을 적용하지 않습니다.
+            {t('foundations.numberHelp', { duration: formatNumber(300) })}
           </p>
         </CardContent>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2>오류와 복구를 함께 안내</h2>
+            <h2>{t('foundations.recoveryTitle')}</h2>
           </CardTitle>
-          <CardDescription>
-            요청 결과의 문구 예시입니다. 실제 API를 호출하지 않습니다.
-          </CardDescription>
+          <CardDescription>{t('foundations.recoveryDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <div aria-live="polite">
             {recovered ? (
               <Alert>
                 <Check aria-hidden="true" />
-                <AlertTitle>프로젝트 목록을 불러왔어요.</AlertTitle>
-                <AlertDescription>기존 작업을 이어갈 수 있어요.</AlertDescription>
+                <AlertTitle>{t('foundations.loadedTitle')}</AlertTitle>
+                <AlertDescription>{t('foundations.loadedDescription')}</AlertDescription>
               </Alert>
             ) : (
               <Alert variant="destructive">
                 <CircleAlert aria-hidden="true" />
-                <AlertTitle>프로젝트 목록을 불러오지 못했어요.</AlertTitle>
-                <AlertDescription>
-                  잠시 후 다시 시도해 주세요. 작성 중인 내용은 유지돼요.
-                </AlertDescription>
+                <AlertTitle>{t('foundations.failedTitle')}</AlertTitle>
+                <AlertDescription>{t('foundations.failedDescription')}</AlertDescription>
               </Alert>
             )}
           </div>
@@ -508,22 +541,17 @@ function FeedbackExamples() {
               setRecovered((current) => !current)
             }}
           >
-            {recovered ? '오류 예시 보기' : '복구 예시 보기'}
+            {recovered ? t('foundations.showError') : t('foundations.showRecovery')}
           </Button>
-          <p className="text-xs leading-5 text-muted-foreground">
-            실제 화면의 재시도 버튼은 해당 요청을 다시 실행합니다. 원인을 모르면 오류 이유를
-            단정하지 않습니다.
-          </p>
+          <p className="text-xs leading-5 text-muted-foreground">{t('foundations.recoveryHelp')}</p>
         </CardContent>
       </Card>
       <Card className="min-w-0 md:col-span-2">
         <CardHeader>
           <CardTitle>
-            <h2>내용의 자리를 보존하는 로딩</h2>
+            <h2>{t('foundations.loadingTitle')}</h2>
           </CardTitle>
-          <CardDescription>
-            초기 로딩의 구조 예시입니다. 갱신 중에는 기존 데이터를 유지합니다.
-          </CardDescription>
+          <CardDescription>{t('foundations.loadingDescription')}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((item) => (
@@ -540,27 +568,29 @@ function FeedbackExamples() {
 }
 
 export function FoundationsPage() {
+  const { t } = useTranslation('examples')
   return (
-    <div lang="ko" className="min-w-0 space-y-7">
+    <div className="min-w-0 space-y-7">
       <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">Foundations</h1>
+          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+            {t('foundations.title')}
+          </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Blueprint의 화면을 구성하는 기준입니다. 글자, 정렬, 문구와 상태를 실제 조합으로
-            확인하세요.
+            {t('foundations.description')}
           </p>
         </div>
         <Badge variant="outline" className="self-start">
-          Blueprint 기준
+          {t('foundations.standards')}
         </Badge>
       </header>
       <Tabs defaultValue="basics" className="min-w-0">
         <div className="min-w-0 overflow-x-auto pb-1">
-          <TabsList aria-label="디자인 기준">
-            <TabsTrigger value="basics">기본</TabsTrigger>
-            <TabsTrigger value="layout">레이아웃</TabsTrigger>
-            <TabsTrigger value="content">문구·국제화</TabsTrigger>
-            <TabsTrigger value="feedback">피드백</TabsTrigger>
+          <TabsList aria-label={t('foundations.tabsLabel')}>
+            <TabsTrigger value="basics">{t('foundations.basicsTab')}</TabsTrigger>
+            <TabsTrigger value="layout">{t('foundations.layoutTab')}</TabsTrigger>
+            <TabsTrigger value="content">{t('foundations.contentTab')}</TabsTrigger>
+            <TabsTrigger value="feedback">{t('foundations.feedbackTab')}</TabsTrigger>
           </TabsList>
         </div>
         <TabsContent value="basics" className="mt-4 min-w-0">
@@ -577,13 +607,10 @@ export function FoundationsPage() {
         </TabsContent>
       </Tabs>
       <footer className="flex flex-col gap-3 border-t pt-5 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p className="leading-5">
-          SEED는 설계 관점의 참고 자료입니다. 이 화면은 기존 shadcn·Tailwind·Pretendard로
-          구성했습니다.
-        </p>
+        <p className="leading-5">{t('foundations.footer')}</p>
         <Button asChild variant="link" size="sm" className="h-auto self-start p-0 text-xs">
           <a href="https://seed-design.io/foundations" target="_blank" rel="noreferrer">
-            참고 문서
+            {t('foundations.reference')}
             <ArrowUpRight aria-hidden="true" />
           </a>
         </Button>

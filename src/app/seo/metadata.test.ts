@@ -7,6 +7,27 @@ afterEach(() => {
 })
 
 describe('page metadata', () => {
+  it('switches client metadata language without changing canonical URLs or accumulating tags', () => {
+    const origin = 'https://blueprint.example'
+    updateDocumentHead(createPageHead('/orders', origin, { locale: 'ko-KR' }))
+    expect(document.title).toBe('주문 · Blueprint')
+    expect(document.head.querySelector('[property="og:locale"]')).toHaveAttribute(
+      'content',
+      'ko_KR',
+    )
+    expect(document.head.querySelector('[rel="canonical"]')).toHaveAttribute(
+      'href',
+      `${origin}/orders`,
+    )
+    updateDocumentHead(createPageHead('/orders', origin, { locale: 'en-US' }))
+    expect(document.title).toBe('Orders · Blueprint')
+    expect(document.head.querySelectorAll('[property="og:locale"]')).toHaveLength(1)
+    expect(document.head.querySelector('[property="og:locale"]')).toHaveAttribute(
+      'content',
+      'en_US',
+    )
+  })
+
   it('omits absolute URLs before a public origin is configured', () => {
     const tags = createPageHead('/orders')
     expect(

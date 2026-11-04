@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Circle, FolderKanban, Gauge, Plus } from 'lucide-react'
 import { projectsQueryOptions } from '@/entities/project'
 import { NumberDisplay } from '@/features/number-motion'
-import { formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
+import type { NumberFormatOptions } from '@/shared/lib/format'
+import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { ProjectEditorDialog } from '@/features/project-editor'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
@@ -15,6 +16,8 @@ const countFormat = { maximumFractionDigits: 0 }
 const progressFormat = { style: 'percent', maximumFractionDigits: 0 } satisfies NumberFormatOptions
 
 export function ProjectsPage() {
+  const { t } = useTranslation('workspace')
+  const { formatNumber } = useFormatters()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const query = useQuery(projectsQueryOptions())
   const projects = query.data ?? []
@@ -28,26 +31,29 @@ export function ProjectsPage() {
 
   const summaries = [
     {
-      title: 'Total projects',
+      title: t('projects.total'),
       value: projects.length,
       format: countFormat,
-      description: 'Across your workspace',
+      description: t('projects.across'),
       Icon: FolderKanban,
     },
     {
-      title: 'Active projects',
+      title: t('projects.active'),
       value: activeCount,
       format: countFormat,
       description: hasData
-        ? `${formatNumber(pausedCount)} ${pausedCount === 1 ? 'project' : 'projects'} currently paused`
-        : 'Projects currently paused',
+        ? t('projects.pausedCount', {
+            count: pausedCount,
+            formattedCount: formatNumber(pausedCount),
+          })
+        : t('projects.pausedDescription'),
       Icon: Circle,
     },
     {
-      title: 'Average progress',
+      title: t('projects.progress'),
       value: averageProgress,
       format: progressFormat,
-      description: 'A shared view of how far you’ve come',
+      description: t('projects.progressDescription'),
       Icon: Gauge,
     },
   ]
@@ -57,21 +63,19 @@ export function ProjectsPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{t('common.projects')}</h1>
             <Badge variant="outline" className="font-normal text-muted-foreground">
-              Workspace
+              {t('common.workspace')}
             </Badge>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Keep the big picture in view. Make the next step count.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('projects.description')}</p>
         </div>
         <Button
           onClick={() => {
             setIsCreateOpen(true)
           }}
         >
-          <Plus aria-hidden="true" /> New project
+          <Plus aria-hidden="true" /> {t('common.newProject')}
         </Button>
       </div>
 

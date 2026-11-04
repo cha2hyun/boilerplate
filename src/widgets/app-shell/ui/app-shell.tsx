@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Boxes, ChevronDown, ExternalLink, Moon, Search, Sun } from 'lucide-react'
+import {
+  Boxes,
+  ChevronDown,
+  ExternalLink,
+  Globe,
+  LoaderCircle,
+  Moon,
+  RefreshCw,
+  Search,
+  Sun,
+} from 'lucide-react'
+import { useExchangeRate } from '@/entities/exchange-rate'
+import { useFormatters, useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { usePreferences } from '@/features/workspace-preferences'
 import { env } from '@/shared/config'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
@@ -26,6 +38,16 @@ import {
   CommandList,
   CommandShortcut,
 } from '@/shared/ui/command'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
+import { Switch } from '@/shared/ui/switch'
 import { Separator } from '@/shared/ui/separator'
 import { Kbd } from '@/shared/ui/kbd'
 import {
@@ -48,6 +70,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
 function WorkspaceSidebar() {
+  const { t } = useTranslation('workspace')
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const { setOpenMobile } = useSidebar()
   return (
@@ -62,7 +85,7 @@ function WorkspaceSidebar() {
             >
               <Link
                 to="/"
-                aria-label="Blueprint overview"
+                aria-label={t('shell.blueprintOverview')}
                 onClick={() => {
                   setOpenMobile(false)
                 }}
@@ -80,8 +103,8 @@ function WorkspaceSidebar() {
       </SidebarHeader>
       <SidebarContent>
         {navigationGroups.map((group) => (
-          <SidebarGroup key={group} className={group === 'Resources' ? 'mt-auto' : undefined}>
-            <SidebarGroupLabel>{group}</SidebarGroupLabel>
+          <SidebarGroup key={group} className={group === 'resources' ? 'mt-auto' : undefined}>
+            <SidebarGroupLabel>{t(`navigationGroups.${group}`)}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigation
@@ -91,7 +114,7 @@ function WorkspaceSidebar() {
                       <SidebarMenuButton
                         asChild
                         isActive={pathname === item.to}
-                        tooltip={item.label}
+                        tooltip={t(item.labelKey)}
                         className="h-10 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
                       >
                         <Link
@@ -102,17 +125,17 @@ function WorkspaceSidebar() {
                         >
                           <item.icon />
                           <span className="group-data-[collapsible=icon]:sr-only">
-                            {item.label}
+                            {t(item.labelKey)}
                           </span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   ))}
-                {group === 'Resources' && (
+                {group === 'resources' && (
                   <SidebarMenuItem>
                     <SidebarMenuButton
                       asChild
-                      tooltip="Documentation"
+                      tooltip={t('shell.documentation')}
                       className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
                     >
                       <a
@@ -121,7 +144,9 @@ function WorkspaceSidebar() {
                         rel="noreferrer"
                       >
                         <ExternalLink />
-                        <span className="group-data-[collapsible=icon]:sr-only">Documentation</span>
+                        <span className="group-data-[collapsible=icon]:sr-only">
+                          {t('shell.documentation')}
+                        </span>
                         <ExternalLink className="ml-auto size-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />
                       </a>
                     </SidebarMenuButton>
@@ -139,12 +164,12 @@ function WorkspaceSidebar() {
             <SidebarMenuButton
               asChild
               size="lg"
-              tooltip="Workspace settings"
+              tooltip={t('shell.workspaceSettings')}
               className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
             >
               <Link
                 to="/settings"
-                aria-label="Workspace settings"
+                aria-label={t('shell.workspaceSettings')}
                 onClick={() => {
                   setOpenMobile(false)
                 }}
@@ -155,8 +180,8 @@ function WorkspaceSidebar() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm group-data-[collapsible=icon]:hidden">
-                  <span className="font-medium">Your workspace</span>
-                  <span className="text-xs text-muted-foreground">Make it your own</span>
+                  <span className="font-medium">{t('shell.yourWorkspace')}</span>
+                  <span className="text-xs text-muted-foreground">{t('shell.makeItYours')}</span>
                 </div>
                 <ChevronDown className="size-4 group-data-[collapsible=icon]:hidden" />
               </Link>
@@ -173,6 +198,13 @@ interface AppShellProps {
   children: ReactNode
 }
 export function AppShell({ children }: AppShellProps) {
+  const { t } = useTranslation('workspace')
+  const { formatNumber, formatDate } = useFormatters()
+  const locale = useLocalePreferences((state) => state.locale)
+  const currency = useLocalePreferences((state) => state.currency)
+  const setLocale = useLocalePreferences((state) => state.setLocale)
+  const setCurrency = useLocalePreferences((state) => state.setCurrency)
+  const exchangeRate = useExchangeRate()
   const [commandOpen, setCommandOpen] = useState(false)
   const commandOpenerRef = useRef<HTMLElement | null>(null)
   const commandNavigatedRef = useRef(false)
@@ -187,7 +219,8 @@ export function AppShell({ children }: AppShellProps) {
   const navigate = useNavigate()
   const compact = usePreferences((state) => state.compactMode)
   const pathname = useRouterState({ select: (state) => state.location.pathname })
-  const title = navigation.find((item) => item.to === pathname)?.label ?? 'Page not found'
+  const currentPage = navigation.find((item) => item.to === pathname)
+  const title = t(currentPage?.labelKey ?? 'shell.notFound')
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -209,69 +242,175 @@ export function AppShell({ children }: AppShellProps) {
       }}
     >
       <Button asChild className="fixed top-2 left-2 z-50 -translate-y-20 focus:translate-y-0">
-        <a href="#main-content">Skip to content</a>
+        <a href="#main-content">{t('shell.skip')}</a>
       </Button>
       <WorkspaceSidebar />
       <SidebarInset className="min-w-0 overflow-hidden">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b px-4 md:px-6">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-1 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:inline-flex">Workspace</BreadcrumbItem>
-              <BreadcrumbSeparator className="hidden md:block" />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{title}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <div className="ml-auto flex items-center gap-2">
-            {env.dataSource === 'demo' && (
-              <Badge
-                variant="outline"
-                className="hidden gap-1.5 text-xs font-normal text-muted-foreground md:inline-flex"
-              >
-                <span className="size-1.5 rounded-full bg-chart-2" />
-                Demo workspace
-              </Badge>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-2 text-muted-foreground"
-              onClick={() => {
-                setCommandOpen(true)
-              }}
-              aria-label="Search workspace"
-              aria-keyshortcuts="Meta+K Control+K"
-            >
-              <Search className="size-4" aria-hidden="true" />
-              <span className="hidden xl:inline">Search</span>
-              <Kbd aria-hidden="true" className="hidden md:inline-flex">
-                ⌘ K
-              </Kbd>
-            </Button>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={
-                    resolvedTheme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
-                  }
-                  onClick={() => {
-                    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
-                  }}
+        <header className="shrink-0 border-b px-4 md:px-6">
+          <div className="flex min-h-16 items-center gap-2 md:gap-3">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-1 h-4" />
+            <Breadcrumb className="hidden min-w-0 md:block">
+              <BreadcrumbList>
+                <BreadcrumbItem className="hidden xl:inline-flex">
+                  {t('common.workspace')}
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden xl:block" />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>{title}</BreadcrumbPage>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+            <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
+              {env.dataSource === 'demo' && (
+                <Badge
+                  variant="outline"
+                  className="hidden gap-1.5 text-xs font-normal text-muted-foreground 2xl:inline-flex"
                 >
-                  {resolvedTheme === 'dark' ? (
-                    <Sun className="size-4" />
-                  ) : (
-                    <Moon className="size-4" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Toggle theme</TooltipContent>
-            </Tooltip>
+                  <span className="size-1.5 rounded-full bg-chart-2" />
+                  {t('shell.demo')}
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="size-8 gap-2 p-0 text-muted-foreground xl:h-9 xl:w-auto xl:px-3"
+                onClick={() => {
+                  setCommandOpen(true)
+                }}
+                aria-label={t('shell.searchWorkspace')}
+                aria-keyshortcuts="Meta+K Control+K"
+              >
+                <Search className="size-4" aria-hidden="true" />
+                <span className="hidden xl:inline">{t('shell.search')}</span>
+                <Kbd aria-hidden="true" className="hidden xl:inline-flex">
+                  ⌘ K
+                </Kbd>
+              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label={t(
+                      resolvedTheme === 'dark' ? 'shell.lightTheme' : 'shell.darkTheme',
+                    )}
+                    onClick={() => {
+                      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
+                    }}
+                  >
+                    {resolvedTheme === 'dark' ? (
+                      <Sun className="size-4" />
+                    ) : (
+                      <Moon className="size-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{t('shell.toggleTheme')}</TooltipContent>
+              </Tooltip>
+              <DropdownMenu>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label={t('shell.language')}
+                      >
+                        <Globe className="size-4" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent>{t('shell.language')}</TooltipContent>
+                </Tooltip>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>{t('shell.language')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuRadioGroup
+                    value={locale}
+                    onValueChange={(value) => {
+                      if (value === 'ko-KR' || value === 'en-US') setLocale(value)
+                    }}
+                  >
+                    <DropdownMenuRadioItem value="ko-KR" lang="ko">
+                      한국어
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="en-US" lang="en">
+                      English
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <div className="ml-1 flex items-center gap-1.5 text-xs font-medium tabular-nums">
+                <span className={currency === 'USD' ? 'text-foreground' : 'text-muted-foreground'}>
+                  USD
+                </span>
+                <Switch
+                  id="display-currency"
+                  checked={currency === 'KRW'}
+                  onCheckedChange={(checked) => {
+                    setCurrency(checked ? 'KRW' : 'USD')
+                  }}
+                  aria-label={t('shell.currency')}
+                  aria-describedby="exchange-rate-status"
+                />
+                <span className={currency === 'KRW' ? 'text-foreground' : 'text-muted-foreground'}>
+                  KRW
+                </span>
+              </div>
+            </div>
+          </div>
+          <div
+            id="exchange-rate-status"
+            role="status"
+            aria-live="polite"
+            className="flex min-h-7 flex-wrap items-center justify-end gap-x-2 gap-y-1 pb-2 text-[11px] text-muted-foreground"
+          >
+            {exchangeRate.data ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    tabIndex={0}
+                    className="rounded-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {t('shell.exchangeRate', {
+                      rate: formatNumber(exchangeRate.data.rate, {
+                        style: 'currency',
+                        currency: 'KRW',
+                        maximumFractionDigits: 2,
+                      }),
+                      date: formatDate(exchangeRate.data.date, { year: 'numeric' }),
+                    })}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-72">
+                  {t('shell.exchangeRateDescription')}
+                </TooltipContent>
+              </Tooltip>
+            ) : exchangeRate.isPending ? (
+              <span className="inline-flex items-center gap-1.5">
+                <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />
+                {t('shell.exchangeRateLoading')}
+              </span>
+            ) : (
+              <span>{t('shell.exchangeRateUnavailable')}</span>
+            )}
+            {exchangeRate.isError && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 px-1.5 text-[11px]"
+                disabled={exchangeRate.isFetching}
+                onClick={() => {
+                  void exchangeRate.refetch()
+                }}
+              >
+                <RefreshCw className="size-3" aria-hidden="true" />
+                {t('shell.retryExchangeRate')}
+              </Button>
+            )}
           </div>
         </header>
         <div
@@ -286,15 +425,15 @@ export function AppShell({ children }: AppShellProps) {
           {children}
         </div>
         <footer className="flex items-center justify-between gap-4 border-t px-6 py-4 text-xs text-muted-foreground">
-          <span>Blueprint workspace</span>
-          <span>Built for what comes next.</span>
+          <span>{t('shell.footerWorkspace')}</span>
+          <span>{t('shell.footerDescription')}</span>
         </footer>
       </SidebarInset>
       <CommandDialog
         open={commandOpen}
         onOpenChange={setCommandOpen}
-        title="Search workspace"
-        description="Jump to a page in your workspace."
+        title={t('shell.searchWorkspace')}
+        description={t('shell.searchDescription')}
         onOpenAutoFocus={() => {
           commandOpenerRef.current =
             document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -309,10 +448,10 @@ export function AppShell({ children }: AppShellProps) {
           target?.focus()
         }}
       >
-        <CommandInput placeholder="Where would you like to go?" />
+        <CommandInput placeholder={t('shell.searchPlaceholder')} />
         <CommandList>
-          <CommandEmpty>No pages found.</CommandEmpty>
-          <CommandGroup heading="Navigate">
+          <CommandEmpty>{t('shell.noPages')}</CommandEmpty>
+          <CommandGroup heading={t('shell.navigate')}>
             {navigation.map((item) => (
               <CommandItem
                 key={item.to}
@@ -323,12 +462,12 @@ export function AppShell({ children }: AppShellProps) {
                 }}
               >
                 <item.icon />
-                <span>{item.label}</span>
+                <span>{t(item.labelKey)}</span>
                 <CommandShortcut>↵</CommandShortcut>
               </CommandItem>
             ))}
           </CommandGroup>
-          <CommandGroup heading="Appearance">
+          <CommandGroup heading={t('settings.appearance')}>
             <CommandItem
               onSelect={() => {
                 setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
@@ -336,7 +475,7 @@ export function AppShell({ children }: AppShellProps) {
               }}
             >
               <Moon />
-              Toggle theme
+              {t('shell.toggleTheme')}
             </CommandItem>
           </CommandGroup>
         </CommandList>
