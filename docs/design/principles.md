@@ -1,10 +1,10 @@
 # UI 기본 원칙
 
-이 문서는 컴포넌트·아이콘·표면·상태 선택의 기본값을 소유합니다. [SEED Foundations](https://seed-design.io/foundations)의 주제 구분을 참고하되 아래 규칙은 기존 Blueprint 구현에 맞춘 결정입니다. 별도 디자인 시스템이나 패키지를 추가하지 않습니다.
+이 문서는 컴포넌트·아이콘·표면·상태 선택의 기본값을 소유합니다. 아래 규칙은 기존 Blueprint 구현에 맞춘 결정입니다. 별도 디자인 시스템이나 패키지를 추가하지 않습니다.
 
 ## 컴포넌트와 토큰
 
-- 시각적 컨트롤은 `src/shared/ui`의 shadcn, 아이콘은 `lucide-react`를 사용합니다. 새 컨트롤이 필요하면 기존 `components.json` 설정으로 추가합니다. 직접 만든 Button/Input, Radix 직접 사용, SEED 의존성, HStack/VStack/Text 같은 새 custom primitive는 도입하지 않습니다.
+- 시각적 컨트롤은 `src/shared/ui`의 shadcn, 아이콘은 `lucide-react`를 사용합니다. 새 컨트롤이 필요하면 기존 `components.json` 설정으로 추가합니다. 직접 만든 Button/Input, Radix 직접 사용, 다른 UI 라이브러리, HStack/VStack/Text 같은 새 custom primitive는 도입하지 않습니다.
 - 레이아웃은 의미 있는 HTML과 Tailwind 조합입니다. 특정 업무에 대한 feature/widget 조합은 허용하며 또 다른 범용 UI API를 만들지 않습니다.
 - CSS는 `src/app/styles/globals.css`의 Tailwind 진입점·의미 토큰·기본 레이어만 둡니다. 화면별 CSS/inline style/고정 팔레트는 추가하지 않습니다. [색상](color.md)과 [타이포그래피](typography.md)를 기준으로 소비합니다.
 

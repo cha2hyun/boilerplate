@@ -27,4 +27,4 @@
 
 light/dark 모두 의미 토큰의 배경·전경 쌍을 확인합니다. 선택·오류·상태는 글자나 아이콘으로도 전달하고, 링크와 버튼은 키보드 포커스를 유지합니다. 대비를 확인하지 않고 전경 색의 opacity를 낮추거나 새로운 브랜드 조합을 만들지 않습니다.
 
-이 문서는 기존 shadcn neutral 테마의 계약입니다. SEED의 색상/브랜드 팔레트를 복제하지 않습니다. 소유 코드: `src/app/styles/globals.css`. 화면 표본: Components → Theme tokens.
+이 문서는 기존 shadcn neutral 테마의 계약입니다. 소유 코드: `src/app/styles/globals.css`. 화면 표본: Components → Theme tokens.

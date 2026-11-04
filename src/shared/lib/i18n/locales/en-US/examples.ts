@@ -81,9 +81,6 @@ export default {
     layoutTab: 'Layout',
     contentTab: 'Writing & localization',
     feedbackTab: 'Feedback',
-    footer:
-      'SEED is a design reference. This screen uses the existing shadcn, Tailwind, and Pretendard stack.',
-    reference: 'Reference documentation',
     typeTitle: 'Three weights, clear hierarchy',
     typeDescription: 'Pretendard · a consistent reading experience for Korean and Latin text.',
     typeSampleTitle: 'Prepare your next project',

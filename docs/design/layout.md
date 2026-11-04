@@ -48,7 +48,3 @@
 ## 방향과 길이
 
 본문 정렬은 `text-start`, 방향성 있는 여백은 `ms-*`, `me-*`, `ps-*`, `pe-*`를 우선합니다. `gap`은 양방향에서 동일하게 작동합니다. 앞으로 RTL을 도입할 때 뒤로가기 같은 방향 아이콘은 의미에 따라 검토하며 로고·숫자·상태 아이콘까지 일괄 반전하지 않습니다. 현재 앱 전체 RTL 지원은 미구현입니다. [국제화](international-design.md)를 함께 확인하세요.
-
-## 참고 자료의 적용 범위
-
-[SEED HStack](https://seed-design.io/react/components/layout/h-stack)과 [VStack](https://seed-design.io/react/components/layout/v-stack)의 가로/세로 구성 개념을 참고했습니다. Blueprint에서는 SEED의 prop API, spacing 토큰, 런타임 레이아웃 컴포넌트를 도입하지 않고 위 Tailwind 조합을 사용합니다.

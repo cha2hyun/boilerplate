@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   ArrowDown,
   ArrowRight,
-  ArrowUpRight,
   Check,
   CircleAlert,
   Folder,
@@ -606,15 +605,6 @@ export function FoundationsPage() {
           <FeedbackExamples />
         </TabsContent>
       </Tabs>
-      <footer className="flex flex-col gap-3 border-t pt-5 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between">
-        <p className="leading-5">{t('foundations.footer')}</p>
-        <Button asChild variant="link" size="sm" className="h-auto self-start p-0 text-xs">
-          <a href="https://seed-design.io/foundations" target="_blank" rel="noreferrer">
-            {t('foundations.reference')}
-            <ArrowUpRight aria-hidden="true" />
-          </a>
-        </Button>
-      </footer>
     </div>
   )
 }

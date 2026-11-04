@@ -69,7 +69,7 @@ VITE_API_BASE_URL=/api
 
 주문/고객은 HTTP 목업에서 읽는 조회 전용 데이터이며 받은편지함 변경은 페이지를 떠나면 초기화됩니다. 실제 메일 발송이나 결제 기능은 없습니다. 모바일(768px 미만)은 사이드바 drawer, 태블릿(768–1279px)은 기본 아이콘 탐색, PC(1280px 이상)는 펼친 사이드바를 사용합니다. 접힌 로고·메뉴·프로필은 같은 중심선을 사용하며 workspace 전환 블록은 표시하지 않습니다.
 
-Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이지입니다. SEED의 설계 관점을 참고하되 패키지/토큰/컴포넌트를 가져오지 않습니다. HStack/VStack은 재사용할 수 있는 Tailwind 조합 예시이며 별도 UI primitive가 아닙니다.
+Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이지입니다. HStack/VStack은 재사용할 수 있는 Tailwind 조합 예시이며 별도 UI primitive가 아닙니다.
 
 ## 명령
 
