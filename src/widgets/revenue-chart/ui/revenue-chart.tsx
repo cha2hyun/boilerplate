@@ -50,11 +50,7 @@ export function RevenueChart({ data, isLoading = false, error, onRetry }: Revenu
   const previous = visible.reduce((sum, point) => sum + point.previousRevenue, 0)
   const change = previous > 0 ? ((total - previous) / previous) * 100 : 0
   return (
-    <Card
-      className="h-full min-w-0 shadow-xs"
-      aria-label={t('revenue.title')}
-      aria-busy={isLoading}
-    >
+    <Card className="min-w-0 shadow-xs" aria-label={t('revenue.title')} aria-busy={isLoading}>
       <CardHeader className="gap-1">
         <CardTitle>{t('revenue.title')}</CardTitle>
         <CardDescription>{t('revenue.description')}</CardDescription>

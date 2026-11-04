@@ -202,7 +202,6 @@ const workspace = {
     makeItYours: 'Make it your own',
     notFound: 'Page not found',
     skip: 'Skip to content',
-    demo: 'Demo workspace',
     searchWorkspace: 'Search workspace',
     search: 'Search',
     lightTheme: 'Switch to light theme',

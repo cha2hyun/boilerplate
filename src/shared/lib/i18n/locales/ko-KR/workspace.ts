@@ -203,7 +203,6 @@ const workspace = {
     makeItYours: '내게 맞게 설정하세요',
     notFound: '페이지를 찾을 수 없습니다',
     skip: '본문으로 건너뛰기',
-    demo: '데모 워크스페이스',
     searchWorkspace: '워크스페이스 검색',
     search: '검색',
     lightTheme: '밝은 테마로 전환',

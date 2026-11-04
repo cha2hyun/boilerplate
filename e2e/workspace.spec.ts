@@ -111,6 +111,7 @@ test('loads the overview without browser errors and changes the revenue period',
     page.getByRole('heading', { name: 'A little clarity. A lot of possibility.' }),
   ).toBeVisible()
   await expect(page.getByText('Active customers', { exact: true })).toBeVisible()
+  await expect(page.getByText('Demo workspace', { exact: true })).toHaveCount(0)
   const footer = page.locator('main > footer')
   await expect(footer.getByText('Made by cha2hyun', { exact: true })).toBeVisible()
   const repository = footer.getByRole('link', { name: 'GitHub', exact: true })
@@ -153,6 +154,19 @@ test('loads the overview without browser errors and changes the revenue period',
   const chart = page.locator('[data-slot="card"]').filter({
     has: page.getByText('Revenue overview', { exact: true }),
   })
+  const unusedBottomSpace = await chart.evaluate((element) => {
+    const footer = element.querySelector('[data-slot="card-footer"]')
+    if (!footer) throw new Error('The revenue chart footer is missing.')
+    return element.getBoundingClientRect().bottom - footer.getBoundingClientRect().bottom
+  })
+  expect(unusedBottomSpace).toBeLessThanOrEqual(32)
+  const activity = page.getByRole('region', { name: 'Recent activity', exact: true })
+  await expect(activity).toBeVisible()
+  await activity.focus()
+  await page.keyboard.press('End')
+  await expect(
+    activity.getByText('Design system milestone reached', { exact: true }),
+  ).toBeInViewport()
   const period = page.getByRole('combobox', { name: 'Revenue period' })
   await period.click()
   await page.getByRole('option', { name: 'Last 7 days', exact: true }).click()

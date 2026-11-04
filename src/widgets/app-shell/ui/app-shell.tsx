@@ -3,14 +3,12 @@ import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Boxes, ChevronDown, ExternalLink, Globe, Moon, Search, Sun } from 'lucide-react'
 import { useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { usePreferences } from '@/features/workspace-preferences'
-import { env } from '@/shared/config'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
 import { navigation, navigationGroups } from '../model/navigation'
 import { CurrencyMenu } from './currency-menu'
 import { useTheme } from '@/shared/lib/theme'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
-import { Badge } from '@/shared/ui/badge'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -252,15 +250,6 @@ export function AppShell({ children }: AppShellProps) {
               </BreadcrumbList>
             </Breadcrumb>
             <HStack className="ml-auto shrink-0 gap-1 md:gap-2">
-              {env.dataSource === 'demo' && (
-                <Badge
-                  variant="outline"
-                  className="hidden gap-1.5 text-xs font-normal text-muted-foreground 2xl:inline-flex"
-                >
-                  <span className="size-1.5 rounded-full bg-chart-2" />
-                  {t('shell.demo')}
-                </Badge>
-              )}
               <Button
                 variant="ghost"
                 size="sm"

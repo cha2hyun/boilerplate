@@ -177,7 +177,7 @@ export function OverviewPage() {
           )
         })}
       </div>
-      <div className="grid items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <RevenueChart
           data={analytics.data?.revenue}
           isLoading={isLoading}
@@ -189,13 +189,13 @@ export function OverviewPage() {
             <CardTitle>{t('overview.activity')}</CardTitle>
             <CardDescription>{t('overview.activityDescription')}</CardDescription>
           </CardHeader>
-          <VStack asChild align="stretch" className="h-114 gap-6 overflow-y-auto">
-            <CardContent>
+          <VStack asChild align="stretch" className="h-88 gap-2 overflow-y-auto">
+            <CardContent role="region" aria-label={t('overview.activity')} tabIndex={0}>
               {isLoading ? (
                 Array.from({ length: 4 }, (_, index) => (
-                  <HStack key={index} className="h-24 shrink-0 gap-3" aria-hidden="true">
+                  <HStack key={index} className="min-h-18 shrink-0 gap-3" aria-hidden="true">
                     <Skeleton className="size-9 shrink-0 rounded-lg" />
-                    <VStack align="stretch" className="min-w-0 flex-1 gap-2">
+                    <VStack align="stretch" className="min-w-0 flex-1 gap-1">
                       <Skeleton className="h-5 w-4/5" />
                       <Skeleton className="h-8 w-full" />
                       <Skeleton className="h-3.5 w-20" />
@@ -206,19 +206,19 @@ export function OverviewPage() {
                 analytics.data.activity.slice(0, 5).map((activity) => {
                   const Icon = activityIcons[activity.type]
                   return (
-                    <HStack key={activity.id} className="h-24 shrink-0 gap-3">
+                    <HStack key={activity.id} className="min-h-18 shrink-0 gap-3">
                       <Avatar className="size-9 shrink-0 rounded-lg">
                         <AvatarFallback className="rounded-lg">
                           <Icon className="size-4 text-muted-foreground" />
                         </AvatarFallback>
                       </Avatar>
-                      <VStack align="stretch" className="min-w-0 gap-1">
-                        <p className="line-clamp-2 text-sm leading-5 font-medium">
+                      <VStack align="stretch" className="min-w-0 flex-1 gap-1">
+                        <p className="text-sm leading-5 font-medium wrap-break-word">
                           {env.dataSource === 'demo' && activity.id in demoActivity
                             ? t(demoActivity[activity.id as keyof typeof demoActivity].title)
                             : activity.title}
                         </p>
-                        <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">
+                        <p className="text-xs leading-4 wrap-break-word text-muted-foreground">
                           {env.dataSource === 'demo' && activity.id in demoActivity
                             ? t(
                                 demoActivity[activity.id as keyof typeof demoActivity].description,
