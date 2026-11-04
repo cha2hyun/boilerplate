@@ -56,6 +56,8 @@ Query 결과를 Zustand에 복제하지 않습니다. 서버 상태의 진실 �
 
 shadcn 컴포넌트는 `src/shared/ui`에 두며 [shadcn의 CSS 변수 테마 방식](https://ui.shadcn.com/docs/theming)을 사용합니다. 컨트롤은 이 계층에서만 정의합니다. 페이지에서 native button/input 또는 Radix primitive를 직접 조합해 또 다른 UI 시스템을 만들지 않습니다. `main`, `section`, `header`, `h1`, `p`, `a` 등 의미 있는 문서 구조는 일반 HTML을 사용해도 됩니다.
 
+본문·푸터의 텍스트 탐색에는 `shared/ui/text-link`의 승인된 shadcn 조합을 사용합니다. `TextLink`는 기존 Button link variant와 anchor를 조합하며 `RouterTextLink`는 TanStack `createLink`로 내부 경로 타입을 보존합니다. Sidebar/Breadcrumb 등의 기존 탐색 컨트롤은 유지합니다. 예외 범위는 [ADR 004](adr/004-text-link-composition.md), 동작/API 계약은 [텍스트 링크 규칙](design/text-links.md)이 소유합니다.
+
 `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`, `chart-*` 등 의미 토큰을 사용합니다. `bg-blue-500` 또는 `bg-[#123456]`처럼 화면별 색을 하드코딩하지 않습니다. 임의 너비/그리드 값 같은 Tailwind 레이아웃 유틸리티는 허용합니다.
 
 CSS 파일은 `src/app/styles/globals.css` 하나입니다. 여기에 Tailwind/폰트 import, shadcn light/dark 토큰, `@theme`, 기본 `@apply`를 둡니다. 화면별 CSS, CSS Modules, Sass, styled-components/Emotion은 사용하지 않습니다. 공식 shadcn 컴포넌트의 차트/사이드바처럼 동적 CSS 변수 또는 내부 style 태그가 필요한 생성 코드만 `shared/ui`에서 허용합니다. 이것은 임의 스타일을 그 폴더로 옮기는 우회 경로가 아닙니다.

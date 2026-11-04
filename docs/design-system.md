@@ -7,6 +7,7 @@ Blueprint는 **기존 shadcn UI → Tailwind 의미 토큰 → Pretendard 400/50
 | 작업                                      | 읽을 계약                                 |
 | ----------------------------------------- | ----------------------------------------- |
 | 컴포넌트 선택, 아이콘, 표면, 접근성, 상태 | [기본 원칙](design/principles.md)         |
+| 텍스트 링크, 외부 새 탭, Router 연결      | [텍스트 링크](design/text-links.md)       |
 | 글꼴·제목·본문·숫자                       | [타이포그래피](design/typography.md)      |
 | neutral/brand, 상태 색상, light/dark      | [색상](design/color.md)                   |
 | 가로·세로 정렬, 간격, 반응형, 아이콘 레일 | [레이아웃](design/layout.md)              |
