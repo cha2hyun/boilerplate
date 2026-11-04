@@ -198,6 +198,126 @@ test('checks ARIA control roles in JSX string expressions', () => {
   )
 })
 
+test('requires stacks for native div flex display and sibling spacing, including variants', () => {
+  for (const value of [
+    'flex items-center gap-2',
+    'inline-flex',
+    'md:flex',
+    'sm:hover:inline-flex',
+    '!flex',
+    'md:flex!',
+    'space-x-2',
+    '-space-y-2',
+    'lg:space-y-[1rem]',
+    'md:!space-x-4',
+    '[display:flex]',
+    'sm:[display:inline-flex]',
+    '[&:hover]:flex',
+    '[@media(min-width:40rem)]:flex',
+  ]) {
+    assert.deepEqual(
+      rules('pages/home/ui/home.tsx', `const Home = () => <div className="${value}" />`),
+      ['stack-layout'],
+      value,
+    )
+  }
+  const [issue] = checkFile(
+    'pages/home/ui/home.tsx',
+    `const Home = () => (\n  <div className="flex space-y-2" />\n)`,
+  )
+  assert.equal(issue.rule, 'stack-layout')
+  assert.equal(issue.line, 2)
+})
+
+test('finds native div layout in conditional className values and class helper inputs', () => {
+  for (const expression of [
+    `'flex'`,
+    'expanded ? "flex" : "grid"',
+    'expanded && "sm:inline-flex"',
+    'cn("grid", expanded && "md:flex")',
+    'clsx(["w-full", expanded ? "space-y-2" : "gap-2"])',
+    'cn({ "md:flex": expanded, hidden: !expanded })',
+    'cn({ ["space-x-2"]: expanded })',
+    '`w-full ${expanded ? "flex" : "grid"}`',
+    '`sm:${expanded ? "flex" : "grid"}`',
+    '"inline-" + "flex"',
+  ]) {
+    assert.deepEqual(
+      rules(
+        'widgets/header/ui/header.tsx',
+        `const Header = () => <div className={${expression}} />`,
+      ),
+      ['stack-layout'],
+      expression,
+    )
+  }
+})
+
+test('keeps grid, child flex sizing, prose, and condition comparisons outside the stack rule', () => {
+  assert.deepEqual(
+    rules(
+      'pages/home/ui/home.tsx',
+      `
+    const prose = 'flex space-y-2'
+    const Home = () => <>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-3" />
+      <div className="grid [&>span]:flex md:[&_svg]:inline-flex *:space-y-2 before:flex [&::after]:flex" />
+      <div className="min-w-0 flex-1 md:flex-auto shrink-0" />
+      <div className={"flex" + "-1"} />
+      <div className={mode === 'flex' ? 'grid' : 'block'} />
+      <div className={cn(mode === 'space-y-2' && 'gap-2', { grid: mode === 'flex' })} />
+      <div title="inline-flex" data-example="space-y-4" />
+      <HStack className="gap-2"><span>Row</span></HStack>
+      <VStack align="stretch" justify="between" className="gap-4 md:flex-row md:items-center" />
+      <HStack asChild><nav aria-label="Main" /></HStack>
+    </>
+  `,
+    ),
+    [],
+  )
+})
+
+test('leaves shared UI implementations and test fixtures outside stack consumer rules', () => {
+  const source = `const Fixture = () => <><div className="flex space-y-2" /><HStack className="items-start" /></>`
+  for (const file of [
+    'shared/ui/stack.tsx',
+    'shared/ui/card.tsx',
+    'pages/home/ui/home.test.tsx',
+    'widgets/header/ui/header.spec.tsx',
+    'shared/lib/__tests__/fixture.tsx',
+    'shared/lib/__fixtures__/layout.tsx',
+  ]) {
+    assert.deepEqual(rules(file, source), [], file)
+  }
+})
+
+test('requires stack props for base alignment and stack components for base direction', () => {
+  for (const tag of ['HStack', 'VStack']) {
+    for (const expression of [
+      '"items-start"',
+      '"!justify-center"',
+      '"flex-row!"',
+      '"flex-col-reverse"',
+      'cn("gap-2", expanded && "items-end")',
+      'clsx({ "justify-between": expanded })',
+      'expanded ? "flex-col" : "flex-row"',
+    ]) {
+      assert.deepEqual(
+        rules('pages/home/ui/home.tsx', `const Home = () => <${tag} className={${expression}} />`),
+        ['stack-props'],
+        `${tag}: ${expression}`,
+      )
+    }
+  }
+  assert.deepEqual(
+    rules(
+      'pages/home/ui/home.tsx',
+      'const Home = () => <HStack align="start" justify="between" className={cn("gap-2 flex-1", expanded && "md:items-end", `sm:${expanded ? "flex-col" : "flex-row"}`)} />',
+    ),
+    [],
+  )
+})
+
 test('allows generated UI primitives but blocks consumer bypasses', () => {
   assert.deepEqual(
     rules(

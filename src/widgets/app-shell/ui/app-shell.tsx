@@ -56,6 +56,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/shared/ui/sidebar'
+import { HStack } from '@/shared/ui/stack'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { TextLink } from '@/shared/ui/text-link'
 
@@ -80,9 +81,12 @@ function WorkspaceSidebar() {
                   setOpenMobile(false)
                 }}
               >
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <HStack
+                  justify="center"
+                  className="size-8 shrink-0 rounded-lg bg-primary text-primary-foreground"
+                >
                   <Boxes className="size-5" />
-                </div>
+                </HStack>
                 <span className="text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
                   blueprint<span className="text-muted-foreground">.</span>
                 </span>
@@ -233,7 +237,7 @@ export function AppShell({ children }: AppShellProps) {
       <WorkspaceSidebar />
       <SidebarInset className="min-w-0 overflow-hidden">
         <header className="shrink-0 border-b px-4 md:px-6">
-          <div className="flex min-h-16 items-center gap-2 md:gap-3">
+          <HStack className="min-h-16 gap-2 md:gap-3">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-1 h-4" />
             <Breadcrumb className="hidden min-w-0 md:block">
@@ -247,7 +251,7 @@ export function AppShell({ children }: AppShellProps) {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <div className="ml-auto flex shrink-0 items-center gap-1 md:gap-2">
+            <HStack className="ml-auto shrink-0 gap-1 md:gap-2">
               {env.dataSource === 'demo' && (
                 <Badge
                   variant="outline"
@@ -330,8 +334,8 @@ export function AppShell({ children }: AppShellProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
               <CurrencyMenu />
-            </div>
-          </div>
+            </HStack>
+          </HStack>
         </header>
         <div
           ref={contentRef}
@@ -344,12 +348,18 @@ export function AppShell({ children }: AppShellProps) {
         >
           {children}
         </div>
-        <footer className="flex items-center justify-between gap-4 border-t px-4 py-4 text-xs text-muted-foreground md:px-6">
-          <span className="min-w-0">{t('shell.footerAuthor', { author: 'cha2hyun' })}</span>
-          <TextLink href="https://github.com/cha2hyun/boilerplate" className="shrink-0">
-            GitHub
-          </TextLink>
-        </footer>
+        <HStack
+          asChild
+          justify="between"
+          className="gap-4 border-t px-4 py-4 text-xs text-muted-foreground md:px-6"
+        >
+          <footer>
+            <span className="min-w-0">{t('shell.footerAuthor', { author: 'cha2hyun' })}</span>
+            <TextLink href="https://github.com/cha2hyun/boilerplate" className="shrink-0">
+              GitHub
+            </TextLink>
+          </footer>
+        </HStack>
       </SidebarInset>
       <CommandDialog
         open={commandOpen}

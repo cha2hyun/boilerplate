@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/sha
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
@@ -44,24 +45,26 @@ function BasicsExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.typeDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-6">
-          <div>
-            <p className="text-2xl font-semibold tracking-tight">
-              {t('foundations.typeSampleTitle')}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {t('foundations.typeSampleDescription')}
-            </p>
-          </div>
-          <dl className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-4 text-sm">
-            <dt className="text-muted-foreground">{formatNumber(400)} · Regular</dt>
-            <dd className="font-normal">{t('foundations.regularRole')}</dd>
-            <dt className="text-muted-foreground">{formatNumber(500)} · Medium</dt>
-            <dd className="font-medium">{t('foundations.mediumRole')}</dd>
-            <dt className="text-muted-foreground">{formatNumber(600)} · SemiBold</dt>
-            <dd className="font-semibold">{t('foundations.semiboldRole')}</dd>
-          </dl>
-        </CardContent>
+        <VStack asChild align="stretch" className="gap-6">
+          <CardContent>
+            <div>
+              <p className="text-2xl font-semibold tracking-tight">
+                {t('foundations.typeSampleTitle')}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                {t('foundations.typeSampleDescription')}
+              </p>
+            </div>
+            <dl className="grid grid-cols-[auto_1fr] items-center gap-x-6 gap-y-4 text-sm">
+              <dt className="text-muted-foreground">{formatNumber(400)} · Regular</dt>
+              <dd className="font-normal">{t('foundations.regularRole')}</dd>
+              <dt className="text-muted-foreground">{formatNumber(500)} · Medium</dt>
+              <dd className="font-medium">{t('foundations.mediumRole')}</dd>
+              <dt className="text-muted-foreground">{formatNumber(600)} · SemiBold</dt>
+              <dd className="font-semibold">{t('foundations.semiboldRole')}</dd>
+            </dl>
+          </CardContent>
+        </VStack>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
@@ -70,27 +73,29 @@ function BasicsExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.colorDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="grid gap-3 xl:grid-cols-2">
-            <div className="rounded-lg bg-primary p-4 text-primary-foreground">
-              <p className="text-sm font-medium">Primary</p>
-              <p className="mt-1 text-xs">{t('foundations.primaryRole')}</p>
+        <VStack asChild align="stretch" className="gap-4">
+          <CardContent>
+            <div className="grid gap-3 xl:grid-cols-2">
+              <div className="rounded-lg bg-primary p-4 text-primary-foreground">
+                <p className="text-sm font-medium">Primary</p>
+                <p className="mt-1 text-xs">{t('foundations.primaryRole')}</p>
+              </div>
+              <div className="rounded-lg bg-brand p-4 text-brand-foreground">
+                <p className="text-sm font-medium">Blueprint Blue</p>
+                <p className="mt-1 text-xs">{t('foundations.brandRole')}</p>
+              </div>
             </div>
-            <div className="rounded-lg bg-brand p-4 text-brand-foreground">
-              <p className="text-sm font-medium">Blueprint Blue</p>
-              <p className="mt-1 text-xs">{t('foundations.brandRole')}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>
-              <Check aria-hidden="true" />
-              {t('foundations.complete')}
-            </Badge>
-            <Badge variant="secondary">{t('foundations.inProgress')}</Badge>
-            <Badge variant="outline">{t('foundations.draft')}</Badge>
-          </div>
-          <p className="text-sm leading-6 text-muted-foreground">{t('foundations.statusHelp')}</p>
-        </CardContent>
+            <HStack wrap className="gap-2">
+              <Badge>
+                <Check aria-hidden="true" />
+                {t('foundations.complete')}
+              </Badge>
+              <Badge variant="secondary">{t('foundations.inProgress')}</Badge>
+              <Badge variant="outline">{t('foundations.draft')}</Badge>
+            </HStack>
+            <p className="text-sm leading-6 text-muted-foreground">{t('foundations.statusHelp')}</p>
+          </CardContent>
+        </VStack>
       </Card>
       <Card className="min-w-0 md:col-span-2">
         <CardHeader>
@@ -125,62 +130,70 @@ function LayoutExamples() {
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2 className="flex items-center gap-2">
-              <ArrowRight className="size-4" aria-hidden="true" />
-              {t('foundations.horizontalTitle')}
-            </h2>
+            <HStack asChild className="gap-2">
+              <h2>
+                <ArrowRight className="size-4" aria-hidden="true" />
+                {t('foundations.horizontalTitle')}
+              </h2>
+            </HStack>
           </CardTitle>
           <CardDescription>{t('foundations.horizontalDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex items-center gap-3 rounded-lg border p-4">
-            <Folder className="size-5 shrink-0" aria-hidden="true" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium" title={t('foundations.reportName')}>
-                {t('foundations.reportName')}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {t('foundations.reportDescription')}
-              </p>
-            </div>
-            <Badge variant="outline" className="shrink-0">
-              {t('foundations.draft')}
-            </Badge>
-          </div>
-          <code className="rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
-            flex items-center gap-3 · min-w-0 flex-1 · shrink-0
-          </code>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {t('foundations.alignmentHelp')}
-          </p>
-        </CardContent>
+        <VStack asChild align="stretch" className="gap-4">
+          <CardContent>
+            <HStack className="gap-3 rounded-lg border p-4">
+              <Folder className="size-5 shrink-0" aria-hidden="true" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium" title={t('foundations.reportName')}>
+                  {t('foundations.reportName')}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('foundations.reportDescription')}
+                </p>
+              </div>
+              <Badge variant="outline" className="shrink-0">
+                {t('foundations.draft')}
+              </Badge>
+            </HStack>
+            <code className="rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
+              {'<HStack className="gap-3">'} · min-w-0 flex-1 · shrink-0
+            </code>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {t('foundations.alignmentHelp')}
+            </p>
+          </CardContent>
+        </VStack>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2 className="flex items-center gap-2">
-              <ArrowDown className="size-4" aria-hidden="true" />
-              {t('foundations.verticalTitle')}
-            </h2>
+            <HStack asChild className="gap-2">
+              <h2>
+                <ArrowDown className="size-4" aria-hidden="true" />
+                {t('foundations.verticalTitle')}
+              </h2>
+            </HStack>
           </CardTitle>
           <CardDescription>{t('foundations.verticalDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col items-start gap-3 rounded-lg border p-4">
-            <p className="text-sm font-medium">{t('foundations.launchTitle')}</p>
-            <p className="text-sm leading-6 text-muted-foreground">
-              {t('foundations.launchDescription')}
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{t('foundations.designReview')}</Badge>
-              <Badge variant="outline">{t('foundations.copyReview')}</Badge>
-              <Badge variant="outline">{t('foundations.accessibilityReview')}</Badge>
-            </div>
-          </div>
-          <code className="rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
-            flex flex-col items-start gap-3 · flex-wrap gap-2
-          </code>
-        </CardContent>
+        <VStack asChild align="stretch" className="gap-4">
+          <CardContent>
+            <VStack align="start" className="gap-3 rounded-lg border p-4">
+              <p className="text-sm font-medium">{t('foundations.launchTitle')}</p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                {t('foundations.launchDescription')}
+              </p>
+              <HStack wrap className="gap-2">
+                <Badge variant="secondary">{t('foundations.designReview')}</Badge>
+                <Badge variant="outline">{t('foundations.copyReview')}</Badge>
+                <Badge variant="outline">{t('foundations.accessibilityReview')}</Badge>
+              </HStack>
+            </VStack>
+            <code className="rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
+              {'<VStack align="start" className="gap-3">'} · {'<HStack wrap>'}
+            </code>
+          </CardContent>
+        </VStack>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
@@ -189,40 +202,42 @@ function LayoutExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.railDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center gap-6">
-          <div
-            className="flex w-14 shrink-0 flex-col items-center gap-2 rounded-lg border bg-muted/30 py-3"
-            aria-label={t('foundations.railLabel')}
-          >
-            {railItems.map((item) => (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant={railSelection.id === item.id ? 'secondary' : 'ghost'}
-                    aria-label={t(item.label)}
-                    aria-pressed={railSelection.id === item.id}
-                    onClick={() => {
-                      setRailSelection(item)
-                    }}
-                  >
-                    <item.icon className="shrink-0" aria-hidden="true" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">{t(item.label)}</TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-          <div className="min-w-0 flex-1 space-y-2">
-            <p className="text-sm font-medium" aria-live="polite">
-              {t('foundations.railSelected', { label: t(railSelection.label) })}
-            </p>
-            <p className="text-sm leading-6 text-muted-foreground">{t('foundations.railHelp')}</p>
-            <code className="text-xs break-words text-muted-foreground">
-              items-center justify-center
-            </code>
-          </div>
-        </CardContent>
+        <HStack asChild className="gap-6">
+          <CardContent>
+            <VStack
+              className="w-14 shrink-0 gap-2 rounded-lg border bg-muted/30 py-3"
+              aria-label={t('foundations.railLabel')}
+            >
+              {railItems.map((item) => (
+                <Tooltip key={item.id}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant={railSelection.id === item.id ? 'secondary' : 'ghost'}
+                      aria-label={t(item.label)}
+                      aria-pressed={railSelection.id === item.id}
+                      onClick={() => {
+                        setRailSelection(item)
+                      }}
+                    >
+                      <item.icon className="shrink-0" aria-hidden="true" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{t(item.label)}</TooltipContent>
+                </Tooltip>
+              ))}
+            </VStack>
+            <VStack align="stretch" className="min-w-0 flex-1 gap-2">
+              <p className="text-sm font-medium" aria-live="polite">
+                {t('foundations.railSelected', { label: t(railSelection.label) })}
+              </p>
+              <p className="text-sm leading-6 text-muted-foreground">{t('foundations.railHelp')}</p>
+              <code className="text-xs break-words text-muted-foreground">
+                {'<VStack> · <HStack justify="center">'}
+              </code>
+            </VStack>
+          </CardContent>
+        </HStack>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
@@ -231,45 +246,49 @@ function LayoutExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.breakpointsDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <dl className="space-y-3 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <dt>{t('foundations.mobile')}</dt>
-              <dd className="text-muted-foreground">
-                {t('foundations.mobileRange', {
-                  width: formatNumber(768),
-                  columns: formatNumber(1),
-                })}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt>{t('foundations.tablet')}</dt>
-              <dd className="text-muted-foreground">
-                {t('foundations.tabletRange', {
-                  width: formatNumber(768),
-                  min: formatNumber(1),
-                  max: formatNumber(2),
-                })}
-              </dd>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <dt>{t('foundations.desktop')}</dt>
-              <dd className="text-muted-foreground">
-                {t('foundations.desktopRange', {
-                  width: formatNumber(1280),
-                  min: formatNumber(2),
-                  max: formatNumber(4),
-                })}
-              </dd>
-            </div>
-          </dl>
-          <code className="block rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
-            grid gap-4 md:grid-cols-2 xl:grid-cols-3
-          </code>
-          <p className="text-sm leading-6 text-muted-foreground">
-            {t('foundations.breakpointsHelp')}
-          </p>
-        </CardContent>
+        <VStack asChild align="stretch" className="gap-4">
+          <CardContent>
+            <VStack asChild align="stretch" className="gap-3 text-sm">
+              <dl>
+                <HStack justify="between" className="gap-3">
+                  <dt>{t('foundations.mobile')}</dt>
+                  <dd className="text-muted-foreground">
+                    {t('foundations.mobileRange', {
+                      width: formatNumber(768),
+                      columns: formatNumber(1),
+                    })}
+                  </dd>
+                </HStack>
+                <HStack justify="between" className="gap-3">
+                  <dt>{t('foundations.tablet')}</dt>
+                  <dd className="text-muted-foreground">
+                    {t('foundations.tabletRange', {
+                      width: formatNumber(768),
+                      min: formatNumber(1),
+                      max: formatNumber(2),
+                    })}
+                  </dd>
+                </HStack>
+                <HStack justify="between" className="gap-3">
+                  <dt>{t('foundations.desktop')}</dt>
+                  <dd className="text-muted-foreground">
+                    {t('foundations.desktopRange', {
+                      width: formatNumber(1280),
+                      min: formatNumber(2),
+                      max: formatNumber(4),
+                    })}
+                  </dd>
+                </HStack>
+              </dl>
+            </VStack>
+            <code className="block rounded-md bg-muted p-3 text-xs leading-5 break-words text-muted-foreground">
+              grid gap-4 md:grid-cols-2 xl:grid-cols-3
+            </code>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {t('foundations.breakpointsHelp')}
+            </p>
+          </CardContent>
+        </VStack>
       </Card>
     </div>
   )
@@ -291,105 +310,113 @@ function ContentExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.writingDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          {[
-            [
-              t('foundations.actionLabel'),
-              t('foundations.actionExample'),
-              t('foundations.actionHelp'),
-            ],
-            [
-              t('foundations.successLabel'),
-              t('foundations.successExample'),
-              t('foundations.successHelp'),
-            ],
-            [
-              t('foundations.errorLabel'),
-              t('foundations.errorExample'),
-              t('foundations.errorHelp'),
-            ],
-            [
-              t('foundations.emptyLabel'),
-              t('foundations.emptyExample'),
-              t('foundations.emptyHelp'),
-            ],
-          ].map(([label, example, description]) => (
-            <div key={label} className="flex items-start gap-3">
-              <Badge variant="outline" className="shrink-0">
-                {label}
-              </Badge>
-              <div className="min-w-0">
-                <p className="text-sm leading-6 font-medium">{example}</p>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
-              </div>
-            </div>
-          ))}
-        </CardContent>
+        <VStack asChild align="stretch" className="gap-5">
+          <CardContent>
+            {[
+              [
+                t('foundations.actionLabel'),
+                t('foundations.actionExample'),
+                t('foundations.actionHelp'),
+              ],
+              [
+                t('foundations.successLabel'),
+                t('foundations.successExample'),
+                t('foundations.successHelp'),
+              ],
+              [
+                t('foundations.errorLabel'),
+                t('foundations.errorExample'),
+                t('foundations.errorHelp'),
+              ],
+              [
+                t('foundations.emptyLabel'),
+                t('foundations.emptyExample'),
+                t('foundations.emptyHelp'),
+              ],
+            ].map(([label, example, description]) => (
+              <HStack key={label} className="gap-3">
+                <Badge variant="outline" className="shrink-0">
+                  {label}
+                </Badge>
+                <div className="min-w-0">
+                  <p className="text-sm leading-6 font-medium">{example}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
+                </div>
+              </HStack>
+            ))}
+          </CardContent>
+        </VStack>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
           <CardTitle>
-            <h2 className="flex items-center gap-2">
-              <Globe className="size-4" aria-hidden="true" />
-              {t('foundations.localeTitle')}
-            </h2>
+            <HStack asChild className="gap-2">
+              <h2>
+                <Globe className="size-4" aria-hidden="true" />
+                {t('foundations.localeTitle')}
+              </h2>
+            </HStack>
           </CardTitle>
           <CardDescription>{t('foundations.localeDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <div className="grid gap-3 xl:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="foundation-locale">{t('foundations.previewLocale')}</Label>
-              <Select value={locale} onValueChange={setPreviewLocale}>
-                <SelectTrigger id="foundation-locale" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ko-KR">{t('foundations.korean')}</SelectItem>
-                  <SelectItem value="en-US">{t('foundations.english')}</SelectItem>
-                  <SelectItem value="de-DE">{t('foundations.german')}</SelectItem>
-                </SelectContent>
-              </Select>
+        <VStack asChild align="stretch" className="gap-5">
+          <CardContent>
+            <div className="grid gap-3 xl:grid-cols-2">
+              <VStack align="stretch" className="gap-2">
+                <Label htmlFor="foundation-locale">{t('foundations.previewLocale')}</Label>
+                <Select value={locale} onValueChange={setPreviewLocale}>
+                  <SelectTrigger id="foundation-locale" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ko-KR">{t('foundations.korean')}</SelectItem>
+                    <SelectItem value="en-US">{t('foundations.english')}</SelectItem>
+                    <SelectItem value="de-DE">{t('foundations.german')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </VStack>
+              <VStack align="stretch" className="gap-2">
+                <Label htmlFor="foundation-timezone">{t('foundations.timeZone')}</Label>
+                <Select value={timeZone} onValueChange={setTimeZone}>
+                  <SelectTrigger id="foundation-timezone" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Asia/Seoul">Asia/Seoul</SelectItem>
+                    <SelectItem value="UTC">UTC</SelectItem>
+                    <SelectItem value="America/New_York">America/New_York</SelectItem>
+                  </SelectContent>
+                </Select>
+              </VStack>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="foundation-timezone">{t('foundations.timeZone')}</Label>
-              <Select value={timeZone} onValueChange={setTimeZone}>
-                <SelectTrigger id="foundation-timezone" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Asia/Seoul">Asia/Seoul</SelectItem>
-                  <SelectItem value="UTC">UTC</SelectItem>
-                  <SelectItem value="America/New_York">America/New_York</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <dl className="space-y-4 rounded-lg border p-4" aria-live="polite">
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t('foundations.amount', { currency: 'USD' })}
-              </dt>
-              <dd className="mt-1 text-2xl font-semibold break-words tabular-nums">
-                {formatPreviewNumber(12480.5, { locale, style: 'currency', currency: 'USD' })}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs text-muted-foreground">
-                {t('foundations.sampleTime', { timeZone })}
-              </dt>
-              <dd className="mt-1 text-sm">
-                {formatDate(sampleTimestamp, {
-                  locale,
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                  timeZone,
-                })}
-              </dd>
-            </div>
-          </dl>
-          <p className="text-xs leading-5 text-muted-foreground">{t('foundations.localeHelp')}</p>
-        </CardContent>
+            <VStack asChild align="stretch" className="gap-4 rounded-lg border p-4">
+              <dl aria-live="polite">
+                <div>
+                  <dt className="text-xs text-muted-foreground">
+                    {t('foundations.amount', { currency: 'USD' })}
+                  </dt>
+                  <dd className="mt-1 text-2xl font-semibold break-words tabular-nums">
+                    {formatPreviewNumber(12480.5, { locale, style: 'currency', currency: 'USD' })}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted-foreground">
+                    {t('foundations.sampleTime', { timeZone })}
+                  </dt>
+                  <dd className="mt-1 text-sm">
+                    {formatDate(sampleTimestamp, {
+                      locale,
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                      timeZone,
+                    })}
+                  </dd>
+                </div>
+              </dl>
+            </VStack>
+            <p className="text-xs leading-5 text-muted-foreground">{t('foundations.localeHelp')}</p>
+          </CardContent>
+        </VStack>
       </Card>
     </div>
   )
@@ -422,93 +449,97 @@ function FeedbackExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.numberDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <div className="rounded-lg border p-5">
-            <p className="text-sm text-muted-foreground">
-              {numberStyle === 'decimal'
-                ? t('foundations.decimalSample')
-                : t('foundations.currencySample', { currency: numberStyle })}
+        <VStack asChild align="stretch" className="gap-5">
+          <CardContent>
+            <div className="rounded-lg border p-5">
+              <p className="text-sm text-muted-foreground">
+                {numberStyle === 'decimal'
+                  ? t('foundations.decimalSample')
+                  : t('foundations.currencySample', { currency: numberStyle })}
+              </p>
+              <HStack className="mt-2 h-9 text-3xl font-semibold tracking-tight">
+                <NumberDisplay key={replay} value={value} format={format} animate={animate} />
+              </HStack>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {t('foundations.originalValue', { value: formatNumber(value) })}
+              </p>
+            </div>
+            <VStack align="stretch" className="gap-2">
+              <Label htmlFor="foundation-number-style">{t('foundations.numberFormat')}</Label>
+              <Select value={numberStyle} onValueChange={setNumberStyle}>
+                <SelectTrigger id="foundation-number-style" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="decimal">{t('foundations.decimal')}</SelectItem>
+                  <SelectItem value="USD">{t('foundations.usd')}</SelectItem>
+                  <SelectItem value="KRW">{t('foundations.krw')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </VStack>
+            <div className="grid gap-4 xl:grid-cols-2">
+              <HStack justify="between" className="gap-3">
+                <Label htmlFor="foundation-number-grouping">{t('foundations.grouping')}</Label>
+                <Switch
+                  id="foundation-number-grouping"
+                  checked={useGrouping}
+                  onCheckedChange={setUseGrouping}
+                />
+              </HStack>
+              <HStack justify="between" className="gap-3">
+                <Label htmlFor="foundation-number-compact">{t('foundations.compact')}</Label>
+                <Switch
+                  id="foundation-number-compact"
+                  checked={compact}
+                  onCheckedChange={setCompact}
+                />
+              </HStack>
+              <HStack justify="between" className="gap-3">
+                <Label htmlFor="foundation-number-currency">
+                  {t('foundations.currencySymbol')}
+                </Label>
+                <Switch
+                  id="foundation-number-currency"
+                  checked={showCurrency}
+                  onCheckedChange={setShowCurrency}
+                  disabled={numberStyle === 'decimal'}
+                />
+              </HStack>
+              <HStack justify="between" className="gap-3">
+                <Label htmlFor="foundation-number-animation">
+                  {t('foundations.numberAnimation')}
+                </Label>
+                <Switch
+                  id="foundation-number-animation"
+                  checked={animate}
+                  onCheckedChange={setAnimate}
+                />
+              </HStack>
+            </div>
+            <HStack wrap className="gap-2">
+              <Button
+                onClick={() => {
+                  setValue((current) => (current === 100400 ? 1000000 : 100400))
+                }}
+              >
+                {t('foundations.changeValue')}
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!animate}
+                onClick={() => {
+                  setReplay((current) => current + 1)
+                }}
+              >
+                <RotateCcw aria-hidden="true" />
+                {t('foundations.replay')}
+              </Button>
+            </HStack>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {t('foundations.numberHelp', { duration: formatNumber(300) })}
             </p>
-            <div className="mt-2 flex h-9 items-center text-3xl font-semibold tracking-tight">
-              <NumberDisplay key={replay} value={value} format={format} animate={animate} />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t('foundations.originalValue', { value: formatNumber(value) })}
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="foundation-number-style">{t('foundations.numberFormat')}</Label>
-            <Select value={numberStyle} onValueChange={setNumberStyle}>
-              <SelectTrigger id="foundation-number-style" className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="decimal">{t('foundations.decimal')}</SelectItem>
-                <SelectItem value="USD">{t('foundations.usd')}</SelectItem>
-                <SelectItem value="KRW">{t('foundations.krw')}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid gap-4 xl:grid-cols-2">
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-grouping">{t('foundations.grouping')}</Label>
-              <Switch
-                id="foundation-number-grouping"
-                checked={useGrouping}
-                onCheckedChange={setUseGrouping}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-compact">{t('foundations.compact')}</Label>
-              <Switch
-                id="foundation-number-compact"
-                checked={compact}
-                onCheckedChange={setCompact}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-currency">{t('foundations.currencySymbol')}</Label>
-              <Switch
-                id="foundation-number-currency"
-                checked={showCurrency}
-                onCheckedChange={setShowCurrency}
-                disabled={numberStyle === 'decimal'}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="foundation-number-animation">
-                {t('foundations.numberAnimation')}
-              </Label>
-              <Switch
-                id="foundation-number-animation"
-                checked={animate}
-                onCheckedChange={setAnimate}
-              />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => {
-                setValue((current) => (current === 100400 ? 1000000 : 100400))
-              }}
-            >
-              {t('foundations.changeValue')}
-            </Button>
-            <Button
-              variant="outline"
-              disabled={!animate}
-              onClick={() => {
-                setReplay((current) => current + 1)
-              }}
-            >
-              <RotateCcw aria-hidden="true" />
-              {t('foundations.replay')}
-            </Button>
-          </div>
-          <p className="text-xs leading-5 text-muted-foreground">
-            {t('foundations.numberHelp', { duration: formatNumber(300) })}
-          </p>
-        </CardContent>
+          </CardContent>
+        </VStack>
       </Card>
       <Card className="min-w-0">
         <CardHeader>
@@ -517,33 +548,37 @@ function FeedbackExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.recoveryDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5">
-          <div aria-live="polite">
-            {recovered ? (
-              <Alert>
-                <Check aria-hidden="true" />
-                <AlertTitle>{t('foundations.loadedTitle')}</AlertTitle>
-                <AlertDescription>{t('foundations.loadedDescription')}</AlertDescription>
-              </Alert>
-            ) : (
-              <Alert variant="destructive">
-                <CircleAlert aria-hidden="true" />
-                <AlertTitle>{t('foundations.failedTitle')}</AlertTitle>
-                <AlertDescription>{t('foundations.failedDescription')}</AlertDescription>
-              </Alert>
-            )}
-          </div>
-          <Button
-            className="self-start"
-            variant="outline"
-            onClick={() => {
-              setRecovered((current) => !current)
-            }}
-          >
-            {recovered ? t('foundations.showError') : t('foundations.showRecovery')}
-          </Button>
-          <p className="text-xs leading-5 text-muted-foreground">{t('foundations.recoveryHelp')}</p>
-        </CardContent>
+        <VStack asChild align="stretch" className="gap-5">
+          <CardContent>
+            <div aria-live="polite">
+              {recovered ? (
+                <Alert>
+                  <Check aria-hidden="true" />
+                  <AlertTitle>{t('foundations.loadedTitle')}</AlertTitle>
+                  <AlertDescription>{t('foundations.loadedDescription')}</AlertDescription>
+                </Alert>
+              ) : (
+                <Alert variant="destructive">
+                  <CircleAlert aria-hidden="true" />
+                  <AlertTitle>{t('foundations.failedTitle')}</AlertTitle>
+                  <AlertDescription>{t('foundations.failedDescription')}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+            <Button
+              className="self-start"
+              variant="outline"
+              onClick={() => {
+                setRecovered((current) => !current)
+              }}
+            >
+              {recovered ? t('foundations.showError') : t('foundations.showRecovery')}
+            </Button>
+            <p className="text-xs leading-5 text-muted-foreground">
+              {t('foundations.recoveryHelp')}
+            </p>
+          </CardContent>
+        </VStack>
       </Card>
       <Card className="min-w-0 md:col-span-2">
         <CardHeader>
@@ -554,11 +589,16 @@ function FeedbackExamples() {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((item) => (
-            <div key={item} className="space-y-3 rounded-lg border p-4" aria-hidden="true">
+            <VStack
+              align="stretch"
+              key={item}
+              className="gap-3 rounded-lg border p-4"
+              aria-hidden="true"
+            >
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-8 w-32" />
               <Skeleton className="h-3 w-40 max-w-full" />
-            </div>
+            </VStack>
           ))}
         </CardContent>
       </Card>
@@ -569,20 +609,26 @@ function FeedbackExamples() {
 export function FoundationsPage() {
   const { t } = useTranslation('examples')
   return (
-    <div className="min-w-0 space-y-7">
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
-            {t('foundations.title')}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-            {t('foundations.description')}
-          </p>
-        </div>
-        <Badge variant="outline" className="self-start">
-          {t('foundations.standards')}
-        </Badge>
-      </header>
+    <VStack align="stretch" className="min-w-0 gap-7">
+      <VStack
+        asChild
+        align="stretch"
+        className="gap-4 md:flex-row md:items-center md:justify-between"
+      >
+        <header>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+              {t('foundations.title')}
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              {t('foundations.description')}
+            </p>
+          </div>
+          <Badge variant="outline" className="self-start">
+            {t('foundations.standards')}
+          </Badge>
+        </header>
+      </VStack>
       <Tabs defaultValue="basics" className="min-w-0">
         <div className="min-w-0 overflow-x-auto pb-1">
           <TabsList aria-label={t('foundations.tabsLabel')}>
@@ -605,6 +651,6 @@ export function FoundationsPage() {
           <FeedbackExamples />
         </TabsContent>
       </Tabs>
-    </div>
+    </VStack>
   )
 }

@@ -35,6 +35,7 @@ import {
   CardTitle,
 } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HStack, VStack } from '@/shared/ui/stack'
 
 const countFormat = { maximumFractionDigits: 0 }
 
@@ -80,13 +81,13 @@ export function OverviewPage() {
   const isLoading = analytics.isPending && !analytics.data
   const [createOpen, setCreateOpen] = useState(false)
   return (
-    <div className="space-y-7">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+    <VStack align="stretch" className="gap-7">
+      <HStack justify="between" wrap className="gap-4">
         <div>
-          <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+          <HStack className="mb-2 gap-2 text-xs font-medium text-muted-foreground">
             <span className="size-1.5 rounded-full bg-foreground" />
             {t('overview.eyebrow')}
-          </div>
+          </HStack>
           <h1 className="text-3xl font-semibold tracking-tight">{t('overview.title')}</h1>
           <p className="mt-2 text-sm text-muted-foreground">{t('overview.description')}</p>
         </div>
@@ -98,7 +99,7 @@ export function OverviewPage() {
           <Plus />
           {t('common.newProject')}
         </Button>
-      </div>
+      </HStack>
       {analytics.isError && (
         <Alert variant="destructive">
           <AlertTitle>{t('overview.errorTitle')}</AlertTitle>
@@ -121,51 +122,57 @@ export function OverviewPage() {
                 <CardAction>
                   <Icon className="size-4 text-muted-foreground" />
                 </CardAction>
-                <CardTitle className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-28" />
-                  ) : kpi ? (
-                    kpi.format === 'currency' ? (
-                      <MoneyDisplay
-                        animate
-                        value={kpi.value}
-                        className="text-2xl 2xl:text-3xl"
-                        format={{ maximumFractionDigits: 0 }}
-                      />
+                <HStack asChild className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
+                  <CardTitle>
+                    {isLoading ? (
+                      <Skeleton className="h-8 w-28" />
+                    ) : kpi ? (
+                      kpi.format === 'currency' ? (
+                        <MoneyDisplay
+                          animate
+                          value={kpi.value}
+                          className="text-2xl 2xl:text-3xl"
+                          format={{ maximumFractionDigits: 0 }}
+                        />
+                      ) : (
+                        <NumberDisplay
+                          animate
+                          value={kpi.value}
+                          format={
+                            kpi.format === 'percent'
+                              ? { style: 'percent', maximumFractionDigits: 2 }
+                              : countFormat
+                          }
+                        />
+                      )
                     ) : (
-                      <NumberDisplay
-                        animate
-                        value={kpi.value}
-                        format={
-                          kpi.format === 'percent'
-                            ? { style: 'percent', maximumFractionDigits: 2 }
-                            : countFormat
-                        }
-                      />
-                    )
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </CardTitle>
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </CardTitle>
+                </HStack>
               </CardHeader>
-              <CardFooter className="grid min-h-8 grid-cols-[5rem_minmax(0,1fr)] items-start gap-2">
-                {isLoading ? (
-                  <Skeleton className="h-5.5 w-20 rounded-full" />
-                ) : kpi ? (
-                  <Badge variant="secondary" className="justify-center gap-0.5 text-[11px]">
-                    <Trend className="size-3" />
-                    {formatNumber(kpi.change, {
-                      style: kpi.format === 'percent' ? 'decimal' : 'percent',
-                      maximumFractionDigits: 3,
-                      signDisplay: 'exceptZero',
-                    })}
-                    {kpi.format === 'percent' ? t('overview.percentagePoints') : ''}
-                  </Badge>
-                ) : (
-                  <span className="text-xs text-muted-foreground">{t('overview.noData')}</span>
-                )}
-                <span className="text-xs text-muted-foreground">{t(description)}</span>
-              </CardFooter>
+              <HStack asChild className="min-h-8 gap-2">
+                <CardFooter data-testid="kpi-comparison">
+                  <HStack className="w-20 shrink-0">
+                    {isLoading ? (
+                      <Skeleton className="h-5.5 w-20 rounded-full" />
+                    ) : kpi ? (
+                      <Badge variant="secondary" className="justify-center gap-0.5 text-[11px]">
+                        <Trend className="size-3" />
+                        {formatNumber(kpi.change, {
+                          style: kpi.format === 'percent' ? 'decimal' : 'percent',
+                          maximumFractionDigits: 3,
+                          signDisplay: 'exceptZero',
+                        })}
+                        {kpi.format === 'percent' ? t('overview.percentagePoints') : ''}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{t('overview.noData')}</span>
+                    )}
+                  </HStack>
+                  <span className="min-w-0 text-xs text-muted-foreground">{t(description)}</span>
+                </CardFooter>
+              </HStack>
             </Card>
           )
         })}
@@ -182,58 +189,63 @@ export function OverviewPage() {
             <CardTitle>{t('overview.activity')}</CardTitle>
             <CardDescription>{t('overview.activityDescription')}</CardDescription>
           </CardHeader>
-          <CardContent className="h-114 space-y-6 overflow-y-auto">
-            {isLoading ? (
-              Array.from({ length: 4 }, (_, index) => (
-                <div key={index} className="flex h-24 gap-3" aria-hidden="true">
-                  <Skeleton className="size-9 shrink-0 rounded-lg" />
-                  <div className="min-w-0 flex-1 space-y-2">
-                    <Skeleton className="h-5 w-4/5" />
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-3.5 w-20" />
-                  </div>
-                </div>
-              ))
-            ) : analytics.data?.activity.length ? (
-              analytics.data.activity.slice(0, 5).map((activity) => {
-                const Icon = activityIcons[activity.type]
-                return (
-                  <div key={activity.id} className="flex h-24 gap-3">
-                    <Avatar className="size-9 shrink-0 rounded-lg">
-                      <AvatarFallback className="rounded-lg">
-                        <Icon className="size-4 text-muted-foreground" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 space-y-1">
-                      <p className="line-clamp-2 text-sm leading-5 font-medium">
-                        {env.dataSource === 'demo' && activity.id in demoActivity
-                          ? t(demoActivity[activity.id as keyof typeof demoActivity].title)
-                          : activity.title}
-                      </p>
-                      <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">
-                        {env.dataSource === 'demo' && activity.id in demoActivity
-                          ? t(demoActivity[activity.id as keyof typeof demoActivity].description, {
-                              progress: formatNumber(72, {
-                                style: 'percent',
-                                maximumFractionDigits: 0,
-                              }),
-                              amount: formatMoney(249),
-                            })
-                          : activity.description}
-                      </p>
-                      <p className="text-[11px] leading-4 text-muted-foreground">
-                        {formatRelativeTime(activity.time)}
-                      </p>
-                    </div>
-                  </div>
-                )
-              })
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                {t(analytics.isError ? 'overview.activityUnavailable' : 'overview.noActivity')}
-              </div>
-            )}
-          </CardContent>
+          <VStack asChild align="stretch" className="h-114 gap-6 overflow-y-auto">
+            <CardContent>
+              {isLoading ? (
+                Array.from({ length: 4 }, (_, index) => (
+                  <HStack key={index} className="h-24 shrink-0 gap-3" aria-hidden="true">
+                    <Skeleton className="size-9 shrink-0 rounded-lg" />
+                    <VStack align="stretch" className="min-w-0 flex-1 gap-2">
+                      <Skeleton className="h-5 w-4/5" />
+                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-3.5 w-20" />
+                    </VStack>
+                  </HStack>
+                ))
+              ) : analytics.data?.activity.length ? (
+                analytics.data.activity.slice(0, 5).map((activity) => {
+                  const Icon = activityIcons[activity.type]
+                  return (
+                    <HStack key={activity.id} className="h-24 shrink-0 gap-3">
+                      <Avatar className="size-9 shrink-0 rounded-lg">
+                        <AvatarFallback className="rounded-lg">
+                          <Icon className="size-4 text-muted-foreground" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <VStack align="stretch" className="min-w-0 gap-1">
+                        <p className="line-clamp-2 text-sm leading-5 font-medium">
+                          {env.dataSource === 'demo' && activity.id in demoActivity
+                            ? t(demoActivity[activity.id as keyof typeof demoActivity].title)
+                            : activity.title}
+                        </p>
+                        <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">
+                          {env.dataSource === 'demo' && activity.id in demoActivity
+                            ? t(
+                                demoActivity[activity.id as keyof typeof demoActivity].description,
+                                {
+                                  progress: formatNumber(72, {
+                                    style: 'percent',
+                                    maximumFractionDigits: 0,
+                                  }),
+                                  amount: formatMoney(249),
+                                },
+                              )
+                            : activity.description}
+                        </p>
+                        <p className="text-[11px] leading-4 text-muted-foreground">
+                          {formatRelativeTime(activity.time)}
+                        </p>
+                      </VStack>
+                    </HStack>
+                  )
+                })
+              ) : (
+                <HStack justify="center" className="h-full text-sm text-muted-foreground">
+                  {t(analytics.isError ? 'overview.activityUnavailable' : 'overview.noActivity')}
+                </HStack>
+              )}
+            </CardContent>
+          </VStack>
           <CardFooter className="mt-auto border-t pt-4">
             <Button asChild variant="ghost" size="sm" className="w-full justify-between">
               <Link to="/projects">
@@ -244,15 +256,15 @@ export function OverviewPage() {
           </CardFooter>
         </Card>
       </div>
-      <div className="space-y-3">
-        <div className="flex justify-end">
+      <VStack align="stretch" className="gap-3">
+        <HStack justify="end">
           <Button asChild variant="link" size="sm" className="h-auto p-0 text-xs">
             <Link to="/projects">
               {t('overview.viewAll')}
               <ArrowRight className="size-3" />
             </Link>
           </Button>
-        </div>
+        </HStack>
         <ProjectTable
           projects={projects.data ?? []}
           hasData={projects.data !== undefined}
@@ -261,8 +273,8 @@ export function OverviewPage() {
           onRetry={() => void projects.refetch()}
           compact
         />
-      </div>
+      </VStack>
       <ProjectEditorDialog open={createOpen} onOpenChange={setCreateOpen} />
-    </div>
+    </VStack>
   )
 }

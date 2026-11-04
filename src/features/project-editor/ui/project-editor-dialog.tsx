@@ -22,6 +22,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
+import { VStack } from '@/shared/ui/stack'
 import { Textarea } from '@/shared/ui/textarea'
 
 interface ProjectEditorDialogProps {
@@ -111,118 +112,119 @@ function ProjectForm({
   }
 
   return (
-    <form
-      onSubmit={(event) => {
-        void handleSubmit(event)
-      }}
-      noValidate
-      className="space-y-5"
-    >
-      <div className="space-y-2">
-        <Label htmlFor={`${formId}-name`}>{t('editor.name')}</Label>
-        <Input
-          id={`${formId}-name`}
-          autoComplete="off"
-          placeholder={t('editor.namePlaceholder')}
-          value={input.name}
-          onChange={(event) => {
-            updateField('name', event.target.value)
-          }}
-          disabled={isPending}
-          aria-invalid={Boolean(errors.name)}
-          aria-describedby={errors.name ? `${formId}-name-error` : undefined}
-        />
-        {errors.name && (
-          <p id={`${formId}-name-error`} role="alert" className="text-sm text-destructive">
-            {t(errors.name)}
-          </p>
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${formId}-description`}>
-          {t('editor.description')}{' '}
-          <span className="font-normal text-muted-foreground">{t('editor.optional')}</span>
-        </Label>
-        <Textarea
-          id={`${formId}-description`}
-          placeholder={t('editor.descriptionPlaceholder')}
-          value={input.description}
-          onChange={(event) => {
-            updateField('description', event.target.value)
-          }}
-          disabled={isPending}
-          rows={3}
-          aria-invalid={Boolean(errors.description)}
-          aria-describedby={`${formId}-description-${errors.description ? 'error' : 'hint'}`}
-        />
-        {errors.description ? (
-          <p id={`${formId}-description-error`} role="alert" className="text-sm text-destructive">
-            {t(errors.description)}
-          </p>
-        ) : (
-          <p id={`${formId}-description-hint`} className="text-xs text-muted-foreground">
-            {t('editor.descriptionHint', { limit: formatNumber(240) })}
-          </p>
-        )}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor={`${formId}-status`}>{t('common.status')}</Label>
-        <Select
-          value={input.status}
-          onValueChange={(value) => {
-            updateField('status', value as ProjectInput['status'])
-          }}
-          disabled={isPending}
-        >
-          <SelectTrigger
-            id={`${formId}-status`}
-            className="w-full"
-            aria-invalid={Boolean(errors.status)}
-            aria-describedby={errors.status ? `${formId}-status-error` : undefined}
+    <VStack asChild align="stretch" className="gap-5">
+      <form
+        onSubmit={(event) => {
+          void handleSubmit(event)
+        }}
+        noValidate
+      >
+        <VStack align="stretch" className="gap-2">
+          <Label htmlFor={`${formId}-name`}>{t('editor.name')}</Label>
+          <Input
+            id={`${formId}-name`}
+            autoComplete="off"
+            placeholder={t('editor.namePlaceholder')}
+            value={input.name}
+            onChange={(event) => {
+              updateField('name', event.target.value)
+            }}
+            disabled={isPending}
+            aria-invalid={Boolean(errors.name)}
+            aria-describedby={errors.name ? `${formId}-name-error` : undefined}
+          />
+          {errors.name && (
+            <p id={`${formId}-name-error`} role="alert" className="text-sm text-destructive">
+              {t(errors.name)}
+            </p>
+          )}
+        </VStack>
+        <VStack align="stretch" className="gap-2">
+          <Label htmlFor={`${formId}-description`}>
+            {t('editor.description')}{' '}
+            <span className="font-normal text-muted-foreground">{t('editor.optional')}</span>
+          </Label>
+          <Textarea
+            id={`${formId}-description`}
+            placeholder={t('editor.descriptionPlaceholder')}
+            value={input.description}
+            onChange={(event) => {
+              updateField('description', event.target.value)
+            }}
+            disabled={isPending}
+            rows={3}
+            aria-invalid={Boolean(errors.description)}
+            aria-describedby={`${formId}-description-${errors.description ? 'error' : 'hint'}`}
+          />
+          {errors.description ? (
+            <p id={`${formId}-description-error`} role="alert" className="text-sm text-destructive">
+              {t(errors.description)}
+            </p>
+          ) : (
+            <p id={`${formId}-description-hint`} className="text-xs text-muted-foreground">
+              {t('editor.descriptionHint', { limit: formatNumber(240) })}
+            </p>
+          )}
+        </VStack>
+        <VStack align="stretch" className="gap-2">
+          <Label htmlFor={`${formId}-status`}>{t('common.status')}</Label>
+          <Select
+            value={input.status}
+            onValueChange={(value) => {
+              updateField('status', value as ProjectInput['status'])
+            }}
+            disabled={isPending}
           >
-            <SelectValue placeholder={t('editor.selectStatus')} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">{t('common.active')}</SelectItem>
-            <SelectItem value="paused">{t('common.paused')}</SelectItem>
-            <SelectItem value="archived">{t('common.archived')}</SelectItem>
-          </SelectContent>
-        </Select>
-        {errors.status && (
-          <p id={`${formId}-status-error`} role="alert" className="text-sm text-destructive">
-            {t(errors.status)}
-          </p>
+            <SelectTrigger
+              id={`${formId}-status`}
+              className="w-full"
+              aria-invalid={Boolean(errors.status)}
+              aria-describedby={errors.status ? `${formId}-status-error` : undefined}
+            >
+              <SelectValue placeholder={t('editor.selectStatus')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">{t('common.active')}</SelectItem>
+              <SelectItem value="paused">{t('common.paused')}</SelectItem>
+              <SelectItem value="archived">{t('common.archived')}</SelectItem>
+            </SelectContent>
+          </Select>
+          {errors.status && (
+            <p id={`${formId}-status-error`} role="alert" className="text-sm text-destructive">
+              {t(errors.status)}
+            </p>
+          )}
+        </VStack>
+        {serverError && (
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
+          >
+            {serverError instanceof ApiError
+              ? serverError.status === 404
+                ? t('editor.notFound')
+                : errorMessage(serverError)
+              : t('editor.saveError')}
+          </div>
         )}
-      </div>
-      {serverError && (
-        <div
-          role="alert"
-          className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-        >
-          {serverError instanceof ApiError
-            ? serverError.status === 404
-              ? t('editor.notFound')
-              : errorMessage(serverError)
-            : t('editor.saveError')}
-        </div>
-      )}
-      <DialogFooter className="pt-2">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={isPending}
-          onClick={() => {
-            onOpenChange(false)
-          }}
-        >
-          {t('common.cancel')}
-        </Button>
-        <Button type="submit" disabled={isPending}>
-          {isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
-          {t(isPending ? 'editor.saving' : project ? 'common.save' : 'editor.create')}
-        </Button>
-      </DialogFooter>
-    </form>
+        <DialogFooter className="pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending}
+            onClick={() => {
+              onOpenChange(false)
+            }}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
+            {t(isPending ? 'editor.saving' : project ? 'common.save' : 'editor.create')}
+          </Button>
+        </DialogFooter>
+      </form>
+    </VStack>
   )
 }
 

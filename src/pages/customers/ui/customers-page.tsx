@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { compareCustomers, customerSortOptions, type CustomerSort } from '../model/sample-customers'
 
@@ -121,16 +122,16 @@ export function CustomersPage() {
   ]
 
   return (
-    <div className="min-w-0 space-y-6">
-      <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2.5">
+    <VStack align="stretch" className="min-w-0 gap-6">
+      <VStack align="stretch" className="gap-1.5">
+        <HStack wrap className="gap-2.5">
           <h1 className="text-2xl font-semibold tracking-tight">{t('customers.title')}</h1>
           <Badge variant="outline" className="font-normal text-muted-foreground">
             {t('common.sample')}
           </Badge>
-        </div>
+        </HStack>
         <p className="text-sm text-muted-foreground">{t('customers.intro')}</p>
-      </div>
+      </VStack>
 
       {customersQuery.isError && customersQuery.data && (
         <Alert variant="destructive">
@@ -152,22 +153,26 @@ export function CustomersPage() {
             aria-label={title}
             aria-busy={isLoading}
           >
-            <CardHeader className="flex flex-row items-center justify-between px-5">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-              <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-            </CardHeader>
-            <CardContent className="space-y-1 px-5">
-              <div className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : customersQuery.data ? (
-                  <NumberDisplay animate value={value} format={countFormat} />
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{description}</p>
-            </CardContent>
+            <HStack asChild justify="between" className="px-5">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+              </CardHeader>
+            </HStack>
+            <VStack asChild align="stretch" className="gap-1 px-5">
+              <CardContent>
+                <HStack className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : customersQuery.data ? (
+                    <NumberDisplay animate value={value} format={countFormat} />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </HStack>
+                <p className="text-xs text-muted-foreground">{description}</p>
+              </CardContent>
+            </VStack>
           </Card>
         ))}
       </div>
@@ -177,265 +182,271 @@ export function CustomersPage() {
           <CardTitle className="text-base">{t('customers.directory')}</CardTitle>
           <CardDescription>{t('customers.directoryHint')}</CardDescription>
         </CardHeader>
-        <CardContent className="min-w-0 space-y-4 px-0">
-          <div className="flex flex-wrap items-center gap-2 px-5">
-            <div className="relative w-full md:max-w-xs">
-              <Search
-                className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
-                aria-hidden="true"
-              />
-              <Label htmlFor="customers-search" className="sr-only">
-                {t('customers.search')}
-              </Label>
-              <Input
-                id="customers-search"
-                ref={searchRef}
-                placeholder={t('customers.searchPlaceholder')}
-                value={search}
-                className="pl-9"
-                onChange={(event) => {
-                  setSearch(event.target.value)
+        <VStack asChild align="stretch" className="min-w-0 gap-4 px-0">
+          <CardContent>
+            <HStack wrap className="gap-2 px-5">
+              <div className="relative w-full md:max-w-xs">
+                <Search
+                  className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
+                  aria-hidden="true"
+                />
+                <Label htmlFor="customers-search" className="sr-only">
+                  {t('customers.search')}
+                </Label>
+                <Input
+                  id="customers-search"
+                  ref={searchRef}
+                  placeholder={t('customers.searchPlaceholder')}
+                  value={search}
+                  className="pl-9"
+                  onChange={(event) => {
+                    setSearch(event.target.value)
+                    setPage(0)
+                  }}
+                />
+              </div>
+              <Select
+                value={status}
+                onValueChange={(value) => {
+                  setStatus(customerStatuses.find((item) => item === value) ?? 'all')
                   setPage(0)
                 }}
-              />
-            </div>
-            <Select
-              value={status}
-              onValueChange={(value) => {
-                setStatus(customerStatuses.find((item) => item === value) ?? 'all')
-                setPage(0)
-              }}
-            >
-              <SelectTrigger aria-label={t('customers.filterStatus')} className="w-full md:w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t('customers.allStatuses')}</SelectItem>
-                {customerStatuses.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {t(`customers.status.${item}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select
-              value={sort}
-              onValueChange={(value) => {
-                setSort(customerSortOptions.find((item) => item.value === value)?.value ?? 'newest')
-                setPage(0)
-              }}
-            >
-              <SelectTrigger aria-label={t('customers.sortLabel')} className="w-full md:w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {customerSortOptions.map((item) => (
-                  <SelectItem key={item.value} value={item.value}>
-                    {t(`customers.sort.${item.value}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {hasFilters && (
-              <Button variant="ghost" size="sm" onClick={resetFilters}>
-                <X aria-hidden="true" />
-                {t('common.reset')}
-              </Button>
-            )}
-          </div>
-          {isLoading || visibleCustomers.length ? (
-            <div
-              role="region"
-              aria-label={t('customers.table')}
-              aria-busy={isLoading}
-              className="h-120 min-w-0 border-y"
-            >
-              <Table className="min-w-200 table-fixed">
-                <colgroup>
-                  <col className="w-[28%]" />
-                  <col className="w-[12%]" />
-                  <col className="w-[20%]" />
-                  <col className="w-[10%]" />
-                  <col className="w-[14%]" />
-                  <col className="w-[16%]" />
-                </colgroup>
-                <TableHeader>
-                  <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="pl-5">{t('common.customer')}</TableHead>
-                    <TableHead>{t('common.status')}</TableHead>
-                    <TableHead>{t('customers.location')}</TableHead>
-                    <TableHead className="text-right">{t('customers.orders')}</TableHead>
-                    <TableHead className="text-right">{t('customers.spent')}</TableHead>
-                    <TableHead className="pr-5">{t('customers.joined')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading
-                    ? Array.from({ length: pageSize }, (_, index) => (
-                        <TableRow key={index} className="h-18" aria-hidden="true">
-                          {Array.from({ length: 6 }, (_, cell) => (
-                            <TableCell key={cell} className="px-5">
-                              <Skeleton className="h-4 w-full max-w-28" />
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))
-                    : visibleCustomers.map((customer) => (
-                        <TableRow key={customer.id} className="h-18">
-                          <TableCell className="py-2 pl-5">
-                            <div className="flex min-w-0 items-center gap-3">
-                              <Avatar className="size-8 shrink-0">
-                                <AvatarFallback className="text-xs font-medium">
-                                  {customer.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="min-w-0 flex-1">
-                                <Button
-                                  variant="link"
-                                  className="block h-auto max-w-full truncate p-0 text-left font-medium text-foreground"
-                                  title={customer.name}
-                                  aria-label={t('customers.viewCustomer', { name: customer.name })}
-                                  onClick={(event) => {
-                                    detailTrigger.current = event.currentTarget
-                                    setSelectedCustomerId(customer.id)
-                                  }}
-                                >
-                                  {customer.name}
-                                </Button>
-                                <p
-                                  className="truncate text-xs text-muted-foreground"
-                                  title={customer.email}
-                                >
-                                  {customer.email}
-                                </p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <CustomerStatusBadge status={customer.status} />
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {customer.country}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {formatNumber(customer.orders)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium tabular-nums">
-                            {formatMoney(customer.spent / 100)}
-                          </TableCell>
-                          <TableCell className="pr-5 text-muted-foreground">
-                            {formatDate(customer.joined, { year: 'numeric' })}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                  {!isLoading &&
-                    Array.from(
-                      { length: Math.max(0, pageSize - visibleCustomers.length) },
-                      (_, index) => (
-                        <TableRow
-                          key={`empty-${String(index)}`}
-                          className="h-18 hover:bg-transparent"
-                          aria-hidden="true"
-                        >
-                          <TableCell colSpan={6} />
-                        </TableRow>
-                      ),
-                    )}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <Empty
-              className="h-120 rounded-none border-y py-12"
-              role={hasLoadError ? 'alert' : undefined}
-            >
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <Search aria-hidden="true" />
-                </EmptyMedia>
-                <EmptyTitle>
-                  {hasLoadError
-                    ? t('customers.loadError')
-                    : customers.length
-                      ? t('customers.noMatch')
-                      : t('customers.empty')}
-                </EmptyTitle>
-                <EmptyDescription>
-                  {hasLoadError
-                    ? errorMessage(customersQuery.error)
-                    : customers.length
-                      ? t('common.searchHint')
-                      : t('customers.emptyHint')}
-                </EmptyDescription>
-              </EmptyHeader>
-              {hasLoadError ? (
-                <Button variant="outline" onClick={() => void customersQuery.refetch()}>
-                  {t('common.tryAgain')}
+              >
+                <SelectTrigger aria-label={t('customers.filterStatus')} className="w-full md:w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('customers.allStatuses')}</SelectItem>
+                  {customerStatuses.map((item) => (
+                    <SelectItem key={item} value={item}>
+                      {t(`customers.status.${item}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={sort}
+                onValueChange={(value) => {
+                  setSort(
+                    customerSortOptions.find((item) => item.value === value)?.value ?? 'newest',
+                  )
+                  setPage(0)
+                }}
+              >
+                <SelectTrigger aria-label={t('customers.sortLabel')} className="w-full md:w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {customerSortOptions.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {t(`customers.sort.${item.value}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasFilters && (
+                <Button variant="ghost" size="sm" onClick={resetFilters}>
+                  <X aria-hidden="true" />
+                  {t('common.reset')}
                 </Button>
-              ) : (
-                customers.length > 0 && (
-                  <Button variant="outline" onClick={resetFilters}>
-                    {t('common.clearFilters')}
-                  </Button>
-                )
               )}
-            </Empty>
-          )}
-          <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-            <p
-              className="text-xs text-muted-foreground"
-              aria-live={hasLoadError ? 'off' : 'polite'}
-            >
-              {isLoading
-                ? t('customers.loading')
-                : hasLoadError
-                  ? t('customers.loadError')
-                  : filteredCustomers.length
-                    ? t('customers.showing', {
-                        start: formatNumber(currentPage * pageSize + 1),
-                        end: formatNumber(
-                          Math.min((currentPage + 1) * pageSize, filteredCustomers.length),
+            </HStack>
+            {isLoading || visibleCustomers.length ? (
+              <div
+                role="region"
+                aria-label={t('customers.table')}
+                aria-busy={isLoading}
+                className="h-120 min-w-0 border-y"
+              >
+                <Table className="min-w-200 table-fixed">
+                  <colgroup>
+                    <col className="w-[28%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[20%]" />
+                    <col className="w-[10%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[16%]" />
+                  </colgroup>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="pl-5">{t('common.customer')}</TableHead>
+                      <TableHead>{t('common.status')}</TableHead>
+                      <TableHead>{t('customers.location')}</TableHead>
+                      <TableHead className="text-right">{t('customers.orders')}</TableHead>
+                      <TableHead className="text-right">{t('customers.spent')}</TableHead>
+                      <TableHead className="pr-5">{t('customers.joined')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {isLoading
+                      ? Array.from({ length: pageSize }, (_, index) => (
+                          <TableRow key={index} className="h-18" aria-hidden="true">
+                            {Array.from({ length: 6 }, (_, cell) => (
+                              <TableCell key={cell} className="px-5">
+                                <Skeleton className="h-4 w-full max-w-28" />
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      : visibleCustomers.map((customer) => (
+                          <TableRow key={customer.id} className="h-18">
+                            <TableCell className="py-2 pl-5">
+                              <HStack className="min-w-0 gap-3">
+                                <Avatar className="size-8 shrink-0">
+                                  <AvatarFallback className="text-xs font-medium">
+                                    {customer.initials}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <VStack align="stretch" className="min-w-0 flex-1">
+                                  <Button
+                                    variant="link"
+                                    className="block h-auto max-w-full truncate p-0 text-left font-medium text-foreground"
+                                    title={customer.name}
+                                    aria-label={t('customers.viewCustomer', {
+                                      name: customer.name,
+                                    })}
+                                    onClick={(event) => {
+                                      detailTrigger.current = event.currentTarget
+                                      setSelectedCustomerId(customer.id)
+                                    }}
+                                  >
+                                    {customer.name}
+                                  </Button>
+                                  <p
+                                    className="truncate text-xs text-muted-foreground"
+                                    title={customer.email}
+                                  >
+                                    {customer.email}
+                                  </p>
+                                </VStack>
+                              </HStack>
+                            </TableCell>
+                            <TableCell>
+                              <CustomerStatusBadge status={customer.status} />
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {customer.country}
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {formatNumber(customer.orders)}
+                            </TableCell>
+                            <TableCell className="text-right font-medium tabular-nums">
+                              {formatMoney(customer.spent / 100)}
+                            </TableCell>
+                            <TableCell className="pr-5 text-muted-foreground">
+                              {formatDate(customer.joined, { year: 'numeric' })}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    {!isLoading &&
+                      Array.from(
+                        { length: Math.max(0, pageSize - visibleCustomers.length) },
+                        (_, index) => (
+                          <TableRow
+                            key={`empty-${String(index)}`}
+                            className="h-18 hover:bg-transparent"
+                            aria-hidden="true"
+                          >
+                            <TableCell colSpan={6} />
+                          </TableRow>
                         ),
-                        total: formatNumber(filteredCustomers.length),
-                      })
-                    : t('customers.count', { total: formatNumber(0) })}
-            </p>
-            <div className="flex items-center gap-3">
-              <p className="text-xs font-medium tabular-nums">
-                {t('common.pageCount', {
-                  current: formatNumber(currentPage + 1),
-                  total: formatNumber(pageCount),
-                })}
-              </p>
-              <div className="flex gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  aria-label={t('customers.previousPage')}
-                  disabled={isLoading || currentPage === 0}
-                  onClick={() => {
-                    setPage(currentPage - 1)
-                  }}
-                >
-                  <ChevronLeft aria-hidden="true" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="size-8"
-                  aria-label={t('customers.nextPage')}
-                  disabled={isLoading || currentPage + 1 >= pageCount}
-                  onClick={() => {
-                    setPage(currentPage + 1)
-                  }}
-                >
-                  <ChevronRight aria-hidden="true" />
-                </Button>
+                      )}
+                  </TableBody>
+                </Table>
               </div>
+            ) : (
+              <Empty
+                className="h-120 rounded-none border-y py-12"
+                role={hasLoadError ? 'alert' : undefined}
+              >
+                <EmptyHeader>
+                  <EmptyMedia variant="icon">
+                    <Search aria-hidden="true" />
+                  </EmptyMedia>
+                  <EmptyTitle>
+                    {hasLoadError
+                      ? t('customers.loadError')
+                      : customers.length
+                        ? t('customers.noMatch')
+                        : t('customers.empty')}
+                  </EmptyTitle>
+                  <EmptyDescription>
+                    {hasLoadError
+                      ? errorMessage(customersQuery.error)
+                      : customers.length
+                        ? t('common.searchHint')
+                        : t('customers.emptyHint')}
+                  </EmptyDescription>
+                </EmptyHeader>
+                {hasLoadError ? (
+                  <Button variant="outline" onClick={() => void customersQuery.refetch()}>
+                    {t('common.tryAgain')}
+                  </Button>
+                ) : (
+                  customers.length > 0 && (
+                    <Button variant="outline" onClick={resetFilters}>
+                      {t('common.clearFilters')}
+                    </Button>
+                  )
+                )}
+              </Empty>
+            )}
+            <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+              <p
+                className="text-xs text-muted-foreground"
+                aria-live={hasLoadError ? 'off' : 'polite'}
+              >
+                {isLoading
+                  ? t('customers.loading')
+                  : hasLoadError
+                    ? t('customers.loadError')
+                    : filteredCustomers.length
+                      ? t('customers.showing', {
+                          start: formatNumber(currentPage * pageSize + 1),
+                          end: formatNumber(
+                            Math.min((currentPage + 1) * pageSize, filteredCustomers.length),
+                          ),
+                          total: formatNumber(filteredCustomers.length),
+                        })
+                      : t('customers.count', { total: formatNumber(0) })}
+              </p>
+              <HStack className="gap-3">
+                <p className="text-xs font-medium tabular-nums">
+                  {t('common.pageCount', {
+                    current: formatNumber(currentPage + 1),
+                    total: formatNumber(pageCount),
+                  })}
+                </p>
+                <HStack className="gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
+                    aria-label={t('customers.previousPage')}
+                    disabled={isLoading || currentPage === 0}
+                    onClick={() => {
+                      setPage(currentPage - 1)
+                    }}
+                  >
+                    <ChevronLeft aria-hidden="true" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="size-8"
+                    aria-label={t('customers.nextPage')}
+                    disabled={isLoading || currentPage + 1 >= pageCount}
+                    onClick={() => {
+                      setPage(currentPage + 1)
+                    }}
+                  >
+                    <ChevronRight aria-hidden="true" />
+                  </Button>
+                </HStack>
+              </HStack>
             </div>
-          </div>
-        </CardContent>
+          </CardContent>
+        </VStack>
       </Card>
 
       <Sheet
@@ -465,18 +476,18 @@ export function CustomersPage() {
             </SheetDescription>
           </SheetHeader>
           {selectedCustomer && (
-            <div className="@container/customer-details space-y-6 px-6 pb-6 text-sm">
-              <div className="flex items-center gap-3">
+            <VStack align="stretch" className="@container/customer-details gap-6 px-6 pb-6 text-sm">
+              <HStack className="gap-3">
                 <Avatar className="size-12">
                   <AvatarFallback className="font-medium">
                     {selectedCustomer.initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="min-w-0 space-y-1.5">
+                <VStack align="start" className="min-w-0 gap-1.5">
                   <p className="break-all text-muted-foreground">{selectedCustomer.email}</p>
                   <CustomerStatusBadge status={selectedCustomer.status} />
-                </div>
-              </div>
+                </VStack>
+              </HStack>
               <div className="grid grid-cols-1 gap-3 @xs/customer-details:grid-cols-2">
                 <Card className="gap-2 py-4 shadow-none">
                   <CardHeader className="px-4">
@@ -499,45 +510,51 @@ export function CustomersPage() {
                   </CardContent>
                 </Card>
               </div>
-              <section className="space-y-4" aria-label={t('customers.information')}>
-                <h2 className="font-medium">{t('customers.information')}</h2>
-                <dl className="space-y-4">
-                  <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">{t('customers.location')}</dt>
-                    <dd>
-                      {selectedCustomer.city}, {selectedCustomer.country}
-                    </dd>
-                  </div>
-                  <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">{t('customers.since')}</dt>
-                    <dd>{formatDate(selectedCustomer.joined, { year: 'numeric' })}</dd>
-                  </div>
-                  <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">{t('customers.lastOrder')}</dt>
-                    <dd>
-                      {selectedCustomer.lastOrder
-                        ? formatDate(selectedCustomer.lastOrder, { year: 'numeric' })
-                        : t('customers.noOrders')}
-                    </dd>
-                  </div>
-                  <div className="space-y-1">
-                    <dt className="text-xs text-muted-foreground">{t('customers.type')}</dt>
-                    <dd>
-                      {selectedCustomer.orders > 1
-                        ? t('customers.returningCustomer')
-                        : t('customers.firstTimeCustomer')}
-                    </dd>
-                  </div>
-                </dl>
-              </section>
+              <VStack asChild align="stretch" className="gap-4">
+                <section aria-label={t('customers.information')}>
+                  <h2 className="font-medium">{t('customers.information')}</h2>
+                  <VStack asChild align="stretch" className="gap-4">
+                    <dl>
+                      <VStack align="stretch" className="gap-1">
+                        <dt className="text-xs text-muted-foreground">{t('customers.location')}</dt>
+                        <dd>
+                          {selectedCustomer.city}, {selectedCustomer.country}
+                        </dd>
+                      </VStack>
+                      <VStack align="stretch" className="gap-1">
+                        <dt className="text-xs text-muted-foreground">{t('customers.since')}</dt>
+                        <dd>{formatDate(selectedCustomer.joined, { year: 'numeric' })}</dd>
+                      </VStack>
+                      <VStack align="stretch" className="gap-1">
+                        <dt className="text-xs text-muted-foreground">
+                          {t('customers.lastOrder')}
+                        </dt>
+                        <dd>
+                          {selectedCustomer.lastOrder
+                            ? formatDate(selectedCustomer.lastOrder, { year: 'numeric' })
+                            : t('customers.noOrders')}
+                        </dd>
+                      </VStack>
+                      <VStack align="stretch" className="gap-1">
+                        <dt className="text-xs text-muted-foreground">{t('customers.type')}</dt>
+                        <dd>
+                          {selectedCustomer.orders > 1
+                            ? t('customers.returningCustomer')
+                            : t('customers.firstTimeCustomer')}
+                        </dd>
+                      </VStack>
+                    </dl>
+                  </VStack>
+                </section>
+              </VStack>
               <Separator />
               <p className="text-xs leading-relaxed text-muted-foreground">
                 {t('customers.disclaimer')}
               </p>
-            </div>
+            </VStack>
           )}
         </SheetContent>
       </Sheet>
-    </div>
+    </VStack>
   )
 }

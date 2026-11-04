@@ -50,6 +50,131 @@ const colorProperties = new Set([
 const fixedColorValue =
   /^(?:#|(?:rgb|hsl|oklch|oklab|lab|lch|color)\(|(?:black|white|red|blue|green|yellow|orange|purple|gray|grey)$)/i
 const normalize = (value) => value.split(path.sep).join('/')
+const testFilePattern = /(?:^|\/)(?:__tests__|__fixtures__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$/
+const classHelpers = new Set(['cn', 'clsx', 'classnames', 'classNames'])
+const unknownClassFragment = '\0'
+const otherElementVariants = new Set([
+  '*',
+  '**',
+  'before',
+  'after',
+  'marker',
+  'file',
+  'selection',
+  'placeholder',
+  'first-letter',
+  'first-line',
+  'backdrop',
+])
+
+// Follow values that can reach className, rather than arbitrary strings in conditions or callbacks.
+function classStrings(node) {
+  if (!node) return [unknownClassFragment]
+  if (ts.isStringLiteralLike(node)) return [node.text]
+  if (
+    ts.isParenthesizedExpression(node) ||
+    ts.isAsExpression(node) ||
+    ts.isSatisfiesExpression(node) ||
+    ts.isNonNullExpression(node)
+  ) {
+    return classStrings(node.expression)
+  }
+  if (ts.isConditionalExpression(node)) {
+    return [...classStrings(node.whenTrue), ...classStrings(node.whenFalse)]
+  }
+  if (ts.isBinaryExpression(node)) {
+    if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
+      return classStrings(node.right)
+    }
+    if (
+      [ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(
+        node.operatorToken.kind,
+      )
+    ) {
+      return [...classStrings(node.left), ...classStrings(node.right)]
+    }
+    if (node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
+      return classStrings(node.left).flatMap((left) =>
+        classStrings(node.right).map((right) => left + right),
+      )
+    }
+  }
+  if (ts.isTemplateExpression(node)) {
+    let values = [node.head.text]
+    for (const span of node.templateSpans) {
+      values = values.flatMap((value) =>
+        classStrings(span.expression).map((expression) => value + expression + span.literal.text),
+      )
+    }
+    return values
+  }
+  if (ts.isArrayLiteralExpression(node)) return node.elements.flatMap(classStrings)
+  if (ts.isObjectLiteralExpression(node)) {
+    return node.properties.flatMap((property) => {
+      if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) {
+        return []
+      }
+      if (ts.isComputedPropertyName(property.name)) return classStrings(property.name.expression)
+      return [property.name.text]
+    })
+  }
+  if (
+    ts.isCallExpression(node) &&
+    ts.isIdentifier(node.expression) &&
+    classHelpers.has(node.expression.text)
+  ) {
+    return node.arguments.flatMap(classStrings)
+  }
+  return [unknownClassFragment]
+}
+
+function variantTargetsElement(variant) {
+  if (otherElementVariants.has(variant)) return false
+  if (!variant.startsWith('[') || variant.startsWith('[@')) return true
+
+  // In arbitrary selectors, the final compound must still select &, not a descendant or pseudo-element.
+  let targetsElement = false
+  let depth = 0
+  for (let index = 1; index < variant.length - 1; index += 1) {
+    const character = variant[index]
+    if (character === '\\') index += 1
+    else if (['[', '('].includes(character)) depth += 1
+    else if ([']', ')'].includes(character)) depth -= 1
+    else if (depth === 0) {
+      if (character === '&') targetsElement = true
+      else if (
+        ['_', '>', '+', '~'].includes(character) ||
+        (character === ':' && variant[index + 1] === ':')
+      ) {
+        targetsElement = false
+      }
+    }
+  }
+  return targetsElement
+}
+
+function classUtilities(node) {
+  return classStrings(node).flatMap((value) =>
+    value.split(/\s+/).map((token) => {
+      let depth = 0
+      let utilityStart = 0
+      const variants = []
+      for (let index = 0; index < token.length; index += 1) {
+        if (['[', '('].includes(token[index])) depth += 1
+        else if ([']', ')'].includes(token[index])) depth -= 1
+        else if (token[index] === ':' && depth === 0) {
+          variants.push(token.slice(utilityStart, index))
+          utilityStart = index + 1
+        }
+      }
+      return {
+        name: token.slice(utilityStart).replace(/^!|!$/g, ''),
+        variant: utilityStart > 0,
+        targetsElement: variants.every(variantTargetsElement),
+      }
+    }),
+  )
+}
 
 function internalPath(specifier, importer) {
   const clean = specifier.split(/[?#]/, 1)[0]
@@ -129,6 +254,7 @@ export function checkFile(filename, contents) {
   const [sourceLayer, sourceSlice] = file.split('/')
   const sourceLevel = layers.indexOf(sourceLayer)
   const isUi = file.startsWith('shared/ui/')
+  const isTest = testFilePattern.test(file)
   if (sourceLevel < 0 && !sourceEntrypoints.has(file)) {
     report('unknown-layer', '앱 코드는 app/pages/widgets/features/entities/shared 레이어에 두세요.')
   }
@@ -289,6 +415,40 @@ export function checkFile(filename, contents) {
           attribute.initializer && ts.isJsxExpression(attribute.initializer)
             ? attribute.initializer.expression
             : attribute.initializer
+        if (!isUi && !isTest && attribute.name.getText(source) === 'className') {
+          const utilities = classUtilities(value)
+          if (
+            tag === 'div' &&
+            utilities.some(
+              ({ name, targetsElement }) =>
+                targetsElement &&
+                (['flex', 'inline-flex', '[display:flex]', '[display:inline-flex]'].includes(
+                  name,
+                ) ||
+                  /^-?space-[xy]-/.test(name)),
+            )
+          ) {
+            report(
+              'stack-layout',
+              '행·열 레이아웃의 div에는 shared/ui/stack의 HStack 또는 VStack과 gap을 사용하세요. grid는 그대로 사용할 수 있습니다.',
+              location(source, attribute),
+            )
+          }
+          if (
+            ['HStack', 'VStack'].includes(tag) &&
+            utilities.some(
+              ({ name, variant }) =>
+                !variant &&
+                (/^(?:items|justify)-/.test(name) || /^flex-(?:row|col)(?:-reverse)?$/.test(name)),
+            )
+          ) {
+            report(
+              'stack-props',
+              'Stack의 기본 정렬은 align·justify prop으로, 방향은 HStack·VStack으로 지정하세요. 반응형 클래스는 허용합니다.',
+              location(source, attribute),
+            )
+          }
+        }
         if (colorProperties.has(attribute.name.getText(source)) && attribute.initializer) {
           if (value && ts.isStringLiteralLike(value) && fixedColorValue.test(value.text)) {
             report(

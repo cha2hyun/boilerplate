@@ -17,6 +17,7 @@ import {
 } from '@/shared/ui/empty'
 import { Input } from '@/shared/ui/input'
 import { Separator } from '@/shared/ui/separator'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { sampleMessages, type SampleMessage } from '../model/sample-messages'
 
@@ -103,26 +104,26 @@ export function InboxPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-3">
+    <VStack align="stretch" className="gap-6">
+      <VStack align="stretch" className="gap-2">
+        <HStack className="gap-3">
           <h1 className="text-3xl font-semibold tracking-tight">{t('inbox.title')}</h1>
           <Badge variant="secondary">{t('common.sample')}</Badge>
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">{t('inbox.intro')}</p>
-      </div>
+        </HStack>
+        <p className="text-sm text-muted-foreground">{t('inbox.intro')}</p>
+      </VStack>
 
       <Card className="gap-0 overflow-hidden py-0 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b p-4 md:px-5">
-          <div className="flex items-center gap-2 text-sm font-medium">
+        <HStack justify="between" wrap className="gap-3 border-b p-4 md:px-5">
+          <HStack className="gap-2 text-sm font-medium">
             <Inbox className="size-4" />
             {t('inbox.allMessages')}
             <Badge variant="outline">
               {t('inbox.unreadCount', { total: formatNumber(unreadCount) })}
             </Badge>
-          </div>
+          </HStack>
           <p className="text-xs text-muted-foreground">{t('inbox.sampleHint')}</p>
-        </div>
+        </HStack>
         <div className="grid min-h-[620px] md:grid-cols-[minmax(0,280px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
           <section
             aria-label={t('inbox.messageList')}
@@ -138,7 +139,7 @@ export function InboxPage() {
                 }
               }}
             >
-              <div className="space-y-4 border-b p-4">
+              <VStack align="stretch" className="gap-4 border-b p-4">
                 <TabsList className="w-full" aria-label={t('inbox.messageViews')}>
                   <TabsTrigger value="all">{t('inbox.all')}</TabsTrigger>
                   <TabsTrigger value="unread">{t('inbox.unread')}</TabsTrigger>
@@ -158,181 +159,193 @@ export function InboxPage() {
                     }}
                   />
                 </div>
-              </div>
+              </VStack>
 
-              <TabsContent value={view} className="space-y-2 p-3">
-                {visibleMessages.map((message) => (
-                  <Button
-                    key={message.id}
-                    ref={(element) => {
-                      if (element) messageRefs.current.set(message.id, element)
-                      else messageRefs.current.delete(message.id)
-                    }}
-                    variant="ghost"
-                    className={cn(
-                      'h-auto w-full min-w-0 flex-col items-stretch gap-2 rounded-lg border p-3 text-left whitespace-normal',
-                      selectedId === message.id && 'bg-muted',
-                    )}
-                    aria-label={t('inbox.openMessage', {
-                      sender: message.sender,
-                      subject: message.subject,
-                    })}
-                    aria-description={
-                      message.unread ? t('inbox.unreadMessage') : t('inbox.readMessage')
-                    }
-                    aria-pressed={selectedId === message.id}
-                    onClick={() => {
-                      openMessage(message)
-                    }}
-                  >
-                    <span className="flex min-w-0 items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span className="truncate font-medium">{message.sender}</span>
-                        {message.unread && (
-                          <span
-                            className="size-1.5 shrink-0 rounded-full bg-foreground"
-                            aria-label={t('inbox.unread')}
-                          />
-                        )}
-                      </span>
-                      <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
-                        {formatDate(message.date)}
-                      </span>
-                    </span>
-                    <span className="line-clamp-1 text-xs font-medium">{message.subject}</span>
-                    <span className="line-clamp-2 text-xs leading-relaxed font-normal text-muted-foreground">
-                      {message.preview}
-                    </span>
-                    <Badge variant="secondary" className="mt-1 text-[10px]">
-                      {labelNames[message.label] ?? message.label}
-                    </Badge>
-                  </Button>
-                ))}
-                {visibleMessages.length === 0 && (
-                  <Empty className="min-h-64 px-3 md:px-3">
-                    <EmptyHeader>
-                      <EmptyMedia variant="icon">
-                        <Search />
-                      </EmptyMedia>
-                      <EmptyTitle>{t('inbox.noMessages')}</EmptyTitle>
-                      <EmptyDescription>
-                        {query
-                          ? t('inbox.searchHint')
-                          : view === 'unread'
-                            ? t('inbox.caughtUp')
-                            : t('inbox.emptyView')}
-                      </EmptyDescription>
-                    </EmptyHeader>
-                    <EmptyContent>
+              <VStack asChild align="stretch" className="gap-2 p-3">
+                <TabsContent value={view}>
+                  {visibleMessages.map((message) => (
+                    <VStack asChild key={message.id} align="stretch" className="gap-2">
                       <Button
-                        variant="outline"
-                        size="sm"
+                        ref={(element) => {
+                          if (element) messageRefs.current.set(message.id, element)
+                          else messageRefs.current.delete(message.id)
+                        }}
+                        variant="ghost"
+                        className={cn(
+                          'h-auto w-full min-w-0 rounded-lg border p-3 text-left whitespace-normal',
+                          selectedId === message.id && 'bg-muted',
+                        )}
+                        aria-label={t('inbox.openMessage', {
+                          sender: message.sender,
+                          subject: message.subject,
+                        })}
+                        aria-description={
+                          message.unread ? t('inbox.unreadMessage') : t('inbox.readMessage')
+                        }
+                        aria-pressed={selectedId === message.id}
                         onClick={() => {
-                          setSearch('')
-                          setView('all')
-                          setSelectedId(null)
-                          searchRef.current?.focus()
+                          openMessage(message)
                         }}
                       >
-                        {t('inbox.showAll')}
+                        <HStack asChild justify="between" className="min-w-0 gap-2">
+                          <span>
+                            <HStack asChild className="min-w-0 gap-2">
+                              <span>
+                                <span className="truncate font-medium">{message.sender}</span>
+                                {message.unread && (
+                                  <span
+                                    className="size-1.5 shrink-0 rounded-full bg-foreground"
+                                    aria-label={t('inbox.unread')}
+                                  />
+                                )}
+                              </span>
+                            </HStack>
+                            <span className="shrink-0 text-[11px] font-normal text-muted-foreground">
+                              {formatDate(message.date)}
+                            </span>
+                          </span>
+                        </HStack>
+                        <span className="line-clamp-1 text-xs font-medium">{message.subject}</span>
+                        <span className="line-clamp-2 text-xs leading-relaxed font-normal text-muted-foreground">
+                          {message.preview}
+                        </span>
+                        <Badge variant="secondary" className="mt-1 text-[10px]">
+                          {labelNames[message.label] ?? message.label}
+                        </Badge>
                       </Button>
-                    </EmptyContent>
-                  </Empty>
-                )}
-              </TabsContent>
+                    </VStack>
+                  ))}
+                  {visibleMessages.length === 0 && (
+                    <Empty className="min-h-64 px-3 md:px-3">
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <Search />
+                        </EmptyMedia>
+                        <EmptyTitle>{t('inbox.noMessages')}</EmptyTitle>
+                        <EmptyDescription>
+                          {query
+                            ? t('inbox.searchHint')
+                            : view === 'unread'
+                              ? t('inbox.caughtUp')
+                              : t('inbox.emptyView')}
+                        </EmptyDescription>
+                      </EmptyHeader>
+                      <EmptyContent>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSearch('')
+                            setView('all')
+                            setSelectedId(null)
+                            searchRef.current?.focus()
+                          }}
+                        >
+                          {t('inbox.showAll')}
+                        </Button>
+                      </EmptyContent>
+                    </Empty>
+                  )}
+                </TabsContent>
+              </VStack>
             </Tabs>
           </section>
 
-          <section
-            aria-label={t('inbox.details')}
-            className={cn('min-w-0', !selected && 'hidden md:flex')}
-          >
-            {selected ? (
-              <article aria-labelledby="message-subject" className="flex h-full flex-col">
-                <div className="flex flex-wrap items-center gap-2 border-b p-3 md:p-4">
-                  {isMobile && (
-                    <Button variant="ghost" size="sm" onClick={closeMessage}>
-                      <ArrowLeft />
-                      {t('inbox.back')}
-                    </Button>
-                  )}
-                  <div className="ml-auto flex flex-wrap items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        toggleRead(selected)
-                      }}
-                    >
-                      {selected.unread ? <MailOpen /> : <Mail />}
-                      {selected.unread ? t('inbox.markRead') : t('inbox.markUnread')}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        toggleArchive(selected)
-                      }}
-                    >
-                      {selected.archived ? <ArchiveRestore /> : <Archive />}
-                      {selected.archived ? t('inbox.moveInbox') : t('inbox.archive')}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-5 p-5 xl:p-6">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline">{labelNames[selected.label] ?? selected.label}</Badge>
-                    {selected.unread && <Badge variant="secondary">{t('inbox.unread')}</Badge>}
-                    {selected.archived && <Badge variant="secondary">{t('inbox.archived')}</Badge>}
-                  </div>
-                  <h2
-                    id="message-subject"
-                    ref={detailHeadingRef}
-                    tabIndex={-1}
-                    className="text-xl leading-snug font-semibold tracking-tight outline-none"
-                  >
-                    {selected.subject}
-                  </h2>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Avatar className="size-9">
-                      <AvatarFallback className="text-xs">{selected.initials}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{selected.sender}</p>
-                      <p className="truncate text-xs text-muted-foreground">{selected.email}</p>
+          <VStack asChild align="stretch" className={cn('min-w-0', !selected && 'hidden md:flex')}>
+            <section aria-label={t('inbox.details')}>
+              {selected ? (
+                <VStack asChild align="stretch" className="h-full shrink-0">
+                  <article aria-labelledby="message-subject">
+                    <HStack wrap className="gap-2 border-b p-3 md:p-4">
+                      {isMobile && (
+                        <Button variant="ghost" size="sm" onClick={closeMessage}>
+                          <ArrowLeft />
+                          {t('inbox.back')}
+                        </Button>
+                      )}
+                      <HStack wrap className="ml-auto gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            toggleRead(selected)
+                          }}
+                        >
+                          {selected.unread ? <MailOpen /> : <Mail />}
+                          {selected.unread ? t('inbox.markRead') : t('inbox.markUnread')}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            toggleArchive(selected)
+                          }}
+                        >
+                          {selected.archived ? <ArchiveRestore /> : <Archive />}
+                          {selected.archived ? t('inbox.moveInbox') : t('inbox.archive')}
+                        </Button>
+                      </HStack>
+                    </HStack>
+                    <VStack align="stretch" className="gap-5 p-5 xl:p-6">
+                      <HStack wrap className="gap-2">
+                        <Badge variant="outline">
+                          {labelNames[selected.label] ?? selected.label}
+                        </Badge>
+                        {selected.unread && <Badge variant="secondary">{t('inbox.unread')}</Badge>}
+                        {selected.archived && (
+                          <Badge variant="secondary">{t('inbox.archived')}</Badge>
+                        )}
+                      </HStack>
+                      <h2
+                        id="message-subject"
+                        ref={detailHeadingRef}
+                        tabIndex={-1}
+                        className="text-xl leading-snug font-semibold tracking-tight outline-none"
+                      >
+                        {selected.subject}
+                      </h2>
+                      <HStack wrap className="gap-3">
+                        <Avatar className="size-9">
+                          <AvatarFallback className="text-xs">{selected.initials}</AvatarFallback>
+                        </Avatar>
+                        <VStack align="stretch" className="min-w-0 flex-1">
+                          <p className="text-sm font-medium">{selected.sender}</p>
+                          <p className="truncate text-xs text-muted-foreground">{selected.email}</p>
+                        </VStack>
+                        <time dateTime={selected.date} className="text-xs text-muted-foreground">
+                          {formatDate(selected.date, { year: 'numeric' })}
+                        </time>
+                      </HStack>
+                    </VStack>
+                    <Separator />
+                    <VStack align="stretch" className="gap-5 p-5 text-sm leading-7 xl:p-6">
+                      {selected.body.map((paragraph) => (
+                        <p key={paragraph}>{paragraph}</p>
+                      ))}
+                    </VStack>
+                    <div className="mt-auto border-t p-5 text-xs text-muted-foreground xl:px-6">
+                      {t('inbox.disclaimer')}
                     </div>
-                    <time dateTime={selected.date} className="text-xs text-muted-foreground">
-                      {formatDate(selected.date, { year: 'numeric' })}
-                    </time>
-                  </div>
-                </div>
-                <Separator />
-                <div className="space-y-5 p-5 text-sm leading-7 xl:p-6">
-                  {selected.body.map((paragraph) => (
-                    <p key={paragraph}>{paragraph}</p>
-                  ))}
-                </div>
-                <div className="mt-auto border-t p-5 text-xs text-muted-foreground xl:px-6">
-                  {t('inbox.disclaimer')}
-                </div>
-              </article>
-            ) : (
-              <Empty className="min-h-96">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Mail />
-                  </EmptyMedia>
-                  <EmptyTitle>{t('inbox.selectMessage')}</EmptyTitle>
-                  <EmptyDescription>{t('inbox.selectHint')}</EmptyDescription>
-                </EmptyHeader>
-              </Empty>
-            )}
-          </section>
+                  </article>
+                </VStack>
+              ) : (
+                <Empty className="min-h-96">
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <Mail />
+                    </EmptyMedia>
+                    <EmptyTitle>{t('inbox.selectMessage')}</EmptyTitle>
+                    <EmptyDescription>{t('inbox.selectHint')}</EmptyDescription>
+                  </EmptyHeader>
+                </Empty>
+              )}
+            </section>
+          </VStack>
         </div>
       </Card>
       <p role="status" className="sr-only">
         {announcement ? t(`inbox.${announcement.key}`, { subject: announcement.subject }) : ''}
       </p>
-    </div>
+    </VStack>
   )
 }

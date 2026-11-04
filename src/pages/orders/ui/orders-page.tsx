@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import {
@@ -128,16 +129,16 @@ export function OrdersPage() {
   ]
 
   return (
-    <div className="min-w-0 space-y-6">
-      <div className="space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2.5">
+    <VStack align="stretch" className="min-w-0 gap-6">
+      <VStack align="stretch" className="gap-1.5">
+        <HStack wrap className="gap-2.5">
           <h1 className="text-2xl font-semibold tracking-tight">{t('orders.title')}</h1>
           <Badge variant="outline" className="font-normal text-muted-foreground">
             {t('common.sample')}
           </Badge>
-        </div>
+        </HStack>
         <p className="text-sm text-muted-foreground">{t('orders.intro')}</p>
-      </div>
+      </VStack>
 
       {ordersQuery.isError && ordersQuery.data && (
         <Alert variant="destructive">
@@ -159,22 +160,26 @@ export function OrdersPage() {
             aria-label={title}
             aria-busy={isLoading}
           >
-            <CardHeader className="flex flex-row items-center justify-between px-5">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-              <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-            </CardHeader>
-            <CardContent className="space-y-1 px-5">
-              <div className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : ordersQuery.data ? (
-                  <NumberDisplay animate value={value} format={countFormat} />
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{description}</p>
-            </CardContent>
+            <HStack asChild justify="between" className="px-5">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+              </CardHeader>
+            </HStack>
+            <VStack asChild align="stretch" className="gap-1 px-5">
+              <CardContent>
+                <HStack className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : ordersQuery.data ? (
+                    <NumberDisplay animate value={value} format={countFormat} />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </HStack>
+                <p className="text-xs text-muted-foreground">{description}</p>
+              </CardContent>
+            </VStack>
           </Card>
         ))}
       </div>
@@ -184,275 +189,285 @@ export function OrdersPage() {
           <CardTitle className="text-base">{t('orders.all')}</CardTitle>
           <CardDescription>{t('orders.browse', { currency })}</CardDescription>
         </CardHeader>
-        <CardContent className="min-w-0 space-y-4 px-0">
-          <Tabs
-            value={status}
-            onValueChange={(value) => {
-              setStatus(orderStatuses.find((item) => item === value) ?? 'all')
-              setPage(0)
-            }}
-            className="min-w-0 gap-4"
-          >
-            <div className="px-5">
-              <TabsList
-                aria-label={t('orders.filterStatus')}
-                className="max-w-full flex-wrap justify-start group-data-[orientation=horizontal]/tabs:h-auto"
-              >
-                <TabsTrigger value="all" className="h-8 flex-none px-3">
-                  {t('orders.all')}
-                </TabsTrigger>
-                {orderStatuses.map((item) => (
-                  <TabsTrigger key={item} value={item} className="h-8 flex-none px-3">
-                    {t(`orders.status.${item}`)}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </div>
-            <TabsContent value={status} className="min-w-0 space-y-4">
-              <div className="flex flex-wrap items-center gap-2 px-5">
-                <div className="relative w-full md:max-w-xs">
-                  <Search
-                    className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <Label htmlFor="orders-search" className="sr-only">
-                    {t('orders.search')}
-                  </Label>
-                  <Input
-                    id="orders-search"
-                    ref={searchRef}
-                    placeholder={t('orders.searchPlaceholder')}
-                    value={search}
-                    className="pl-9"
-                    onChange={(event) => {
-                      setSearch(event.target.value)
-                      setPage(0)
-                    }}
-                  />
-                </div>
-                <Select
-                  value={sort}
-                  onValueChange={(value) => {
-                    setSort(
-                      orderSortOptions.find((item) => item.value === value)?.value ?? 'newest',
-                    )
-                    setPage(0)
-                  }}
+        <VStack asChild align="stretch" className="min-w-0 gap-4 px-0">
+          <CardContent>
+            <Tabs
+              value={status}
+              onValueChange={(value) => {
+                setStatus(orderStatuses.find((item) => item === value) ?? 'all')
+                setPage(0)
+              }}
+              className="min-w-0 gap-4"
+            >
+              <div className="px-5">
+                <HStack
+                  asChild
+                  wrap
+                  className="max-w-full group-data-[orientation=horizontal]/tabs:h-auto"
                 >
-                  <SelectTrigger aria-label={t('orders.sortLabel')} className="w-full md:w-48">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {orderSortOptions.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {t(`orders.sort.${item.value}`)}
-                      </SelectItem>
+                  <TabsList aria-label={t('orders.filterStatus')}>
+                    <TabsTrigger value="all" className="h-8 flex-none px-3">
+                      {t('orders.all')}
+                    </TabsTrigger>
+                    {orderStatuses.map((item) => (
+                      <TabsTrigger key={item} value={item} className="h-8 flex-none px-3">
+                        {t(`orders.status.${item}`)}
+                      </TabsTrigger>
                     ))}
-                  </SelectContent>
-                </Select>
-                {hasFilters && (
-                  <Button variant="ghost" size="sm" onClick={resetFilters}>
-                    <X aria-hidden="true" />
-                    {t('common.reset')}
-                  </Button>
-                )}
+                  </TabsList>
+                </HStack>
               </div>
-              {isLoading || visibleOrders.length ? (
-                <div
-                  role="region"
-                  aria-label={t('orders.table')}
-                  aria-busy={isLoading}
-                  className="h-120 min-w-0 border-y"
-                >
-                  <Table className="min-w-190 table-fixed">
-                    <colgroup>
-                      <col className="w-[14%]" />
-                      <col className="w-[28%]" />
-                      <col className="w-[15%]" />
-                      <col className="w-[13%]" />
-                      <col className="w-[16%]" />
-                      <col className="w-[14%]" />
-                    </colgroup>
-                    <TableHeader>
-                      <TableRow className="bg-muted/30 hover:bg-muted/30">
-                        <TableHead className="pl-5">{t('orders.order')}</TableHead>
-                        <TableHead>{t('common.customer')}</TableHead>
-                        <TableHead>{t('common.status')}</TableHead>
-                        <TableHead>{t('orders.payment')}</TableHead>
-                        <TableHead>{t('orders.date')}</TableHead>
-                        <TableHead className="pr-5 text-right">{t('orders.total')}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {isLoading
-                        ? Array.from({ length: pageSize }, (_, index) => (
-                            <TableRow key={index} className="h-18" aria-hidden="true">
-                              {Array.from({ length: 6 }, (_, cell) => (
-                                <TableCell key={cell} className="px-5">
-                                  <Skeleton className="h-4 w-full max-w-28" />
-                                </TableCell>
-                              ))}
-                            </TableRow>
-                          ))
-                        : visibleOrders.map((order) => (
-                            <TableRow key={order.id} className="h-18">
-                              <TableCell className="py-2 pl-5">
-                                <Button
-                                  variant="link"
-                                  className="h-auto p-0 font-medium text-foreground"
-                                  aria-label={t('orders.viewOrder', { id: order.id })}
-                                  onClick={(event) => {
-                                    detailTrigger.current = event.currentTarget
-                                    setSelectedOrderId(order.id)
-                                  }}
-                                >
-                                  {order.id}
-                                </Button>
-                              </TableCell>
-                              <TableCell>
-                                <div className="flex min-w-0 items-center gap-3">
-                                  <Avatar className="size-8 shrink-0">
-                                    <AvatarFallback className="text-xs font-medium">
-                                      {order.customer.initials}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <div className="min-w-0 flex-1">
-                                    <p className="truncate font-medium" title={order.customer.name}>
-                                      {order.customer.name}
-                                    </p>
-                                    <p
-                                      className="truncate text-xs text-muted-foreground"
-                                      title={order.customer.email}
-                                    >
-                                      {order.customer.email}
-                                    </p>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <OrderStatusBadge status={order.status} />
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {t(`orders.paymentStatus.${order.payment}`)}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground">
-                                {formatDate(order.date, { year: 'numeric' })}
-                              </TableCell>
-                              <TableCell className="pr-5 text-right font-medium tabular-nums">
-                                {formatMoney(orderTotal(order) / 100)}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      {!isLoading &&
-                        Array.from(
-                          { length: Math.max(0, pageSize - visibleOrders.length) },
-                          (_, index) => (
-                            <TableRow
-                              key={`empty-${String(index)}`}
-                              className="h-18 hover:bg-transparent"
-                              aria-hidden="true"
-                            >
-                              <TableCell colSpan={6} />
-                            </TableRow>
-                          ),
-                        )}
-                    </TableBody>
-                  </Table>
-                </div>
-              ) : (
-                <Empty
-                  className="h-120 rounded-none border-y py-12"
-                  role={hasLoadError ? 'alert' : undefined}
-                >
-                  <EmptyHeader>
-                    <EmptyMedia variant="icon">
-                      <Search aria-hidden="true" />
-                    </EmptyMedia>
-                    <EmptyTitle>
-                      {hasLoadError
-                        ? t('orders.loadError')
-                        : orders.length
-                          ? t('orders.noMatch')
-                          : t('orders.empty')}
-                    </EmptyTitle>
-                    <EmptyDescription>
-                      {hasLoadError
-                        ? errorMessage(ordersQuery.error)
-                        : orders.length
-                          ? t('common.searchHint')
-                          : t('orders.emptyHint')}
-                    </EmptyDescription>
-                  </EmptyHeader>
-                  {hasLoadError ? (
-                    <Button variant="outline" onClick={() => void ordersQuery.refetch()}>
-                      {t('common.tryAgain')}
-                    </Button>
-                  ) : (
-                    orders.length > 0 && (
-                      <Button variant="outline" onClick={resetFilters}>
-                        {t('common.clearFilters')}
+              <VStack asChild align="stretch" className="min-w-0 gap-4">
+                <TabsContent value={status}>
+                  <HStack wrap className="gap-2 px-5">
+                    <div className="relative w-full md:max-w-xs">
+                      <Search
+                        className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <Label htmlFor="orders-search" className="sr-only">
+                        {t('orders.search')}
+                      </Label>
+                      <Input
+                        id="orders-search"
+                        ref={searchRef}
+                        placeholder={t('orders.searchPlaceholder')}
+                        value={search}
+                        className="pl-9"
+                        onChange={(event) => {
+                          setSearch(event.target.value)
+                          setPage(0)
+                        }}
+                      />
+                    </div>
+                    <Select
+                      value={sort}
+                      onValueChange={(value) => {
+                        setSort(
+                          orderSortOptions.find((item) => item.value === value)?.value ?? 'newest',
+                        )
+                        setPage(0)
+                      }}
+                    >
+                      <SelectTrigger aria-label={t('orders.sortLabel')} className="w-full md:w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {orderSortOptions.map((item) => (
+                          <SelectItem key={item.value} value={item.value}>
+                            {t(`orders.sort.${item.value}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {hasFilters && (
+                      <Button variant="ghost" size="sm" onClick={resetFilters}>
+                        <X aria-hidden="true" />
+                        {t('common.reset')}
                       </Button>
-                    )
+                    )}
+                  </HStack>
+                  {isLoading || visibleOrders.length ? (
+                    <div
+                      role="region"
+                      aria-label={t('orders.table')}
+                      aria-busy={isLoading}
+                      className="h-120 min-w-0 border-y"
+                    >
+                      <Table className="min-w-190 table-fixed">
+                        <colgroup>
+                          <col className="w-[14%]" />
+                          <col className="w-[28%]" />
+                          <col className="w-[15%]" />
+                          <col className="w-[13%]" />
+                          <col className="w-[16%]" />
+                          <col className="w-[14%]" />
+                        </colgroup>
+                        <TableHeader>
+                          <TableRow className="bg-muted/30 hover:bg-muted/30">
+                            <TableHead className="pl-5">{t('orders.order')}</TableHead>
+                            <TableHead>{t('common.customer')}</TableHead>
+                            <TableHead>{t('common.status')}</TableHead>
+                            <TableHead>{t('orders.payment')}</TableHead>
+                            <TableHead>{t('orders.date')}</TableHead>
+                            <TableHead className="pr-5 text-right">{t('orders.total')}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {isLoading
+                            ? Array.from({ length: pageSize }, (_, index) => (
+                                <TableRow key={index} className="h-18" aria-hidden="true">
+                                  {Array.from({ length: 6 }, (_, cell) => (
+                                    <TableCell key={cell} className="px-5">
+                                      <Skeleton className="h-4 w-full max-w-28" />
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))
+                            : visibleOrders.map((order) => (
+                                <TableRow key={order.id} className="h-18">
+                                  <TableCell className="py-2 pl-5">
+                                    <Button
+                                      variant="link"
+                                      className="h-auto p-0 font-medium text-foreground"
+                                      aria-label={t('orders.viewOrder', { id: order.id })}
+                                      onClick={(event) => {
+                                        detailTrigger.current = event.currentTarget
+                                        setSelectedOrderId(order.id)
+                                      }}
+                                    >
+                                      {order.id}
+                                    </Button>
+                                  </TableCell>
+                                  <TableCell>
+                                    <HStack className="min-w-0 gap-3">
+                                      <Avatar className="size-8 shrink-0">
+                                        <AvatarFallback className="text-xs font-medium">
+                                          {order.customer.initials}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <VStack align="stretch" className="min-w-0 flex-1">
+                                        <p
+                                          className="truncate font-medium"
+                                          title={order.customer.name}
+                                        >
+                                          {order.customer.name}
+                                        </p>
+                                        <p
+                                          className="truncate text-xs text-muted-foreground"
+                                          title={order.customer.email}
+                                        >
+                                          {order.customer.email}
+                                        </p>
+                                      </VStack>
+                                    </HStack>
+                                  </TableCell>
+                                  <TableCell>
+                                    <OrderStatusBadge status={order.status} />
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {t(`orders.paymentStatus.${order.payment}`)}
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    {formatDate(order.date, { year: 'numeric' })}
+                                  </TableCell>
+                                  <TableCell className="pr-5 text-right font-medium tabular-nums">
+                                    {formatMoney(orderTotal(order) / 100)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                          {!isLoading &&
+                            Array.from(
+                              { length: Math.max(0, pageSize - visibleOrders.length) },
+                              (_, index) => (
+                                <TableRow
+                                  key={`empty-${String(index)}`}
+                                  className="h-18 hover:bg-transparent"
+                                  aria-hidden="true"
+                                >
+                                  <TableCell colSpan={6} />
+                                </TableRow>
+                              ),
+                            )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  ) : (
+                    <Empty
+                      className="h-120 rounded-none border-y py-12"
+                      role={hasLoadError ? 'alert' : undefined}
+                    >
+                      <EmptyHeader>
+                        <EmptyMedia variant="icon">
+                          <Search aria-hidden="true" />
+                        </EmptyMedia>
+                        <EmptyTitle>
+                          {hasLoadError
+                            ? t('orders.loadError')
+                            : orders.length
+                              ? t('orders.noMatch')
+                              : t('orders.empty')}
+                        </EmptyTitle>
+                        <EmptyDescription>
+                          {hasLoadError
+                            ? errorMessage(ordersQuery.error)
+                            : orders.length
+                              ? t('common.searchHint')
+                              : t('orders.emptyHint')}
+                        </EmptyDescription>
+                      </EmptyHeader>
+                      {hasLoadError ? (
+                        <Button variant="outline" onClick={() => void ordersQuery.refetch()}>
+                          {t('common.tryAgain')}
+                        </Button>
+                      ) : (
+                        orders.length > 0 && (
+                          <Button variant="outline" onClick={resetFilters}>
+                            {t('common.clearFilters')}
+                          </Button>
+                        )
+                      )}
+                    </Empty>
                   )}
-                </Empty>
-              )}
-              <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                <p
-                  className="text-xs text-muted-foreground"
-                  aria-live={hasLoadError ? 'off' : 'polite'}
-                >
-                  {isLoading
-                    ? t('orders.loading')
-                    : hasLoadError
-                      ? t('orders.loadError')
-                      : filteredOrders.length
-                        ? t('orders.showing', {
-                            start: formatNumber(currentPage * pageSize + 1),
-                            end: formatNumber(
-                              Math.min((currentPage + 1) * pageSize, filteredOrders.length),
-                            ),
-                            total: formatNumber(filteredOrders.length),
-                          })
-                        : t('orders.count', { total: formatNumber(0) })}
-                </p>
-                <div className="flex items-center gap-3">
-                  <p className="text-xs font-medium tabular-nums">
-                    {t('common.pageCount', {
-                      current: formatNumber(currentPage + 1),
-                      total: formatNumber(pageCount),
-                    })}
-                  </p>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="size-8"
-                      aria-label={t('orders.previousPage')}
-                      disabled={isLoading || currentPage === 0}
-                      onClick={() => {
-                        setPage(currentPage - 1)
-                      }}
+                  <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                    <p
+                      className="text-xs text-muted-foreground"
+                      aria-live={hasLoadError ? 'off' : 'polite'}
                     >
-                      <ChevronLeft aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="size-8"
-                      aria-label={t('orders.nextPage')}
-                      disabled={isLoading || currentPage + 1 >= pageCount}
-                      onClick={() => {
-                        setPage(currentPage + 1)
-                      }}
-                    >
-                      <ChevronRight aria-hidden="true" />
-                    </Button>
+                      {isLoading
+                        ? t('orders.loading')
+                        : hasLoadError
+                          ? t('orders.loadError')
+                          : filteredOrders.length
+                            ? t('orders.showing', {
+                                start: formatNumber(currentPage * pageSize + 1),
+                                end: formatNumber(
+                                  Math.min((currentPage + 1) * pageSize, filteredOrders.length),
+                                ),
+                                total: formatNumber(filteredOrders.length),
+                              })
+                            : t('orders.count', { total: formatNumber(0) })}
+                    </p>
+                    <HStack className="gap-3">
+                      <p className="text-xs font-medium tabular-nums">
+                        {t('common.pageCount', {
+                          current: formatNumber(currentPage + 1),
+                          total: formatNumber(pageCount),
+                        })}
+                      </p>
+                      <HStack className="gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-8"
+                          aria-label={t('orders.previousPage')}
+                          disabled={isLoading || currentPage === 0}
+                          onClick={() => {
+                            setPage(currentPage - 1)
+                          }}
+                        >
+                          <ChevronLeft aria-hidden="true" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-8"
+                          aria-label={t('orders.nextPage')}
+                          disabled={isLoading || currentPage + 1 >= pageCount}
+                          onClick={() => {
+                            setPage(currentPage + 1)
+                          }}
+                        >
+                          <ChevronRight aria-hidden="true" />
+                        </Button>
+                      </HStack>
+                    </HStack>
                   </div>
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
+                </TabsContent>
+              </VStack>
+            </Tabs>
+          </CardContent>
+        </VStack>
       </Card>
 
       <Sheet
@@ -482,78 +497,90 @@ export function OrdersPage() {
             </SheetDescription>
           </SheetHeader>
           {selectedOrder && (
-            <div className="space-y-6 px-6 pb-6 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+            <VStack align="stretch" className="gap-6 px-6 pb-6 text-sm">
+              <HStack justify="between" wrap className="gap-3">
                 <OrderStatusBadge status={selectedOrder.status} />
                 <span className="text-muted-foreground">
                   {t('orders.paymentValue', {
                     status: t(`orders.paymentStatus.${selectedOrder.payment}`),
                   })}
                 </span>
-              </div>
-              <section className="space-y-3" aria-label={t('orders.orderItems')}>
-                <h2 className="font-medium">{t('orders.items')}</h2>
-                <ul className="divide-y rounded-lg border px-4">
-                  {selectedOrder.items.map((item) => (
-                    <li key={item.name} className="flex items-start justify-between gap-3 py-4">
-                      <div className="min-w-0">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {formatNumber(item.quantity)} × {formatMoney(item.unitPrice / 100)}
-                        </p>
-                      </div>
-                      <span className="shrink-0 tabular-nums">
-                        {formatMoney((item.quantity * item.unitPrice) / 100)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <dl className="space-y-2">
-                  <div className="flex justify-between gap-3 text-muted-foreground">
-                    <dt>{t('orders.subtotal')}</dt>
-                    <dd className="tabular-nums">
-                      {formatMoney(orderSubtotal(selectedOrder) / 100)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between gap-3 text-muted-foreground">
-                    <dt>{t('orders.shipping')}</dt>
-                    <dd className="tabular-nums">{formatMoney(selectedOrder.shipping / 100)}</dd>
-                  </div>
-                  <div className="flex justify-between gap-3 pt-2 font-semibold">
-                    <dt>{t('orders.currencyTotal', { currency })}</dt>
-                    <dd className="tabular-nums">{formatMoney(orderTotal(selectedOrder) / 100)}</dd>
-                  </div>
-                </dl>
-              </section>
+              </HStack>
+              <VStack asChild align="stretch" className="gap-3">
+                <section aria-label={t('orders.orderItems')}>
+                  <h2 className="font-medium">{t('orders.items')}</h2>
+                  <ul className="divide-y rounded-lg border px-4">
+                    {selectedOrder.items.map((item) => (
+                      <HStack asChild key={item.name} justify="between" className="gap-3 py-4">
+                        <li>
+                          <VStack align="stretch" className="min-w-0 gap-1">
+                            <p className="font-medium">{item.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatNumber(item.quantity)} × {formatMoney(item.unitPrice / 100)}
+                            </p>
+                          </VStack>
+                          <span className="shrink-0 tabular-nums">
+                            {formatMoney((item.quantity * item.unitPrice) / 100)}
+                          </span>
+                        </li>
+                      </HStack>
+                    ))}
+                  </ul>
+                  <VStack asChild align="stretch" className="gap-2">
+                    <dl>
+                      <HStack justify="between" className="gap-3 text-muted-foreground">
+                        <dt>{t('orders.subtotal')}</dt>
+                        <dd className="tabular-nums">
+                          {formatMoney(orderSubtotal(selectedOrder) / 100)}
+                        </dd>
+                      </HStack>
+                      <HStack justify="between" className="gap-3 text-muted-foreground">
+                        <dt>{t('orders.shipping')}</dt>
+                        <dd className="tabular-nums">
+                          {formatMoney(selectedOrder.shipping / 100)}
+                        </dd>
+                      </HStack>
+                      <HStack justify="between" className="gap-3 pt-2 font-semibold">
+                        <dt>{t('orders.currencyTotal', { currency })}</dt>
+                        <dd className="tabular-nums">
+                          {formatMoney(orderTotal(selectedOrder) / 100)}
+                        </dd>
+                      </HStack>
+                    </dl>
+                  </VStack>
+                </section>
+              </VStack>
               <Separator />
-              <section className="space-y-3" aria-label={t('orders.orderCustomer')}>
-                <h2 className="font-medium">{t('common.customer')}</h2>
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                    <AvatarFallback>{selectedOrder.customer.initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="font-medium break-words">{selectedOrder.customer.name}</p>
-                    <p className="break-all text-muted-foreground">
-                      {selectedOrder.customer.email}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-muted-foreground">
-                  {t('orders.destination', {
-                    city: selectedOrder.city,
-                    country: selectedOrder.country,
-                  })}
-                </p>
-              </section>
+              <VStack asChild align="stretch" className="gap-3">
+                <section aria-label={t('orders.orderCustomer')}>
+                  <h2 className="font-medium">{t('common.customer')}</h2>
+                  <HStack className="gap-3">
+                    <Avatar>
+                      <AvatarFallback>{selectedOrder.customer.initials}</AvatarFallback>
+                    </Avatar>
+                    <VStack align="stretch" className="min-w-0">
+                      <p className="font-medium break-words">{selectedOrder.customer.name}</p>
+                      <p className="break-all text-muted-foreground">
+                        {selectedOrder.customer.email}
+                      </p>
+                    </VStack>
+                  </HStack>
+                  <p className="text-muted-foreground">
+                    {t('orders.destination', {
+                      city: selectedOrder.city,
+                      country: selectedOrder.country,
+                    })}
+                  </p>
+                </section>
+              </VStack>
               <Separator />
               <p className="text-xs leading-relaxed text-muted-foreground">
                 {t('orders.disclaimer')}
               </p>
-            </div>
+            </VStack>
           )}
         </SheetContent>
       </Sheet>
-    </div>
+    </VStack>
   )
 }

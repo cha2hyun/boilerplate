@@ -16,6 +16,7 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { Separator } from '@/shared/ui/separator'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 
@@ -29,11 +30,11 @@ export function SettingsPage() {
   const dirty =
     workspaceName !== preferences.workspaceName || compactMode !== preferences.compactMode
   return (
-    <div className="max-w-4xl space-y-7">
-      <div>
+    <VStack align="stretch" className="max-w-4xl gap-7">
+      <VStack align="stretch" className="gap-2">
         <h1 className="text-3xl font-semibold tracking-tight">{t('settings.title')}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{t('settings.description')}</p>
-      </div>
+        <p className="text-sm text-muted-foreground">{t('settings.description')}</p>
+      </VStack>
       <Tabs defaultValue="general">
         <TabsList>
           <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
@@ -63,61 +64,65 @@ export function SettingsPage() {
                 <CardTitle>{t('settings.preferences')}</CardTitle>
                 <CardDescription>{t('settings.savedInBrowser')}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="max-w-md space-y-2">
-                  <Label htmlFor="workspace-name">{t('settings.workspaceName')}</Label>
-                  <Input
-                    id="workspace-name"
-                    value={workspaceName}
-                    onChange={(event) => {
-                      setWorkspaceName(event.target.value)
+              <VStack asChild align="stretch" className="gap-6">
+                <CardContent>
+                  <VStack align="stretch" className="max-w-md gap-2">
+                    <Label htmlFor="workspace-name">{t('settings.workspaceName')}</Label>
+                    <Input
+                      id="workspace-name"
+                      value={workspaceName}
+                      onChange={(event) => {
+                        setWorkspaceName(event.target.value)
+                      }}
+                      aria-invalid={!!error}
+                      aria-describedby={error ? 'workspace-error' : 'workspace-hint'}
+                      maxLength={40}
+                    />
+                    <p id="workspace-hint" className="text-xs text-muted-foreground">
+                      {t('settings.workspaceHint')}
+                    </p>
+                    {error && (
+                      <p id="workspace-error" role="alert" className="text-sm text-destructive">
+                        {t(error)}
+                      </p>
+                    )}
+                  </VStack>
+                  <Separator />
+                  <HStack justify="between" className="gap-5">
+                    <VStack align="stretch" className="gap-1">
+                      <Label htmlFor="compact-mode">{t('settings.compact')}</Label>
+                      <p className="text-sm text-muted-foreground">
+                        {t('settings.compactDescription')}
+                      </p>
+                    </VStack>
+                    <Switch
+                      id="compact-mode"
+                      checked={compactMode}
+                      onCheckedChange={setCompactMode}
+                    />
+                  </HStack>
+                </CardContent>
+              </VStack>
+              <HStack asChild justify="between" className="gap-4 border-t pt-6">
+                <CardFooter>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      preferences.reset()
+                      setWorkspaceName('Acme Studio')
+                      setCompactMode(false)
+                      setError(undefined)
+                      toast.success(t('settings.resetToast'))
                     }}
-                    aria-invalid={!!error}
-                    aria-describedby={error ? 'workspace-error' : 'workspace-hint'}
-                    maxLength={40}
-                  />
-                  <p id="workspace-hint" className="text-xs text-muted-foreground">
-                    {t('settings.workspaceHint')}
-                  </p>
-                  {error && (
-                    <p id="workspace-error" role="alert" className="text-sm text-destructive">
-                      {t(error)}
-                    </p>
-                  )}
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between gap-5">
-                  <div className="space-y-1">
-                    <Label htmlFor="compact-mode">{t('settings.compact')}</Label>
-                    <p className="text-sm text-muted-foreground">
-                      {t('settings.compactDescription')}
-                    </p>
-                  </div>
-                  <Switch
-                    id="compact-mode"
-                    checked={compactMode}
-                    onCheckedChange={setCompactMode}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="justify-between gap-4 border-t pt-6">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => {
-                    preferences.reset()
-                    setWorkspaceName('Acme Studio')
-                    setCompactMode(false)
-                    setError(undefined)
-                    toast.success(t('settings.resetToast'))
-                  }}
-                >
-                  {t('settings.reset')}
-                </Button>
-                <Button type="submit" disabled={!dirty}>
-                  {t('common.save')}
-                </Button>
-              </CardFooter>
+                  >
+                    {t('settings.reset')}
+                  </Button>
+                  <Button type="submit" disabled={!dirty}>
+                    {t('common.save')}
+                  </Button>
+                </CardFooter>
+              </HStack>
             </Card>
           </form>
         </TabsContent>
@@ -149,21 +154,21 @@ export function SettingsPage() {
                     description: t('settings.systemDescription'),
                   },
                 ].map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={theme === option.value ? 'secondary' : 'outline'}
-                    className="h-auto flex-col items-start gap-3 p-5"
-                    onClick={() => {
-                      setTheme(option.value)
-                    }}
-                    aria-pressed={theme === option.value}
-                  >
-                    <option.icon className="size-6" />
-                    <span className="text-sm font-medium">{option.label}</span>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {option.description}
-                    </span>
-                  </Button>
+                  <VStack asChild key={option.value} align="start" className="h-auto gap-3 p-5">
+                    <Button
+                      variant={theme === option.value ? 'secondary' : 'outline'}
+                      onClick={() => {
+                        setTheme(option.value)
+                      }}
+                      aria-pressed={theme === option.value}
+                    >
+                      <option.icon className="size-6" />
+                      <span className="text-sm font-medium">{option.label}</span>
+                      <span className="text-xs font-normal text-muted-foreground">
+                        {option.description}
+                      </span>
+                    </Button>
+                  </VStack>
                 ))}
               </div>
               <p className="mt-5 text-xs text-muted-foreground">{t('settings.immediate')}</p>
@@ -171,6 +176,6 @@ export function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
-    </div>
+    </VStack>
   )
 }
