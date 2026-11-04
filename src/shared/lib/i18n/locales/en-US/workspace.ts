@@ -209,7 +209,9 @@ const workspace = {
     darkTheme: 'Switch to dark theme',
     toggleTheme: 'Toggle theme',
     language: 'Language',
-    currency: 'Display amounts in KRW',
+    currency: 'Display currency',
+    currencyUsd: 'US dollar (USD)',
+    currencyKrw: 'Korean won (KRW)',
     exchangeRate: 'Reference: 1 USD = {{rate}} · {{date}}',
     exchangeRateDescription:
       'Amounts are converted from USD using this public reference exchange rate. The date is the rate’s reference date, not a live execution quote.',

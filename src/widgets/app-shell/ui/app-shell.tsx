@@ -1,22 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import {
-  Boxes,
-  ChevronDown,
-  ExternalLink,
-  Globe,
-  LoaderCircle,
-  Moon,
-  RefreshCw,
-  Search,
-  Sun,
-} from 'lucide-react'
-import { useExchangeRate } from '@/entities/exchange-rate'
-import { useFormatters, useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
+import { Boxes, ChevronDown, ExternalLink, Globe, Moon, Search, Sun } from 'lucide-react'
+import { useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { usePreferences } from '@/features/workspace-preferences'
 import { env } from '@/shared/config'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
 import { navigation, navigationGroups } from '../model/navigation'
+import { CurrencyMenu } from './currency-menu'
 import { useTheme } from '@/shared/lib/theme'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
@@ -47,7 +37,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
-import { Switch } from '@/shared/ui/switch'
 import { Separator } from '@/shared/ui/separator'
 import { Kbd } from '@/shared/ui/kbd'
 import {
@@ -199,12 +188,8 @@ interface AppShellProps {
 }
 export function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation('workspace')
-  const { formatNumber, formatDate } = useFormatters()
   const locale = useLocalePreferences((state) => state.locale)
-  const currency = useLocalePreferences((state) => state.currency)
   const setLocale = useLocalePreferences((state) => state.setLocale)
-  const setCurrency = useLocalePreferences((state) => state.setCurrency)
-  const exchangeRate = useExchangeRate()
   const [commandOpen, setCommandOpen] = useState(false)
   const commandOpenerRef = useRef<HTMLElement | null>(null)
   const commandNavigatedRef = useRef(false)
@@ -343,74 +328,8 @@ export function AppShell({ children }: AppShellProps) {
                   </DropdownMenuRadioGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <div className="ml-1 flex items-center gap-1.5 text-xs font-medium tabular-nums">
-                <span className={currency === 'USD' ? 'text-foreground' : 'text-muted-foreground'}>
-                  USD
-                </span>
-                <Switch
-                  id="display-currency"
-                  checked={currency === 'KRW'}
-                  onCheckedChange={(checked) => {
-                    setCurrency(checked ? 'KRW' : 'USD')
-                  }}
-                  aria-label={t('shell.currency')}
-                  aria-describedby="exchange-rate-status"
-                />
-                <span className={currency === 'KRW' ? 'text-foreground' : 'text-muted-foreground'}>
-                  KRW
-                </span>
-              </div>
+              <CurrencyMenu />
             </div>
-          </div>
-          <div
-            id="exchange-rate-status"
-            role="status"
-            aria-live="polite"
-            className="flex min-h-7 flex-wrap items-center justify-end gap-x-2 gap-y-1 pb-2 text-[11px] text-muted-foreground"
-          >
-            {exchangeRate.data ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    tabIndex={0}
-                    className="rounded-sm tabular-nums outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    {t('shell.exchangeRate', {
-                      rate: formatNumber(exchangeRate.data.rate, {
-                        style: 'currency',
-                        currency: 'KRW',
-                        maximumFractionDigits: 2,
-                      }),
-                      date: formatDate(exchangeRate.data.date, { year: 'numeric' }),
-                    })}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-72">
-                  {t('shell.exchangeRateDescription')}
-                </TooltipContent>
-              </Tooltip>
-            ) : exchangeRate.isPending ? (
-              <span className="inline-flex items-center gap-1.5">
-                <LoaderCircle className="size-3 animate-spin" aria-hidden="true" />
-                {t('shell.exchangeRateLoading')}
-              </span>
-            ) : (
-              <span>{t('shell.exchangeRateUnavailable')}</span>
-            )}
-            {exchangeRate.isError && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 gap-1 px-1.5 text-[11px]"
-                disabled={exchangeRate.isFetching}
-                onClick={() => {
-                  void exchangeRate.refetch()
-                }}
-              >
-                <RefreshCw className="size-3" aria-hidden="true" />
-                {t('shell.retryExchangeRate')}
-              </Button>
-            )}
           </div>
         </header>
         <div

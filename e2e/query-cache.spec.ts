@@ -123,7 +123,7 @@ for (const sample of pages) {
     await page.clock.setFixedTime(initialTime)
     await page.goto('/settings')
     await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
-    await expect(page.locator('#exchange-rate-status')).toContainText('1 USD = ₩1,350')
+    // The closed currency menu keeps the header stable independently of the FX response.
     await page.evaluate(async () => {
       await Promise.all(
         ['400', '500', '600'].map((weight) =>

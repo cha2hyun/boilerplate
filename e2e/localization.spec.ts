@@ -9,8 +9,8 @@ async function expectResponsiveControls(page: Page, korean: boolean) {
     name: korean ? '언어 선택' : 'Language',
     exact: true,
   })
-  const currency = page.getByRole('switch', {
-    name: korean ? '금액을 원화(KRW)로 표시' : 'Display amounts in KRW',
+  const currency = page.getByRole('button', {
+    name: korean ? '표시 통화' : 'Display currency',
     exact: true,
   })
   await expect(language).toBeVisible()
@@ -27,6 +27,8 @@ async function expectResponsiveControls(page: Page, korean: boolean) {
   if (!languageBox || !currencyBox) throw new Error('The localization controls are missing.')
   expect(languageBox.x + languageBox.width).toBeLessThanOrEqual(currencyBox.x)
   expect(currencyBox.x + currencyBox.width).toBeLessThanOrEqual(dimensions.viewport)
+  expect(currencyBox.width).toBe(languageBox.width)
+  expect(currencyBox.height).toBe(languageBox.height)
   expect(
     Math.abs(languageBox.y + languageBox.height / 2 - currencyBox.y - currencyBox.height / 2),
   ).toBeLessThanOrEqual(1)
@@ -38,9 +40,21 @@ test('persists independent language and currency choices and reuses the referenc
 }) => {
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
-  await expect(page.locator('#exchange-rate-status')).toContainText(
+  const englishCurrency = page.getByRole('button', { name: 'Display currency', exact: true })
+  const currencyMenu = page.getByRole('menu')
+  const englishUsd = page.getByRole('menuitemradio', { name: 'US dollar (USD)', exact: true })
+  const englishKrw = page.getByRole('menuitemradio', { name: 'Korean won (KRW)', exact: true })
+  await expect(page.locator('#exchange-rate-status')).toHaveCount(0)
+  await englishCurrency.focus()
+  await englishCurrency.press('ArrowDown')
+  await expect(currencyMenu.locator('#exchange-rate-status')).toContainText(
     'Reference: 1 USD = ₩1,350 · Nov 3, 2026',
   )
+  await expect(englishUsd).toHaveAttribute('aria-checked', 'true')
+  await expect(englishKrw).toHaveAttribute('aria-checked', 'false')
+  await page.keyboard.press('Escape')
+  await expect(currencyMenu).toHaveCount(0)
+  await expect(englishCurrency).toBeFocused()
   await expect(revenueValue(page, 'Total revenue')).toHaveText('$30,630')
   await expectResponsiveControls(page, false)
 
@@ -51,14 +65,21 @@ test('persists independent language and currency choices and reuses the referenc
   await expect(
     page.getByRole('heading', { name: '더 선명한 오늘, 더 넓은 가능성.', exact: true }),
   ).toBeVisible()
-  const koreanCurrency = page.getByRole('switch', {
-    name: '금액을 원화(KRW)로 표시',
-    exact: true,
-  })
-  await expect(koreanCurrency).not.toBeChecked()
+  const koreanCurrency = page.getByRole('button', { name: '표시 통화', exact: true })
+  const koreanUsd = page.getByRole('menuitemradio', { name: '미국 달러 (USD)', exact: true })
+  const koreanKrw = page.getByRole('menuitemradio', { name: '대한민국 원 (KRW)', exact: true })
   await expect(revenueValue(page, '총매출')).toHaveText('US$30,630')
   await koreanCurrency.click()
-  await expect(koreanCurrency).toBeChecked()
+  await expect(koreanUsd).toHaveAttribute('aria-checked', 'true')
+  await expect(koreanKrw).toHaveAttribute('aria-checked', 'false')
+  await koreanKrw.click()
+  await expect(currencyMenu).toHaveCount(0)
+  await expect(page.locator('#exchange-rate-status')).toHaveCount(0)
+  await koreanCurrency.click()
+  await expect(koreanUsd).toHaveAttribute('aria-checked', 'false')
+  await expect(koreanKrw).toHaveAttribute('aria-checked', 'true')
+  await page.keyboard.press('Escape')
+  await expect(koreanCurrency).toBeFocused()
   await expect(revenueValue(page, '총매출')).toHaveText('₩41,350,500')
   await expect(
     page.getByText('워크스페이스 청구 금액 ₩336,150 결제를 완료했습니다.', { exact: true }),
@@ -79,7 +100,10 @@ test('persists independent language and currency choices and reuses the referenc
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('lang', 'ko-KR')
   await expect(page).toHaveTitle('개요 · Blueprint')
-  await expect(koreanCurrency).toBeChecked()
+  await koreanCurrency.click()
+  await expect(koreanUsd).toHaveAttribute('aria-checked', 'false')
+  await expect(koreanKrw).toHaveAttribute('aria-checked', 'true')
+  await page.keyboard.press('Escape')
   await expect(revenueValue(page, '총매출')).toHaveText('₩41,350,500')
   expect(exchangeRateMock.requests).toBe(2)
   const savedPreferences = await page.evaluate(() =>
@@ -92,14 +116,16 @@ test('persists independent language and currency choices and reuses the referenc
   await page.getByRole('menuitemradio', { name: 'English', exact: true }).click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
   await expect(page).toHaveTitle('Overview · Blueprint')
-  const englishCurrency = page.getByRole('switch', {
-    name: 'Display amounts in KRW',
-    exact: true,
-  })
-  await expect(englishCurrency).toBeChecked()
-  await expect(revenueValue(page, 'Total revenue')).toHaveText('₩41,350,500')
   await englishCurrency.click()
-  await expect(englishCurrency).not.toBeChecked()
+  await expect(englishUsd).toHaveAttribute('aria-checked', 'false')
+  await expect(englishKrw).toHaveAttribute('aria-checked', 'true')
+  await expect(revenueValue(page, 'Total revenue')).toHaveText('₩41,350,500')
+  await englishUsd.click()
+  await expect(currencyMenu).toHaveCount(0)
+  await englishCurrency.click()
+  await expect(englishUsd).toHaveAttribute('aria-checked', 'true')
+  await expect(englishKrw).toHaveAttribute('aria-checked', 'false')
+  await page.keyboard.press('Escape')
   await expect(revenueValue(page, 'Total revenue')).toHaveText('$30,630')
   await expect(
     page.getByText('The workspace invoice for $249.00 was paid.', { exact: true }),
@@ -108,7 +134,7 @@ test('persists independent language and currency choices and reuses the referenc
   await expectResponsiveControls(page, false)
 })
 
-test('shows missing KRW amounts after a rate failure and recovers through the header retry', async ({
+test('shows missing KRW amounts after a rate failure and recovers through the currency menu retry', async ({
   page,
   context,
 }) => {
@@ -124,19 +150,31 @@ test('shows missing KRW amounts after a rate failure and recovers through the he
     })
   })
   await page.goto('/')
-  await expect(page.locator('#exchange-rate-status')).toContainText('Exchange rate unavailable')
+  const currency = page.getByRole('button', { name: 'Display currency', exact: true })
+  const currencyMenu = page.getByRole('menu')
+  await expect(page.locator('#exchange-rate-status')).toHaveCount(0)
+  await currency.click()
+  await expect(currencyMenu.locator('#exchange-rate-status')).toContainText(
+    'Exchange rate unavailable',
+  )
   expect(requests).toBe(2)
-  await page.getByRole('switch', { name: 'Display amounts in KRW', exact: true }).click()
+  await page.getByRole('menuitemradio', { name: 'Korean won (KRW)', exact: true }).click()
+  await expect(currencyMenu).toHaveCount(0)
   await expect(revenueValue(page, 'Total revenue')).toHaveText('—')
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
 
   fail = false
-  await page.getByRole('button', { name: 'Retry rate', exact: true }).click()
-  await expect(page.locator('#exchange-rate-status')).toContainText(
+  await currency.click()
+  await page.getByRole('menuitem', { name: 'Retry rate', exact: true }).click()
+  await expect(currencyMenu).toBeVisible()
+  await expect(currencyMenu.locator('#exchange-rate-status')).toContainText(
     'Reference: 1 USD = ₩1,350 · Nov 3, 2026',
   )
   await expect(revenueValue(page, 'Total revenue')).toHaveText('₩41,350,500')
-  await expect(page.getByRole('button', { name: 'Retry rate', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('menuitem', { name: 'Retry rate', exact: true })).toHaveCount(0)
   expect(requests).toBe(3)
+  await page.keyboard.press('Escape')
+  await expect(currencyMenu).toHaveCount(0)
+  await expect(currency).toBeFocused()
   await expectResponsiveControls(page, false)
 })

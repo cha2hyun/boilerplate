@@ -210,7 +210,9 @@ const workspace = {
     darkTheme: '어두운 테마로 전환',
     toggleTheme: '테마 전환',
     language: '언어 선택',
-    currency: '금액을 원화(KRW)로 표시',
+    currency: '표시 통화',
+    currencyUsd: '미국 달러 (USD)',
+    currencyKrw: '대한민국 원 (KRW)',
     exchangeRate: '기준 환율: 1 USD = {{rate}} · {{date}}',
     exchangeRateDescription:
       'USD 금액을 공개 기준 환율로 환산합니다. 표시 날짜는 환율 기준일이며 실시간 거래 환율이 아닙니다.',
