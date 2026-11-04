@@ -58,6 +58,7 @@ import { Label } from '@/shared/ui/label'
 import { Progress } from '@/shared/ui/progress'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
 interface ProjectTableProps {
@@ -217,10 +218,13 @@ export function ProjectTable({
           )
         },
         cell: ({ row }) => (
-          <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/50 text-muted-foreground">
+          <HStack className="min-w-0 gap-3">
+            <HStack
+              justify="center"
+              className="size-9 shrink-0 rounded-lg border bg-muted/50 text-muted-foreground"
+            >
               <FolderKanban className="size-4" aria-hidden="true" />
-            </div>
+            </HStack>
             <div className="min-w-0 flex-1">
               <Button
                 variant="link"
@@ -236,7 +240,7 @@ export function ProjectTable({
                 {row.original.description || t('table.noDescription')}
               </p>
             </div>
-          </div>
+          </HStack>
         ),
         enableHiding: false,
       },
@@ -252,12 +256,12 @@ export function ProjectTable({
         accessorFn: (project) => project.owner.name,
         header: t('table.owner'),
         cell: ({ row }) => (
-          <div className="flex items-center gap-2.5">
+          <HStack className="gap-2.5">
             <Avatar className="size-7">
               <AvatarFallback className="text-xs">{row.original.owner.initials}</AvatarFallback>
             </Avatar>
             <span className="text-sm whitespace-nowrap">{row.original.owner.name}</span>
-          </div>
+          </HStack>
         ),
         enableGlobalFilter: false,
       },
@@ -281,7 +285,7 @@ export function ProjectTable({
           )
         },
         cell: ({ row }) => (
-          <div className="flex w-28 items-center gap-2.5">
+          <HStack className="w-28 gap-2.5">
             <Progress
               value={row.original.progress}
               className="h-1.5 flex-1"
@@ -290,7 +294,7 @@ export function ProjectTable({
             <span className="w-8 text-right text-xs text-muted-foreground tabular-nums">
               {formatNumber(row.original.progress, { style: 'percent', maximumFractionDigits: 0 })}
             </span>
-          </div>
+          </HStack>
         ),
         enableGlobalFilter: false,
       },
@@ -429,32 +433,36 @@ export function ProjectTable({
         className="gap-0 overflow-hidden py-0 shadow-none"
       >
         <CardHeader className="border-b px-5 py-5 md:px-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1 space-y-1">
-              <CardTitle className="flex h-6 items-center gap-2 text-base">
-                <span className="truncate">{t(compact ? 'table.recent' : 'table.all')}</span>
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-6 shrink-0 justify-center font-normal tabular-nums"
-                >
-                  {formatNumber(hasData ? projects.length : undefined)}
-                </Badge>
-              </CardTitle>
-              <CardDescription className="flex h-8 items-center gap-2" aria-live="polite">
-                <span className="min-w-0 flex-1 truncate">
-                  {showRefreshError
-                    ? t('table.refreshError')
-                    : compact
-                      ? t('table.recentDescription')
-                      : t('table.allDescription')}
-                </span>
-                {showRefreshError && onRetry && (
-                  <Button variant="outline" size="sm" className="shrink-0" onClick={onRetry}>
-                    <RefreshCw aria-hidden="true" /> {t('common.retry')}
-                  </Button>
-                )}
-              </CardDescription>
-            </div>
+          <HStack justify="between" wrap className="gap-3">
+            <VStack align="stretch" className="min-w-0 flex-1 gap-1">
+              <HStack asChild className="h-6 gap-2 text-base">
+                <CardTitle>
+                  <span className="truncate">{t(compact ? 'table.recent' : 'table.all')}</span>
+                  <Badge
+                    variant="secondary"
+                    className="h-5 min-w-6 shrink-0 justify-center font-normal tabular-nums"
+                  >
+                    {formatNumber(hasData ? projects.length : undefined)}
+                  </Badge>
+                </CardTitle>
+              </HStack>
+              <HStack asChild className="h-8 gap-2">
+                <CardDescription aria-live="polite">
+                  <span className="min-w-0 flex-1 truncate">
+                    {showRefreshError
+                      ? t('table.refreshError')
+                      : compact
+                        ? t('table.recentDescription')
+                        : t('table.allDescription')}
+                  </span>
+                  {showRefreshError && onRetry && (
+                    <Button variant="outline" size="sm" className="shrink-0" onClick={onRetry}>
+                      <RefreshCw aria-hidden="true" /> {t('common.retry')}
+                    </Button>
+                  )}
+                </CardDescription>
+              </HStack>
+            </VStack>
             {!compact && (
               <Button
                 variant="outline"
@@ -492,9 +500,9 @@ export function ProjectTable({
                   : t('table.export')}
               </Button>
             )}
-          </div>
+          </HStack>
           {!compact && (
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <HStack wrap className="mt-4 gap-2">
               <div className="relative min-w-48 flex-1 md:max-w-80">
                 <Search
                   className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
@@ -568,7 +576,7 @@ export function ProjectTable({
                     ))}
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
+            </HStack>
           )}
         </CardHeader>
         <CardContent className="px-0">
@@ -630,13 +638,13 @@ export function ProjectTable({
                             className={`py-4 ${column.id === 'select' ? 'pl-5 md:pl-6' : column.id === 'actions' ? 'pr-5 md:pr-6' : compact && column.id === 'name' ? 'pl-5 md:pl-6' : ''}`}
                           >
                             {column.id === 'name' ? (
-                              <div className="flex items-center gap-3">
+                              <HStack className="gap-3">
                                 <Skeleton className="size-9 shrink-0 rounded-lg" />
-                                <div className="min-w-0 flex-1 space-y-1">
+                                <VStack align="stretch" className="min-w-0 flex-1 gap-1">
                                   <Skeleton className="h-4 w-40 max-w-full" />
                                   <Skeleton className="h-3 w-48 max-w-full" />
-                                </div>
-                              </div>
+                                </VStack>
+                              </HStack>
                             ) : (
                               <Skeleton
                                 className={
@@ -714,7 +722,11 @@ export function ProjectTable({
             )}
           </div>
           {!compact && (
-            <div className="flex h-24 flex-col items-start justify-center gap-3 border-t px-5 py-4 text-sm md:h-16 md:flex-row md:items-center md:justify-between md:px-6">
+            <VStack
+              align="stretch"
+              justify="center"
+              className="h-24 gap-3 border-t px-5 py-4 text-sm md:h-16 md:flex-row md:items-center md:justify-between md:px-6"
+            >
               <p className="min-w-0 truncate text-xs text-muted-foreground" aria-live="polite">
                 {showLoading
                   ? t('table.loading')
@@ -740,8 +752,8 @@ export function ProjectTable({
                           })
                         : t('table.count', { count: 0, formattedCount: formatNumber(0) })}
               </p>
-              <div className="flex items-center gap-4 md:gap-6">
-                <div className="hidden items-center gap-2 md:flex">
+              <HStack className="gap-4 md:gap-6">
+                <HStack className="hidden gap-2 md:flex">
                   <Label
                     htmlFor="projects-page-size"
                     className="text-xs font-normal text-muted-foreground"
@@ -765,14 +777,14 @@ export function ProjectTable({
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </HStack>
                 <p className="text-xs font-medium whitespace-nowrap tabular-nums">
                   {t('table.page', {
                     page: formatNumber(pageIndex + 1),
                     total: formatNumber(pageCount),
                   })}
                 </p>
-                <div className="flex items-center gap-1">
+                <HStack className="gap-1">
                   <Button
                     variant="outline"
                     size="icon"
@@ -821,9 +833,9 @@ export function ProjectTable({
                   >
                     <ChevronsRight aria-hidden="true" />
                   </Button>
-                </div>
-              </div>
-            </div>
+                </HStack>
+              </HStack>
+            </VStack>
           )}
         </CardContent>
       </Card>

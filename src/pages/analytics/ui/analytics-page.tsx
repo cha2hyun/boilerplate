@@ -7,7 +7,6 @@ import { NumberDisplay } from '@/features/number-motion'
 import type { NumberFormatOptions } from '@/shared/lib/format'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
   Card,
@@ -26,8 +25,10 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from '@/shared/ui/chart'
+import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
 const countFormat = { maximumFractionDigits: 0 }
@@ -100,43 +101,43 @@ export function AnalyticsPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">{t('analytics.title')}</h1>
-            <Badge variant="secondary">{t('common.sample')}</Badge>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">{t('analytics.intro')}</p>
-        </div>
-        <Select
-          value={period}
-          onValueChange={(value) => {
-            if (value === '7' || value === '14' || value === '30') setPeriod(value)
-          }}
-        >
-          <SelectTrigger aria-label={t('analytics.period')} className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="30">
-              {t('analytics.lastDays', { days: formatNumber(30) })}
-            </SelectItem>
-            <SelectItem value="14">
-              {t('analytics.lastDays', { days: formatNumber(14) })}
-            </SelectItem>
-            <SelectItem value="7">{t('analytics.lastDays', { days: formatNumber(7) })}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+    <VStack align="stretch" className="gap-6">
+      <PageHeader
+        title={t('analytics.title')}
+        description={t('analytics.intro')}
+        badgeLabel={t('common.sample')}
+        actions={
+          <Select
+            value={period}
+            onValueChange={(value) => {
+              if (value === '7' || value === '14' || value === '30') setPeriod(value)
+            }}
+          >
+            <SelectTrigger aria-label={t('analytics.period')} className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30">
+                {t('analytics.lastDays', { days: formatNumber(30) })}
+              </SelectItem>
+              <SelectItem value="14">
+                {t('analytics.lastDays', { days: formatNumber(14) })}
+              </SelectItem>
+              <SelectItem value="7">
+                {t('analytics.lastDays', { days: formatNumber(7) })}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        }
+      />
 
-      <div className="flex h-8 items-center text-xs text-muted-foreground" role="status">
+      <HStack className="h-8 text-xs text-muted-foreground" role="status">
         {isLoading
           ? t('analytics.loading')
           : data
             ? t('analytics.rangeHint', { range })
             : t('analytics.unavailable')}
-      </div>
+      </HStack>
 
       {traffic.isError && (
         <Alert variant="destructive">
@@ -163,15 +164,17 @@ export function AnalyticsPage() {
               <CardAction>
                 <metric.icon className="size-4 text-muted-foreground" />
               </CardAction>
-              <CardTitle className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
-                {isLoading ? (
-                  <Skeleton className="h-8 w-28" />
-                ) : metric.value !== undefined ? (
-                  <NumberDisplay animate value={metric.value} format={metric.format} />
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </CardTitle>
+              <HStack asChild className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
+                <CardTitle>
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-28" />
+                  ) : metric.value !== undefined ? (
+                    <NumberDisplay animate value={metric.value} format={metric.format} />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </CardTitle>
+              </HStack>
             </CardHeader>
             <CardFooter className="text-xs text-muted-foreground">{metric.detail}</CardFooter>
           </Card>
@@ -247,9 +250,9 @@ export function AnalyticsPage() {
                 </AreaChart>
               </ChartContainer>
             ) : (
-              <div className="flex h-72 items-center justify-center text-sm text-muted-foreground">
+              <HStack justify="center" className="h-72 text-sm text-muted-foreground">
                 {traffic.isError ? t('analytics.audienceUnavailable') : t('analytics.noAudience')}
-              </div>
+              </HStack>
             )}
           </CardContent>
         </Card>
@@ -288,48 +291,47 @@ export function AnalyticsPage() {
                 </BarChart>
               </ChartContainer>
             ) : (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+              <HStack justify="center" className="h-48 text-sm text-muted-foreground">
                 {traffic.isError ? t('analytics.devicesUnavailable') : t('analytics.noDevices')}
-              </div>
+              </HStack>
             )}
-            <dl className="mt-3 space-y-3 text-sm">
-              {Array.from({ length: 3 }, (_, index) => {
-                const device = data?.devices[index]
-                return (
-                  <div
-                    key={device?.device ?? index}
-                    className="flex h-5 items-center justify-between gap-3"
-                  >
-                    <dt className="text-muted-foreground">
-                      {device ? (
-                        (deviceLabels[device.device] ?? device.device)
-                      ) : isLoading ? (
-                        <Skeleton className="h-4 w-16" />
-                      ) : (
-                        '—'
-                      )}
-                    </dt>
-                    <dd className="font-medium tabular-nums">
-                      {isLoading ? (
-                        <Skeleton className="h-4 w-24" />
-                      ) : device ? (
-                        <>
-                          <NumberDisplay animate value={device.sessions} format={countFormat} />{' '}
-                          <span className="ml-1 text-xs font-normal text-muted-foreground">
-                            {formatNumber(
-                              data.sessions > 0 ? (device.sessions / data.sessions) * 100 : 0,
-                              { style: 'percent', maximumFractionDigits: 0 },
-                            )}
-                          </span>
-                        </>
-                      ) : (
-                        '—'
-                      )}
-                    </dd>
-                  </div>
-                )
-              })}
-            </dl>
+            <VStack asChild align="stretch" className="mt-3 gap-3 text-sm">
+              <dl>
+                {Array.from({ length: 3 }, (_, index) => {
+                  const device = data?.devices[index]
+                  return (
+                    <HStack justify="between" key={device?.device ?? index} className="h-5 gap-3">
+                      <dt className="text-muted-foreground">
+                        {device ? (
+                          (deviceLabels[device.device] ?? device.device)
+                        ) : isLoading ? (
+                          <Skeleton className="h-4 w-16" />
+                        ) : (
+                          '—'
+                        )}
+                      </dt>
+                      <dd className="font-medium tabular-nums">
+                        {isLoading ? (
+                          <Skeleton className="h-4 w-24" />
+                        ) : device ? (
+                          <>
+                            <NumberDisplay animate value={device.sessions} format={countFormat} />{' '}
+                            <span className="ml-1 text-xs font-normal text-muted-foreground">
+                              {formatNumber(
+                                data.sessions > 0 ? (device.sessions / data.sessions) * 100 : 0,
+                                { style: 'percent', maximumFractionDigits: 0 },
+                              )}
+                            </span>
+                          </>
+                        ) : (
+                          '—'
+                        )}
+                      </dd>
+                    </HStack>
+                  )
+                })}
+              </dl>
+            </VStack>
           </CardContent>
         </Card>
       </div>
@@ -468,6 +470,6 @@ export function AnalyticsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </VStack>
   )
 }

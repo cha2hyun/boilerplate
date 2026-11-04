@@ -1,6 +1,6 @@
 export default {
   components: {
-    title: 'The building blocks',
+    title: 'Components',
     description: 'One design language. Endless possibilities.',
     explore: 'Explore shadcn/ui',
     componentsTab: 'Components',
@@ -8,6 +8,10 @@ export default {
     typographyTab: 'Typography',
     actionsTitle: 'Actions',
     actionsDescription: 'The right emphasis for every interaction.',
+    linksTitle: 'Text links',
+    linksDescription: 'Internal pages open here by default. External sites open in a new tab.',
+    linkProjects: 'Projects',
+    linkProjectsNewTab: 'Projects in a new tab',
     primaryToast: 'Ready for your next idea.',
     primaryAction: 'Primary action',
     secondaryToast: 'A secondary action',

@@ -20,6 +20,10 @@ export default {
     date: 'Date',
     total: 'Total',
     items: 'Items',
+    products: 'Products',
+    quantity: 'Quantity',
+    city: 'City',
+    country: 'Country',
     subtotal: 'Subtotal',
     shipping: 'Shipping',
     disclaimer:
@@ -28,6 +32,7 @@ export default {
     searchPlaceholder: 'Search orders or customers…',
     sortLabel: 'Sort orders',
     table: 'Orders table',
+    scrollHint: 'Swipe or scroll horizontally to see all fields.',
     previousPage: 'Previous orders page',
     nextPage: 'Next orders page',
     orderItems: 'Order items',

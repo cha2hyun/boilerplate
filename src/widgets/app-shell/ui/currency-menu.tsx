@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
+import { HStack } from '@/shared/ui/stack'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 
 export function CurrencyMenu() {
@@ -73,13 +74,15 @@ export function CurrencyMenu() {
               }),
             })
           ) : exchangeRate.isPending ? (
-            <span className="inline-flex items-center gap-1.5">
-              <LoaderCircle
-                className="size-3 animate-spin motion-reduce:animate-none"
-                aria-hidden="true"
-              />
-              {t('shell.exchangeRateLoading')}
-            </span>
+            <HStack asChild className="inline-flex gap-1.5">
+              <span>
+                <LoaderCircle
+                  className="size-3 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                {t('shell.exchangeRateLoading')}
+              </span>
+            </HStack>
           ) : (
             t('shell.exchangeRateUnavailable')
           )}

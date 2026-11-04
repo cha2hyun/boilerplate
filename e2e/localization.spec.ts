@@ -40,6 +40,7 @@ test('persists independent language and currency choices and reuses the referenc
 }) => {
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
+  await expect(page.getByRole('heading', { name: 'Overview', level: 1, exact: true })).toBeVisible()
   const englishCurrency = page.getByRole('button', { name: 'Display currency', exact: true })
   const currencyMenu = page.getByRole('menu')
   const englishUsd = page.getByRole('menuitemradio', { name: 'US dollar (USD)', exact: true })
@@ -62,9 +63,8 @@ test('persists independent language and currency choices and reuses the referenc
   await page.getByRole('menuitemradio', { name: '한국어', exact: true }).click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'ko-KR')
   await expect(page).toHaveTitle('개요 · Blueprint')
-  await expect(
-    page.getByRole('heading', { name: '더 선명한 오늘, 더 넓은 가능성.', exact: true }),
-  ).toBeVisible()
+  await expect(page.getByRole('heading', { name: '개요', level: 1, exact: true })).toBeVisible()
+  await expect(page.getByText('워크스페이스 개요', { exact: true })).toHaveCount(0)
   const koreanCurrency = page.getByRole('button', { name: '표시 통화', exact: true })
   const koreanUsd = page.getByRole('menuitemradio', { name: '미국 달러 (USD)', exact: true })
   const koreanKrw = page.getByRole('menuitemradio', { name: '대한민국 원 (KRW)', exact: true })
@@ -100,6 +100,7 @@ test('persists independent language and currency choices and reuses the referenc
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('lang', 'ko-KR')
   await expect(page).toHaveTitle('개요 · Blueprint')
+  await expect(page.getByRole('heading', { name: '개요', level: 1, exact: true })).toBeVisible()
   await koreanCurrency.click()
   await expect(koreanUsd).toHaveAttribute('aria-checked', 'false')
   await expect(koreanKrw).toHaveAttribute('aria-checked', 'true')
@@ -116,6 +117,7 @@ test('persists independent language and currency choices and reuses the referenc
   await page.getByRole('menuitemradio', { name: 'English', exact: true }).click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
   await expect(page).toHaveTitle('Overview · Blueprint')
+  await expect(page.getByRole('heading', { name: 'Overview', level: 1, exact: true })).toBeVisible()
   await englishCurrency.click()
   await expect(englishUsd).toHaveAttribute('aria-checked', 'false')
   await expect(englishKrw).toHaveAttribute('aria-checked', 'true')

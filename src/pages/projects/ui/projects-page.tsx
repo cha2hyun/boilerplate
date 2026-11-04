@@ -6,10 +6,11 @@ import { NumberDisplay } from '@/features/number-motion'
 import type { NumberFormatOptions } from '@/shared/lib/format'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { ProjectEditorDialog } from '@/features/project-editor'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
+import { PageHeader } from '@/shared/ui/page-header'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { ProjectTable } from '@/widgets/project-table'
 
 const countFormat = { maximumFractionDigits: 0 }
@@ -59,25 +60,21 @@ export function ProjectsPage() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="space-y-1.5">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-semibold tracking-tight">{t('common.projects')}</h1>
-            <Badge variant="outline" className="font-normal text-muted-foreground">
-              {t('common.workspace')}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">{t('projects.description')}</p>
-        </div>
-        <Button
-          onClick={() => {
-            setIsCreateOpen(true)
-          }}
-        >
-          <Plus aria-hidden="true" /> {t('common.newProject')}
-        </Button>
-      </div>
+    <VStack align="stretch" className="gap-6">
+      <PageHeader
+        title={t('common.projects')}
+        description={t('projects.description')}
+        badgeLabel={t('common.workspace')}
+        actions={
+          <Button
+            onClick={() => {
+              setIsCreateOpen(true)
+            }}
+          >
+            <Plus aria-hidden="true" /> {t('common.newProject')}
+          </Button>
+        }
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
         {summaries.map(({ title, value, format, description, Icon }) => (
@@ -87,22 +84,26 @@ export function ProjectsPage() {
             aria-label={title}
             aria-busy={isLoading}
           >
-            <CardHeader className="flex flex-row items-center justify-between px-5">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-              <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-            </CardHeader>
-            <CardContent className="space-y-1 px-5">
-              <div className="flex h-9 items-center text-3xl font-semibold tracking-tight tabular-nums">
-                {isLoading ? (
-                  <Skeleton className="h-8 w-16" />
-                ) : hasData ? (
-                  <NumberDisplay animate value={value} format={format} />
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                )}
-              </div>
-              <p className="min-h-8 text-xs leading-4 text-muted-foreground">{description}</p>
-            </CardContent>
+            <HStack asChild justify="between" className="px-5">
+              <CardHeader>
+                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+                <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
+              </CardHeader>
+            </HStack>
+            <VStack asChild align="stretch" className="gap-1 px-5">
+              <CardContent>
+                <HStack className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
+                  {isLoading ? (
+                    <Skeleton className="h-8 w-16" />
+                  ) : hasData ? (
+                    <NumberDisplay animate value={value} format={format} />
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </HStack>
+                <p className="min-h-8 text-xs leading-4 text-muted-foreground">{description}</p>
+              </CardContent>
+            </VStack>
           </Card>
         ))}
       </div>
@@ -117,6 +118,6 @@ export function ProjectsPage() {
         }}
       />
       <ProjectEditorDialog open={isCreateOpen} onOpenChange={setIsCreateOpen} />
-    </div>
+    </VStack>
   )
 }

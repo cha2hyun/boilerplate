@@ -1,6 +1,6 @@
 export default {
   components: {
-    title: '제품을 구성하는 요소',
+    title: '컴포넌트',
     description: '하나의 디자인 언어로 다양한 가능성을 만듭니다.',
     explore: 'shadcn/ui 살펴보기',
     componentsTab: '컴포넌트',
@@ -8,6 +8,10 @@ export default {
     typographyTab: '타이포그래피',
     actionsTitle: '액션',
     actionsDescription: '상호작용마다 알맞은 강조를 사용합니다.',
+    linksTitle: '텍스트 링크',
+    linksDescription: '내부 페이지는 기본적으로 현재 탭에서, 외부 사이트는 새 탭에서 엽니다.',
+    linkProjects: '프로젝트',
+    linkProjectsNewTab: '프로젝트 새 탭',
     primaryToast: '다음 아이디어를 시작할 준비가 됐어요.',
     primaryAction: '주요 액션',
     secondaryToast: '보조 액션을 실행했어요.',

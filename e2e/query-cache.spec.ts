@@ -35,6 +35,11 @@ async function captureColdCards(page: Page, expectedCount: number) {
       }
       return cards.map((card) => {
         const rect = card.getBoundingClientRect()
+        const comparison = card.querySelector('[data-testid="kpi-comparison"]')
+        const indicator = comparison
+          ?.querySelector('[data-slot="skeleton"]')
+          ?.getBoundingClientRect()
+        const description = comparison?.lastElementChild?.getBoundingClientRect()
         return {
           name:
             card.getAttribute('aria-label') ??
@@ -45,6 +50,12 @@ async function captureColdCards(page: Page, expectedCount: number) {
           width: rect.width,
           height: rect.height,
           skeletons: card.querySelectorAll('[data-slot="skeleton"]').length,
+          comparisonCenterDelta:
+            indicator && description
+              ? Math.abs(
+                  indicator.y + indicator.height / 2 - description.y - description.height / 2,
+                )
+              : null,
         }
       })
     },
@@ -55,6 +66,20 @@ async function captureColdCards(page: Page, expectedCount: number) {
   if (!cards) throw new Error('No cold-loading card layout was captured.')
   expect(cards.every((card) => card.skeletons > 0)).toBe(true)
   return cards
+}
+
+async function expectOverviewComparisonsCentered(page: Page) {
+  const comparisons = page.getByTestId('kpi-comparison')
+  await expect(comparisons).toHaveCount(4)
+  const centers = await comparisons.evaluateAll((rows) =>
+    rows.map((row) => {
+      const badge = row.querySelector('[data-slot="badge"]')?.getBoundingClientRect()
+      const description = row.lastElementChild?.getBoundingClientRect()
+      if (!badge || !description) throw new Error('KPI badge or comparison text is missing')
+      return Math.abs(badge.y + badge.height / 2 - description.y - description.height / 2)
+    }),
+  )
+  for (const delta of centers) expect(delta).toBeLessThanOrEqual(1)
 }
 
 async function captureCards(cards: Locator) {
@@ -139,10 +164,16 @@ for (const sample of pages) {
     )
     await navigate(page, sample.name, sample.route)
     const before = await cold
+    if (sample.name === 'Overview') {
+      const comparisons = before.filter((card) => card.comparisonCenterDelta !== null)
+      expect(comparisons).toHaveLength(4)
+      for (const card of comparisons) expect(card.comparisonCenterDelta).toBeLessThanOrEqual(1)
+    }
     expect((await firstResponse).fromServiceWorker()).toBe(true)
     const cards = page.locator(cardSelector)
     await expectReadyCards(cards, sample.cards)
     const after = await captureCards(cards)
+    if (sample.name === 'Overview') await expectOverviewComparisonsCentered(page)
     expect(after).toHaveLength(before.length)
     before.forEach((loading, index) => {
       const ready = after[index]
@@ -187,6 +218,7 @@ for (const sample of pages) {
     await navigate(page, sample.name, sample.route)
     await expectReadyCards(cards, sample.cards)
     expect(await warmLoading.evaluate((observer) => observer.finish())).toBe(false)
+    if (sample.name === 'Overview') await expectOverviewComparisonsCentered(page)
     await warmLoading.dispose()
     expect(await cards.locator('[data-number-state] > .sr-only').allTextContents()).toEqual(
       initialNumbers,
