@@ -28,7 +28,9 @@ test('analytics period updates the metrics, charts, and traffic tables together'
 
   await page.getByRole('combobox', { name: 'Analytics period' }).click()
   await page.getByRole('option', { name: 'Last 7 days', exact: true }).click()
-  await expect(page.getByRole('status')).toContainText('Oct 28 – Nov 3, 2026')
+  await expect(page.locator('#main-content').getByRole('status')).toContainText(
+    'Oct 28 – Nov 3, 2026',
+  )
   await expect(visitors.locator('[data-number-state]')).toHaveAttribute('data-number-state', 'idle')
   await expect(visitors.locator('.sr-only')).not.toHaveText(initialVisitors)
   await expect(sources.getByRole('row').nth(1)).not.toHaveText(initialSource, {
@@ -92,7 +94,7 @@ test('inbox marks sample messages read and unread and restores an archived conve
   await expect(page.getByRole('button', { name: launchMessageName, exact: true })).toHaveCount(0)
   await page.getByRole('tab', { name: 'All', exact: true }).click()
   await expect(page.getByRole('button', { name: launchMessageName, exact: true })).toBeVisible()
-  await expect(page.getByRole('status')).toContainText('moved to inbox')
+  await expect(page.locator('#main-content').getByRole('status')).toContainText('moved to inbox')
   await expectNoPageOverflow(page)
 })
 
