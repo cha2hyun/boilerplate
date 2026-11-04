@@ -212,9 +212,7 @@ const workspace = {
     currency: 'Display currency',
     currencyUsd: 'US dollar (USD)',
     currencyKrw: 'Korean won (KRW)',
-    exchangeRate: 'Reference: 1 USD = {{rate}} · {{date}}',
-    exchangeRateDescription:
-      'Amounts are converted from USD using this public reference exchange rate. The date is the rate’s reference date, not a live execution quote.',
+    exchangeRate: 'Reference: 1 USD = {{rate}}',
     exchangeRateLoading: 'Loading exchange rate…',
     exchangeRateUnavailable: 'Exchange rate unavailable',
     retryExchangeRate: 'Retry rate',
