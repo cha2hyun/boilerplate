@@ -57,6 +57,7 @@ import {
   useSidebar,
 } from '@/shared/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
+import { TextLink } from '@/shared/ui/text-link'
 
 function WorkspaceSidebar() {
   const { t } = useTranslation('workspace')
@@ -343,9 +344,11 @@ export function AppShell({ children }: AppShellProps) {
         >
           {children}
         </div>
-        <footer className="flex items-center justify-between gap-4 border-t px-6 py-4 text-xs text-muted-foreground">
-          <span>{t('shell.footerWorkspace')}</span>
-          <span>{t('shell.footerDescription')}</span>
+        <footer className="flex items-center justify-between gap-4 border-t px-4 py-4 text-xs text-muted-foreground md:px-6">
+          <span className="min-w-0">{t('shell.footerAuthor', { author: 'cha2hyun' })}</span>
+          <TextLink href="https://github.com/cha2hyun/boilerplate" className="shrink-0">
+            GitHub
+          </TextLink>
         </footer>
       </SidebarInset>
       <CommandDialog

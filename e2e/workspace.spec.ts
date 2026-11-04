@@ -111,6 +111,33 @@ test('loads the overview without browser errors and changes the revenue period',
     page.getByRole('heading', { name: 'A little clarity. A lot of possibility.' }),
   ).toBeVisible()
   await expect(page.getByText('Active customers', { exact: true })).toBeVisible()
+  const footer = page.locator('main > footer')
+  await expect(footer.getByText('Made by cha2hyun', { exact: true })).toBeVisible()
+  const repository = footer.getByRole('link', { name: 'GitHub', exact: true })
+  await expect(repository).toHaveAttribute('href', 'https://github.com/cha2hyun/boilerplate')
+  await expect(repository).toHaveAttribute('target', '_blank')
+  await expect(repository).toHaveAttribute('rel', /noopener/)
+  await expect(repository).toHaveAttribute('rel', /noreferrer/)
+  await expect(repository).toHaveAccessibleDescription('Opens in a new tab')
+  const footerAlignment = await footer.evaluate((element) => {
+    const author = element.firstElementChild
+    const link = element.querySelector('a')
+    if (!author || !link) throw new Error('Footer content is missing')
+    const authorBox = author.getBoundingClientRect()
+    const linkBox = link.getBoundingClientRect()
+    return {
+      authorRight: authorBox.right,
+      linkLeft: linkBox.left,
+      centerDelta: Math.abs(
+        authorBox.top + authorBox.height / 2 - linkBox.top - linkBox.height / 2,
+      ),
+      width: element.clientWidth,
+      scrollWidth: element.scrollWidth,
+    }
+  })
+  expect(footerAlignment.authorRight).toBeLessThan(footerAlignment.linkLeft)
+  expect(footerAlignment.centerDelta).toBeLessThanOrEqual(1)
+  expect(footerAlignment.scrollWidth).toBeLessThanOrEqual(footerAlignment.width)
   await expect(
     page.getByRole('application', { name: 'Revenue compared with previous period', exact: true }),
   ).toBeVisible()

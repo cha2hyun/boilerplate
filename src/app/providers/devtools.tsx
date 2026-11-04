@@ -8,7 +8,7 @@ export default function Devtools() {
   return (
     <TanStackDevtools
       config={{
-        position: 'bottom-right',
+        position: 'middle-right',
         triggerMode: 'fixed',
         customTrigger: (
           <Button asChild variant="outline" size="icon-sm">

@@ -15,6 +15,7 @@ export default {
   previousPage: 'Go to previous page',
   nextPage: 'Go to next page',
   notifications: 'Notifications',
+  linkNewTab: 'Opens in a new tab',
   errors: {
     timeoutWrite:
       'The request timed out. Your changes may have been saved. Refresh to check before trying again.',

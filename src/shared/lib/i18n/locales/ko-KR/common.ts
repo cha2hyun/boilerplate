@@ -17,6 +17,7 @@ export default {
   previousPage: '이전 페이지로 이동',
   nextPage: '다음 페이지로 이동',
   notifications: '알림',
+  linkNewTab: '새 탭에서 열림',
   errors: {
     timeoutWrite:
       '요청 시간이 초과됐어요. 변경 내용이 저장됐을 수 있으니 새로고침으로 확인한 후 다시 시도해 주세요.',

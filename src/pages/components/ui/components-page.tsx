@@ -23,6 +23,7 @@ import { Progress } from '@/shared/ui/progress'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { RouterTextLink, TextLink } from '@/shared/ui/text-link'
 
 const tokens = [
   {
@@ -83,6 +84,19 @@ export function ComponentsPage() {
           <TabsTrigger value="typography">{t('components.typographyTab')}</TabsTrigger>
         </TabsList>
         <TabsContent value="components" className="mt-6 grid items-start gap-5 xl:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('components.linksTitle')}</CardTitle>
+              <CardDescription>{t('components.linksDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm">
+              <RouterTextLink to="/projects">{t('components.linkProjects')}</RouterTextLink>
+              <RouterTextLink to="/projects" target="_blank">
+                {t('components.linkProjectsNewTab')}
+              </RouterTextLink>
+              <TextLink href="https://github.com/cha2hyun/boilerplate">GitHub</TextLink>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle>{t('components.actionsTitle')}</CardTitle>

@@ -22,6 +22,8 @@
 
 `target`은 HTML과 같은 이름으로 `_self` / `_blank`만 지원합니다. `blank`, `newTab`, `external` 같은 중복 속성은 두지 않습니다. 외부 링크를 현재 탭으로 강제하는 예외도 두지 않습니다.
 
+`disabled`는 Router의 비활성 상태도 같은 계약으로 받습니다. `true`이면 href를 제거하고 탭 순서와 클릭 탐색에서 제외합니다. 유효한 URL은 브라우저가 해석한 절대 URL로 정규화합니다.
+
 새 탭 링크에는 `rel="noopener noreferrer"`를 보장합니다. 호출자의 `nofollow` 등 추가 rel 토큰은 보존하고 `opener`는 제거합니다. 최종 href·target·rel은 컴포넌트가 결정하므로 props 전달 순서로 정책을 덮어쓰지 않습니다.
 
 ## 시각 표현과 접근성
