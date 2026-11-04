@@ -139,7 +139,7 @@ test('filters, sorts, paginates and inspects sample customer profiles', async ({
   await expect(trigger).toBeFocused()
 })
 
-test('keeps commerce tables and detail sheets inside the viewport', async ({ page }) => {
+test('keeps commerce tables and detail sheets inside the viewport', async ({ page }, testInfo) => {
   for (const route of ['orders', 'customers'] as const) {
     if (route === 'customers' && (page.viewportSize()?.width ?? 1440) < 768) {
       await page.setViewportSize({ width: 320, height: 915 })
@@ -148,7 +148,7 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
     const title = route === 'orders' ? 'Orders' : 'Customers'
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
     const region = page.getByRole('region', { name: `${title} table`, exact: true })
-    const table = region.locator('[data-slot="table-container"]')
+    const table = route === 'orders' ? region : region.locator('[data-slot="table-container"]')
     await expect(table).toBeVisible()
     await expect(region).toHaveAttribute('aria-busy', 'false')
     const layout = await table.evaluate((element) => ({
@@ -160,7 +160,81 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
     }))
     expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport)
     expect(layout.overflowX).toBe('auto')
-    if (layout.viewport < 768) expect(layout.contentWidth).toBeGreaterThan(layout.containerWidth)
+    if (route === 'orders' || layout.viewport < 768) {
+      expect(layout.contentWidth).toBeGreaterThan(layout.containerWidth)
+    }
+    if (route === 'orders') {
+      await expect(table.getByRole('columnheader')).toHaveCount(12)
+      for (const name of ['Products', 'Quantity', 'City', 'Country', 'Subtotal', 'Shipping']) {
+        await expect(table.getByRole('columnheader', { name, exact: true })).toBeVisible()
+      }
+      await expect(table).toHaveAccessibleDescription(
+        'Swipe or scroll horizontally to see all fields.',
+      )
+      await table.focus()
+      await page.keyboard.press('ArrowRight')
+      await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0)
+
+      if (testInfo.project.use.hasTouch) {
+        await table.scrollIntoViewIfNeeded()
+        const box = await table.boundingBox()
+        if (!box) throw new Error('The order scroll region is missing.')
+        const before = await table.evaluate((element) => element.scrollLeft)
+        const session = await page.context().newCDPSession(page)
+        try {
+          // Real browser touch input, not DOM dispatchEvent or a direct scrollLeft assignment.
+          await session.send('Input.synthesizeScrollGesture', {
+            x: box.x + box.width * 0.8,
+            y: box.y + 100,
+            xDistance: -Math.min(220, box.width * 0.6),
+            yDistance: 0,
+            gestureSourceType: 'touch',
+            preventFling: true,
+            speed: 600,
+          })
+          await expect
+            .poll(() => table.evaluate((element) => element.scrollLeft))
+            .toBeGreaterThan(before + 30)
+          const afterSwipe = await table.evaluate((element) => element.scrollLeft)
+          await session.send('Input.synthesizeScrollGesture', {
+            x: box.x + box.width * 0.45,
+            y: box.y + 100,
+            xDistance: Math.min(180, box.width * 0.4),
+            yDistance: 0,
+            gestureSourceType: 'touch',
+            preventFling: true,
+            speed: 600,
+          })
+          await expect
+            .poll(() => table.evaluate((element) => element.scrollLeft))
+            .toBeLessThan(afterSwipe - 30)
+          await expect(page.getByRole('dialog')).toHaveCount(0)
+        } finally {
+          await session.detach()
+        }
+      }
+      const total = table.getByRole('columnheader', { name: 'Total', exact: true })
+      await total.scrollIntoViewIfNeeded()
+      const rightEdge = await total.evaluate((element) => {
+        const viewport = element.closest('[data-slot="table-container"]')
+        if (!viewport) throw new Error('The header has no scroll container.')
+        return {
+          right: element.getBoundingClientRect().right,
+          limit: viewport.getBoundingClientRect().right,
+        }
+      })
+      expect(rightEdge.right).toBeLessThanOrEqual(rightEdge.limit + 1)
+      const pinnedOrder = table.getByRole('button').first()
+      const pinnedBounds = await pinnedOrder.evaluate((element) => {
+        const viewport = element.closest('[data-slot="table-container"]')
+        if (!viewport) throw new Error('The order has no scroll container.')
+        const button = element.getBoundingClientRect()
+        const container = viewport.getBoundingClientRect()
+        return { left: button.left, right: button.right, min: container.left, max: container.right }
+      })
+      expect(pinnedBounds.left).toBeGreaterThanOrEqual(pinnedBounds.min)
+      expect(pinnedBounds.right).toBeLessThanOrEqual(pinnedBounds.max)
+    }
     if (route === 'customers') {
       await page.getByRole('button', { name: 'Display currency', exact: true }).click()
       await page.getByRole('menuitemradio', { name: 'Korean won (KRW)', exact: true }).click()

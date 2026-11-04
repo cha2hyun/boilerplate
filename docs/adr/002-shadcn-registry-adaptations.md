@@ -18,6 +18,7 @@
 - 사이드바 skeleton은 렌더 중 난수 대신 고정 Tailwind 너비를 사용합니다.
 - 모바일 Sidebar는 자체 Trigger로 열리는 Sheet이므로 열기 전 초점을 기억하고 닫힐 때 복원합니다. 열었던 요소가 탐색으로 사라졌다면 Sidebar Trigger로 돌아갑니다.
 - CommandDialog는 기존 props에 선택적 `onOpenAutoFocus`/`onCloseAutoFocus`를 추가하여 내부 DialogContent로 전달합니다. 앱 셸은 키보드나 버튼으로 열기 전 초점을 복원하고, 명령으로 페이지를 이동한 경우 main으로 옮깁니다.
+- Table은 선택적 `containerProps`를 기존 가로 스크롤 div에 전달합니다. 실제 overflow 요소의 ref·이름·설명·tabIndex·로딩 상태·높이를 설정하며 table의 native props/ref와 분리합니다. 기본 `overflow-x-auto`, `touch-auto`, `overscroll-x-contain`으로 네이티브 터치 스크롤을 유지하고 별도 드래그 UI나 이벤트 가로채기를 추가하지 않습니다.
 - Sonner는 `shared/lib/theme`의 context를 사용합니다. Vite 테마 provider의 배경은 [ADR 003](003-vite-theme-provider.md)에 기록합니다.
 
 전역 lint 규칙을 비활성화하지 않습니다. shadcn의 variants/컴포넌트 동시 export 특성 때문에 `shared/ui`에서만 Fast Refresh의 export 전용 규칙을 제외합니다. 차트/사이드바 등 생성 코드의 동적 style과 내부 CSS 변수는 아키텍처 검사에서 허용합니다.

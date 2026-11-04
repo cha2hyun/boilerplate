@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
+  ArrowLeftRight,
   CheckCheck,
   ChevronLeft,
   ChevronRight,
@@ -42,6 +43,7 @@ import {
 } from '../model/sample-orders'
 
 const pageSize = 6
+const orderTableColumnCount = 12
 const countFormat = { maximumFractionDigits: 0 }
 
 function OrderStatusBadge({ status }: { status: OrderStatus }) {
@@ -75,6 +77,7 @@ export function OrdersPage() {
   const selectedOrder = orders.find((item) => item.id === selectedOrderId)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
+  const scrollHintId = useId()
   const query = search.trim().toLowerCase()
   const filteredOrders = orders
     .filter(
@@ -267,29 +270,56 @@ export function OrdersPage() {
                       </Button>
                     )}
                   </HStack>
+                  <HStack
+                    aria-hidden={!isLoading && visibleOrders.length === 0}
+                    className={`gap-2 px-5 text-xs text-muted-foreground ${!isLoading && visibleOrders.length === 0 ? 'invisible' : ''}`}
+                  >
+                    <ArrowLeftRight className="size-4 shrink-0" aria-hidden="true" />
+                    <p id={scrollHintId}>{t('orders.scrollHint')}</p>
+                  </HStack>
                   {isLoading || visibleOrders.length ? (
-                    <div
-                      role="region"
-                      aria-label={t('orders.table')}
-                      aria-busy={isLoading}
-                      className="h-120 min-w-0 border-y"
-                    >
-                      <Table className="min-w-190 table-fixed">
+                    <div className="h-124 min-w-0 border-y">
+                      <Table
+                        className="min-w-[1840px] table-fixed"
+                        containerProps={{
+                          tabIndex: 0,
+                          role: 'region',
+                          'aria-label': t('orders.table'),
+                          'aria-busy': isLoading,
+                          'aria-describedby': scrollHintId,
+                          className:
+                            'h-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+                        }}
+                      >
                         <colgroup>
-                          <col className="w-[14%]" />
-                          <col className="w-[28%]" />
-                          <col className="w-[15%]" />
-                          <col className="w-[13%]" />
-                          <col className="w-[16%]" />
-                          <col className="w-[14%]" />
+                          <col className="w-[128px]" />
+                          <col className="w-[240px]" />
+                          <col className="w-[136px]" />
+                          <col className="w-[120px]" />
+                          <col className="w-[152px]" />
+                          <col className="w-[256px]" />
+                          <col className="w-[96px]" />
+                          <col className="w-[144px]" />
+                          <col className="w-[160px]" />
+                          <col className="w-[136px]" />
+                          <col className="w-[128px]" />
+                          <col className="w-[144px]" />
                         </colgroup>
                         <TableHeader>
-                          <TableRow className="bg-muted/30 hover:bg-muted/30">
-                            <TableHead className="pl-5">{t('orders.order')}</TableHead>
+                          <TableRow className="bg-muted hover:bg-muted">
+                            <TableHead className="sticky left-0 z-10 border-r bg-muted pl-5">
+                              {t('orders.order')}
+                            </TableHead>
                             <TableHead>{t('common.customer')}</TableHead>
                             <TableHead>{t('common.status')}</TableHead>
                             <TableHead>{t('orders.payment')}</TableHead>
                             <TableHead>{t('orders.date')}</TableHead>
+                            <TableHead>{t('orders.products')}</TableHead>
+                            <TableHead className="text-right">{t('orders.quantity')}</TableHead>
+                            <TableHead>{t('orders.city')}</TableHead>
+                            <TableHead>{t('orders.country')}</TableHead>
+                            <TableHead className="text-right">{t('orders.subtotal')}</TableHead>
+                            <TableHead className="text-right">{t('orders.shipping')}</TableHead>
                             <TableHead className="pr-5 text-right">{t('orders.total')}</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -297,16 +327,26 @@ export function OrdersPage() {
                           {isLoading
                             ? Array.from({ length: pageSize }, (_, index) => (
                                 <TableRow key={index} className="h-18" aria-hidden="true">
-                                  {Array.from({ length: 6 }, (_, cell) => (
-                                    <TableCell key={cell} className="px-5">
+                                  {Array.from({ length: orderTableColumnCount }, (_, cell) => (
+                                    <TableCell
+                                      key={cell}
+                                      className={
+                                        cell === 0
+                                          ? 'sticky left-0 z-10 border-r bg-card px-5'
+                                          : 'px-5'
+                                      }
+                                    >
                                       <Skeleton className="h-4 w-full max-w-28" />
                                     </TableCell>
                                   ))}
                                 </TableRow>
                               ))
                             : visibleOrders.map((order) => (
-                                <TableRow key={order.id} className="h-18">
-                                  <TableCell className="py-2 pl-5">
+                                <TableRow
+                                  key={order.id}
+                                  className="group/order-row h-18 hover:bg-muted"
+                                >
+                                  <TableCell className="sticky left-0 z-10 border-r bg-card py-2 pl-5 group-hover/order-row:bg-muted">
                                     <Button
                                       variant="link"
                                       className="h-auto p-0 font-medium text-foreground"
@@ -351,6 +391,35 @@ export function OrdersPage() {
                                   <TableCell className="text-muted-foreground">
                                     {formatDate(order.date, { year: 'numeric' })}
                                   </TableCell>
+                                  <TableCell>
+                                    <p
+                                      className="truncate"
+                                      title={order.items.map((item) => item.name).join(', ')}
+                                    >
+                                      {order.items.map((item) => item.name).join(', ')}
+                                    </p>
+                                  </TableCell>
+                                  <TableCell className="text-right tabular-nums">
+                                    {formatNumber(
+                                      order.items.reduce((sum, item) => sum + item.quantity, 0),
+                                    )}
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    <p className="truncate" title={order.city}>
+                                      {order.city}
+                                    </p>
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground">
+                                    <p className="truncate" title={order.country}>
+                                      {order.country}
+                                    </p>
+                                  </TableCell>
+                                  <TableCell className="text-right tabular-nums">
+                                    {formatMoney(orderSubtotal(order) / 100)}
+                                  </TableCell>
+                                  <TableCell className="text-right tabular-nums">
+                                    {formatMoney(order.shipping / 100)}
+                                  </TableCell>
                                   <TableCell className="pr-5 text-right font-medium tabular-nums">
                                     {formatMoney(orderTotal(order) / 100)}
                                   </TableCell>
@@ -365,7 +434,7 @@ export function OrdersPage() {
                                   className="h-18 hover:bg-transparent"
                                   aria-hidden="true"
                                 >
-                                  <TableCell colSpan={6} />
+                                  <TableCell colSpan={orderTableColumnCount} />
                                 </TableRow>
                               ),
                             )}
@@ -374,7 +443,7 @@ export function OrdersPage() {
                     </div>
                   ) : (
                     <Empty
-                      className="h-120 rounded-none border-y py-12"
+                      className="h-124 rounded-none border-y py-12"
                       role={hasLoadError ? 'alert' : undefined}
                     >
                       <EmptyHeader>

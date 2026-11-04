@@ -69,6 +69,18 @@
 
 ## 검사와 완료 조건
 
+### 넓은 표와 터치 스크롤
+
+많은 열을 작은 화면에 강제로 압축하거나 주요 필드를 숨기지 않습니다. Orders는 실제 주문 데이터 12개 열과 읽을 수 있는 최소 열 너비를 가진 예제입니다. 스크롤은 페이지가 아닌 shadcn Table의 기존 컨테이너 안에 한정합니다.
+
+- `Table.containerProps`로 **실제 overflow 요소**에 `role="region"`, 번역된 이름/설명, `tabIndex={0}`, `aria-busy`와 높이를 부여합니다. 같은 이름의 바깥 region을 중첩하지 않습니다.
+- `overflow-x-auto` + `touch-auto`로 가로 스와이프, 세로 페이지 스크롤, 핀치 확대를 브라우저에 맡깁니다. `touch-pan-x`, `touch-none`, 터치 `preventDefault()`나 직접 scrollLeft를 조작하는 드래그 핸들러로 기본 동작을 막지 않습니다. `overscroll-x-contain`은 수평 끝에서의 스크롤 전파를 제한합니다.
+- 포커스된 표는 좌우 화살표 키로 이동할 수 있어야 합니다. overflow가 있는 카드 안에서는 안쪽 초점 테두리를 사용합니다. 고정한 첫 열은 불투명한 의미 색상과 stacking을 갖춰 뒤 셀이 비치지 않게 합니다.
+- 열·colgroup·스켈레톤 셀·빈 행 colspan은 일치해야 합니다. 로딩/성공/빈 결과의 높이를 유지하고 일반 스크롤바의 높이까지 예약합니다. Orders의 표 프레임은 496px입니다.
+- 실제 터치 회귀 검사는 Chromium의 터치 입력으로 scrollLeft 변화와 상세창 오작동 여부를 확인합니다. DOM touch 이벤트 dispatch나 scrollLeft 직접 대입을 터치 검증이라고 보고하지 않습니다. 관련 테스트는 기존 commerce 범주에 포함합니다.
+
+### 정렬 검사
+
 `pnpm check:architecture`는 shared/ui와 테스트를 제외한 native div의 직접 행·열 배치와 Stack의 기본 정렬 덮어쓰기를 거부합니다. 정적 검사는 계산된 클래스나 실제 픽셀 중심을 모두 증명하지 못하므로 변경된 행은 화면에서 확인합니다.
 
 - 아이콘/배지/텍스트 박스의 세로 중심 차이가 1px 이내인지 확인합니다. 폰트의 line-height 차이도 눈으로 검토합니다.
