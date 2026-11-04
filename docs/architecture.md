@@ -36,15 +36,16 @@ import { httpProjectAdapter } from './http'
 
 ## 상태의 소유권
 
-| 상태                           | 소유자                    | 이유                                                |
-| ------------------------------ | ------------------------- | --------------------------------------------------- |
-| 경로와 탐색                    | TanStack Router           | 새로고침/직접 링크에 일관된 진입점                  |
-| 원격/샘플 조회 데이터          | TanStack Query            | 캐시, 로딩/오류, 요청 취소, mutation 후 무효화      |
-| 워크스페이스 이름/compact mode | Zustand                   | 서버와 독립적인 UI 환경 설정의 명시적 소유권        |
-| 언어·표시 통화                 | Zustand                   | 검증·저장하는 독립적인 UI 환경 설정                 |
-| USD/KRW 기준 환율              | TanStack Query            | 공개 API의 검증된 원격 데이터와 공유 캐시           |
-| light/dark/system 테마         | shadcn Vite ThemeProvider | 공식 Vite recipe 기반의 class 적용/시스템 테마 구독 |
-| 폼 입력/열린 대화상자          | 해당 컴포넌트/feature     | 수명이 짧고 다른 영역에 공개할 이유가 없음          |
+| 상태                            | 소유자                    | 이유                                                |
+| ------------------------------- | ------------------------- | --------------------------------------------------- |
+| 경로와 탐색                     | TanStack Router           | 새로고침/직접 링크에 일관된 진입점                  |
+| 차트 기간·검색·필터·정렬·페이지 | TanStack Router search    | Zod 검증 후 새로고침·뒤로/앞으로·직접 링크에서 복원 |
+| 원격/샘플 조회 데이터           | TanStack Query            | 캐시, 로딩/오류, 요청 취소, mutation 후 무효화      |
+| 워크스페이스 이름/compact mode  | Zustand                   | 서버와 독립적인 UI 환경 설정의 명시적 소유권        |
+| 언어·표시 통화                  | Zustand                   | 검증·저장하는 독립적인 UI 환경 설정                 |
+| USD/KRW 기준 환율               | TanStack Query            | 공개 API의 검증된 원격 데이터와 공유 캐시           |
+| light/dark/system 테마          | shadcn Vite ThemeProvider | 공식 Vite recipe 기반의 class 적용/시스템 테마 구독 |
+| 폼 입력/열린 대화상자           | 해당 컴포넌트/feature     | 수명이 짧고 다른 영역에 공개할 이유가 없음          |
 
 Query 결과를 Zustand에 복제하지 않습니다. 서버 상태의 진실 공급원은 서버이며 데모에서는 API 어댑터입니다. API 응답은 Zod로 검증하고 컴포넌트에는 검증된 도메인 데이터를 전달합니다. 데이터 어댑터는 `demo`와 `api` 모드에서 같은 계약을 따릅니다. 캐시 수명·무효화·화면 갱신은 [Query 캐시](query-cache.md), 응답/페이지/정렬/저장 규칙은 [API 계약](api-contract.md)이 소유합니다.
 

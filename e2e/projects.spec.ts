@@ -94,15 +94,30 @@ test('searches owners and projects, filters status, resets empty results, and ch
   await search.fill('Phoenix')
   await expect(page.getByRole('button', { name: 'Mobile app launch', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toHaveCount(0)
+  await expect(page).toHaveURL((url) => url.searchParams.get('q') === 'Phoenix')
+  await page.reload()
+  await expect(search).toHaveValue('Phoenix')
+  await expect(page.getByRole('button', { name: 'Mobile app launch', exact: true })).toBeVisible()
 
   await search.fill('No matching project exists')
   await expect(page.getByText('No matching projects', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
   await expect(search).toBeFocused()
+  await expect(page).toHaveURL('/projects')
   await page.getByRole('combobox', { name: 'Filter by status' }).click()
   await page.getByRole('option', { name: 'Paused', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Customer insights', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Mobile app launch', exact: true })).toHaveCount(0)
+  await expect(page).toHaveURL((url) => url.searchParams.get('status') === 'paused')
+  await page.reload()
+  await expect(page.getByRole('combobox', { name: 'Filter by status' })).toContainText('Paused')
+  await page.goBack()
+  await expect(page).toHaveURL('/projects')
+  await expect(page.getByRole('combobox', { name: 'Filter by status' })).toContainText(
+    'All statuses',
+  )
+  await page.goForward()
+  await expect(page.getByRole('combobox', { name: 'Filter by status' })).toContainText('Paused')
   await page.getByRole('button', { name: 'Reset', exact: true }).click()
   await expect(search).toBeFocused()
 
@@ -125,6 +140,37 @@ test('searches owners and projects, filters status, resets empty results, and ch
     'aria-sort',
     'descending',
   )
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get('sort') === 'progress' && !url.searchParams.has('order'),
+  )
+  await page.reload()
+  await expect(page.getByRole('columnheader', { name: 'Progress', exact: true })).toHaveAttribute(
+    'aria-sort',
+    'descending',
+  )
+  await page.goBack()
+  await expect(page.getByRole('columnheader', { name: 'Progress', exact: true })).toHaveAttribute(
+    'aria-sort',
+    'ascending',
+  )
+  await page.goForward()
+  await expect(page.getByRole('columnheader', { name: 'Progress', exact: true })).toHaveAttribute(
+    'aria-sort',
+    'descending',
+  )
+
+  await page.goto(
+    '/projects?q=%5B%22bad%22%5D&status=invalid&sort=owner&order=invalid&page=-2&pageSize=10',
+  )
+  await expect(search).toHaveValue('')
+  await expect(page.getByRole('combobox', { name: 'Filter by status' })).toContainText(
+    'All statuses',
+  )
+  await expect(
+    page.getByRole('columnheader', { name: 'Last updated', exact: true }),
+  ).toHaveAttribute('aria-sort', 'descending')
+  await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
+  await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible()
 })
 
 test('keeps project validation and save controls reachable in a short viewport', async ({
@@ -163,6 +209,13 @@ test('paginates projects and exports only selected rows as a safe CSV', async ({
   await expect(page.getByText('Page 1 of 2', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Next page', exact: true }).click()
   await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
+  await page.reload()
+  await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
+  await page.goBack()
+  await expect(page.getByText('Page 1 of 2', { exact: true })).toBeVisible()
+  await page.goForward()
+  await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Previous page', exact: true }).click()
   await page.getByRole('checkbox', { name: 'Select Export planning', exact: true }).check()
   await page.getByRole('checkbox', { name: 'Select =SUM(1,2)', exact: true }).check()
@@ -179,6 +232,23 @@ test('paginates projects and exports only selected rows as a safe CSV', async ({
   expect(csv).toContain('"\'=SUM(1,2)"')
   expect(csv).not.toContain('Second export project')
   expect(csv).not.toContain('Website redesign')
+
+  if ((page.viewportSize()?.width ?? 1440) >= 768) {
+    await page.getByRole('button', { name: 'Next page', exact: true }).click()
+    await page.getByRole('combobox', { name: 'Rows per page', exact: true }).click()
+    await page.getByRole('option', { name: '16', exact: true }).click()
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get('pageSize') === '16' && !url.searchParams.has('page'),
+    )
+    await page.reload()
+    await expect(page.getByRole('combobox', { name: 'Rows per page', exact: true })).toHaveText(
+      '16',
+    )
+    await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible()
+  }
+  await page.goto('/projects?page=999')
+  await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
 })
 
 test('keeps an edit open and explains the error when another tab deletes the project', async ({

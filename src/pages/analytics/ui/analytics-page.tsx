@@ -1,11 +1,11 @@
-import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Activity, Eye, MousePointer2, Users } from 'lucide-react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
-import { trafficQueryOptions, type TrafficPeriod } from '@/entities/traffic'
+import { trafficQueryOptions } from '@/entities/traffic'
 import { NumberDisplay } from '@/features/number-motion'
 import type { NumberFormatOptions } from '@/shared/lib/format'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import {
@@ -30,13 +30,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
+import type { AnalyticsSearch } from '../model/search'
 
 const countFormat = { maximumFractionDigits: 0 }
 const percentFormat = { style: 'percent', maximumFractionDigits: 1 } satisfies NumberFormatOptions
 
 const deviceColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)'] as const
 
-export function AnalyticsPage() {
+interface AnalyticsPageProps {
+  search: AnalyticsSearch
+  onSearchChange: SearchChange<AnalyticsSearch>
+}
+
+export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
   const { t } = useTranslation('admin')
   const errorMessage = useErrorMessage()
   const { formatDate, formatNumber } = useFormatters()
@@ -59,7 +65,7 @@ export function AnalyticsPage() {
     Social: t('analytics.sources.social'),
     Email: t('analytics.sources.email'),
   }
-  const [period, setPeriod] = useState<TrafficPeriod>('30')
+  const { period } = search
   const traffic = useQuery(trafficQueryOptions(period))
   const data = traffic.data
   const isLoading = traffic.isPending && !data
@@ -110,7 +116,9 @@ export function AnalyticsPage() {
           <Select
             value={period}
             onValueChange={(value) => {
-              if (value === '7' || value === '14' || value === '30') setPeriod(value)
+              if (value === '7' || value === '14' || value === '30') {
+                onSearchChange({ period: value })
+              }
             }}
           >
             <SelectTrigger aria-label={t('analytics.period')} className="w-40">

@@ -58,7 +58,17 @@ test('combines order status and customer search, and recovers from empty results
     'true',
   )
   await expect(page.getByText('Showing 1–3 of 3 orders', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL((url) => url.searchParams.get('status') === 'Processing')
   await page.getByRole('textbox', { name: 'Search orders' }).fill('olivia@example.com')
+  await expect(page).toHaveURL((url) => url.searchParams.get('q') === 'olivia@example.com')
+  await page.reload()
+  await expect(page.getByRole('textbox', { name: 'Search orders' })).toHaveValue(
+    'olivia@example.com',
+  )
+  await expect(page.getByRole('tab', { name: 'Processing', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
   await expect(page.getByRole('button', { name: 'View order ORD-1042', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'View order ORD-1039', exact: true })).toHaveCount(
     0,
@@ -73,6 +83,21 @@ test('combines order status and customer search, and recovers from empty results
     'true',
   )
   await expect(page.getByText('Showing 1–6 of 12 orders', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL((url) => url.pathname === '/orders' && url.search === '')
+  await page.goBack()
+  await expect(page.getByRole('textbox', { name: 'Search orders' })).toHaveValue('no such customer')
+  await expect(page.getByText('No matching orders', { exact: true })).toBeVisible()
+  // Typing replaces the current filter entry, so Back skips intermediate text values.
+  await page.goBack()
+  await expect(page.getByRole('textbox', { name: 'Search orders' })).toHaveValue('')
+  await expect(page.getByRole('tab', { name: 'All orders', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  await page.goForward()
+  await expect(page.getByText('No matching orders', { exact: true })).toBeVisible()
+  await page.goForward()
+  await expect(page.getByText('Showing 1–6 of 12 orders', { exact: true })).toBeVisible()
 })
 
 test('paginates and sorts orders, then opens details with keyboard focus restored', async ({
@@ -80,6 +105,8 @@ test('paginates and sorts orders, then opens details with keyboard focus restore
 }) => {
   await page.goto('/orders')
   await page.getByRole('button', { name: 'Next orders page', exact: true }).click()
+  await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
+  await page.reload()
   await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'View order ORD-1031', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Next orders page', exact: true })).toBeDisabled()
@@ -88,6 +115,20 @@ test('paginates and sorts orders, then opens details with keyboard focus restore
   await expect(page.getByText('Page 1 of 2', { exact: true })).toBeVisible()
   const orderTable = page.getByRole('region', { name: 'Orders table', exact: true })
   await expect(orderTable.getByRole('row').nth(1)).toContainText('ORD-1033')
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get('sort') === 'highest' && !url.searchParams.has('page'),
+  )
+  await page.goBack()
+  await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
+  await expect(page.getByRole('combobox', { name: 'Sort orders', exact: true })).toHaveText(
+    'Newest first',
+  )
+  await page.goForward()
+  await expect(orderTable.getByRole('row').nth(1)).toContainText('ORD-1033')
+  await page.reload()
+  await expect(page.getByRole('combobox', { name: 'Sort orders', exact: true })).toHaveText(
+    'Total: high to low',
+  )
   await page.getByRole('textbox', { name: 'Search orders' }).fill('ORD-1042')
   const trigger = page.getByRole('button', { name: 'View order ORD-1042', exact: true })
   await trigger.focus()
@@ -107,12 +148,29 @@ test('filters, sorts, paginates and inspects sample customer profiles', async ({
   await recoverInitialRead(page, 'customers')
   await expect(page.getByRole('heading', { name: 'Customers', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Next customers page', exact: true }).click()
+  await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
+  await page.reload()
   await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
   await page.getByRole('combobox', { name: 'Filter customers by status' }).click()
   await page.getByRole('option', { name: 'Inactive', exact: true }).click()
   await expect(page.getByText('Showing 1–4 of 4 customers', { exact: true })).toBeVisible()
   await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get('status') === 'Inactive' && !url.searchParams.has('page'),
+  )
+  await page.goBack()
+  await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
+  await page.goForward()
+  await expect(page.getByRole('combobox', { name: 'Filter customers by status' })).toHaveText(
+    'Inactive',
+  )
   await page.getByRole('textbox', { name: 'Search customers' }).fill('Canada')
+  await expect(page).toHaveURL((url) => url.searchParams.get('q') === 'Canada')
+  await page.reload()
+  await expect(page.getByRole('textbox', { name: 'Search customers' })).toHaveValue('Canada')
+  await expect(page.getByRole('combobox', { name: 'Filter customers by status' })).toHaveText(
+    'Inactive',
+  )
   await expect(
     page.getByRole('button', { name: 'View customer Drew Cano', exact: true }),
   ).toBeVisible()
@@ -121,9 +179,23 @@ test('filters, sorts, paginates and inspects sample customer profiles', async ({
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click()
   await expect(page.getByRole('textbox', { name: 'Search customers' })).toHaveValue('')
   await expect(page.getByRole('textbox', { name: 'Search customers' })).toBeFocused()
+  await expect(page).toHaveURL((url) => url.pathname === '/customers' && url.search === '')
+  await page.goBack()
+  await expect(page.getByRole('textbox', { name: 'Search customers' })).toHaveValue(
+    'no matching person',
+  )
+  await expect(page.getByText('No matching customers', { exact: true })).toBeVisible()
+  await page.goForward()
+  await expect(page.getByRole('textbox', { name: 'Search customers' })).toHaveValue('')
   await page.getByRole('combobox', { name: 'Sort customers', exact: true }).click()
   await page.getByRole('option', { name: 'Spend: high to low', exact: true }).click()
   const customerTable = page.getByRole('region', { name: 'Customers table', exact: true })
+  await expect(customerTable.getByRole('row').nth(1)).toContainText('Orlando Diggs')
+  await expect(page).toHaveURL((url) => url.searchParams.get('sort') === 'highest')
+  await page.reload()
+  await expect(page.getByRole('combobox', { name: 'Sort customers', exact: true })).toHaveText(
+    'Spend: high to low',
+  )
   await expect(customerTable.getByRole('row').nth(1)).toContainText('Orlando Diggs')
   const trigger = page.getByRole('button', { name: 'View customer Orlando Diggs', exact: true })
   await trigger.click()
@@ -137,6 +209,34 @@ test('filters, sorts, paginates and inspects sample customer profiles', async ({
   await details.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(details).toBeHidden()
   await expect(trigger).toBeFocused()
+})
+
+test('recovers invalid commerce URL filters and clamps pages after data loads', async ({
+  page,
+}) => {
+  for (const route of ['orders', 'customers'] as const) {
+    await page.goto(`/${route}?q=%5B%22invalid%22%5D&status=unknown&sort=unknown&page=-4`)
+    await expect(page.getByRole('textbox', { name: `Search ${route}` })).toHaveValue('')
+    await expect(page.getByRole('combobox', { name: `Sort ${route}`, exact: true })).toHaveText(
+      'Newest first',
+    )
+    await expect(page.getByText(`Showing 1–6 of 12 ${route}`, { exact: true })).toBeVisible()
+    if (route === 'orders') {
+      await expect(page.getByRole('tab', { name: 'All orders', exact: true })).toHaveAttribute(
+        'aria-selected',
+        'true',
+      )
+    } else {
+      await expect(page.getByRole('combobox', { name: 'Filter customers by status' })).toHaveText(
+        'All statuses',
+      )
+    }
+    await page.goto(`/${route}?page=999`)
+    await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
+    await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
+    await page.getByRole('button', { name: `Previous ${route} page`, exact: true }).click()
+    await expect(page).toHaveURL((url) => !url.searchParams.has('page'))
+  }
 })
 
 test('keeps commerce tables and detail sheets inside the viewport', async ({ page }, testInfo) => {

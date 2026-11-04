@@ -46,13 +46,34 @@ test('analytics period updates the metrics, charts, and traffic tables together'
     useInnerText: true,
   })
   await expect(page.getByText('Visitors and sessions over the selected 7 days.')).toBeVisible()
+  await expect(page).toHaveURL((url) => url.searchParams.has('period'))
+  const sevenDayUrl = page.url()
+  await page.reload()
+  await expect(page.getByRole('combobox', { name: 'Analytics period' })).toHaveText('Last 7 days')
+  await expect(page.locator('#main-content').getByRole('status')).toContainText(
+    'Oct 28 – Nov 3, 2026',
+  )
+  await page.goBack()
+  await expect(page).toHaveURL('/analytics')
+  await expect(page.getByRole('combobox', { name: 'Analytics period' })).toHaveText('Last 30 days')
+  await page.goForward()
+  await expect(page).toHaveURL(sevenDayUrl)
+  await expect(page.getByRole('combobox', { name: 'Analytics period' })).toHaveText('Last 7 days')
 
   await page.getByRole('combobox', { name: 'Analytics period' }).click()
   await page.getByRole('option', { name: 'Last 30 days', exact: true }).click()
+  await expect(page).toHaveURL('/analytics')
   await expect(visitors.locator('[data-number-state]')).toHaveAttribute('data-number-state', 'idle')
   await expect(visitors.locator('.sr-only')).toHaveText(initialVisitors)
   await expect(sources.getByRole('row').nth(1)).toHaveText(initialSource, { useInnerText: true })
   await expect(topPages.getByRole('row').nth(1)).toHaveText(initialTopPage, { useInnerText: true })
+  await page.goto('/analytics?period=14')
+  await expect(page.getByRole('combobox', { name: 'Analytics period' })).toHaveText('Last 14 days')
+  await expect(page.getByText('Visitors and sessions over the selected 14 days.')).toBeVisible()
+  await page.goto('/analytics?period=unsupported')
+  await expect(page.getByRole('combobox', { name: 'Analytics period' })).toHaveText('Last 30 days')
+  await expect(visitors.locator('[data-number-state]')).toHaveAttribute('data-number-state', 'idle')
+  await expect(visitors.locator('.sr-only')).toHaveText(initialVisitors)
   await expectNoPageOverflow(page)
 })
 
@@ -66,6 +87,31 @@ test('inbox combines unread and search filters and recovers from an empty result
   await search.fill('planning workshop')
   await expect(page.getByRole('button', { name: /Open message from/ })).toHaveCount(1)
   await expect(page.getByRole('button', { name: /Open message from Sam Rivera/ })).toBeVisible()
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get('view') === 'unread' &&
+      url.searchParams.get('q') === 'planning workshop',
+  )
+  const filteredUrl = page.url()
+  await page.reload()
+  await expect(search).toHaveValue('planning workshop')
+  await expect(page.getByRole('tab', { name: 'Unread', exact: true })).toHaveAttribute(
+    'data-state',
+    'active',
+  )
+  await expect(page.getByRole('button', { name: /Open message from/ })).toHaveCount(1)
+  await page.goBack()
+  await expect(page).toHaveURL('/inbox')
+  await expect(search).toHaveValue('')
+  await expect(page.getByRole('tab', { name: 'All', exact: true })).toHaveAttribute(
+    'data-state',
+    'active',
+  )
+  await expect(page.getByRole('button', { name: /Open message from/ })).toHaveCount(5)
+  await page.goForward()
+  await expect(page).toHaveURL(filteredUrl)
+  await expect(search).toHaveValue('planning workshop')
+  await expect(page.getByRole('button', { name: /Open message from/ })).toHaveCount(1)
   await search.fill('no matching sample conversation')
   await expect(page.getByText('No messages found', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Show all messages', exact: true }).click()
@@ -76,6 +122,15 @@ test('inbox combines unread and search filters and recovers from an empty result
     'active',
   )
   await expect(page.getByRole('button', { name: /Open message from/ })).toHaveCount(5)
+  await expect(page).toHaveURL('/inbox')
+  await page.goto('/inbox?view=unsupported&q=planning%20workshop')
+  await expect(search).toHaveValue('planning workshop')
+  await expect(page.getByRole('tab', { name: 'All', exact: true })).toHaveAttribute(
+    'data-state',
+    'active',
+  )
+  await expect(page.getByRole('button', { name: /Open message from/ })).toHaveCount(1)
+  await expect(page.getByRole('button', { name: /Open message from Sam Rivera/ })).toBeVisible()
   await expectNoPageOverflow(page)
 })
 
@@ -93,6 +148,7 @@ test('inbox marks sample messages read and unread and restores an archived conve
   await page.getByRole('button', { name: 'Archive', exact: true }).click()
   await expect(page.getByRole('button', { name: launchMessageName, exact: true })).toHaveCount(0)
   await expect(page.getByRole('textbox', { name: 'Search messages' })).toBeFocused()
+  await expect(page).toHaveURL('/inbox')
 
   await page.getByRole('tab', { name: 'Archived', exact: true }).click()
   await page.getByRole('button', { name: launchMessageName, exact: true }).click()
@@ -101,6 +157,12 @@ test('inbox marks sample messages read and unread and restores an archived conve
   await page.getByRole('tab', { name: 'All', exact: true }).click()
   await expect(page.getByRole('button', { name: launchMessageName, exact: true })).toBeVisible()
   await expect(page.locator('#main-content').getByRole('status')).toContainText('moved to inbox')
+  await page.reload()
+  await expect(page.getByText('3 unread', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: launchMessageName, exact: true })).toHaveAttribute(
+    'aria-description',
+    'Unread message',
+  )
   await expectNoPageOverflow(page)
 })
 
@@ -129,5 +191,25 @@ test('inbox supports keyboard message selection and responsive focus recovery', 
       page.getByRole('heading', { name: 'A few thoughts on the new dashboard', exact: true }),
     ).toBeFocused()
   }
+
+  await page.goto('/inbox?view=unread')
+  await page.getByRole('tab', { name: 'All', exact: true }).click()
+  await page.getByRole('button', { name: /Open message from Jordan Lee/ }).click()
+  await expect(
+    page.getByRole('heading', { name: 'Customer onboarding notes', exact: true }),
+  ).toBeVisible()
+  await page.goBack()
+  await expect(page.getByRole('tab', { name: 'Unread', exact: true })).toHaveAttribute(
+    'data-state',
+    'active',
+  )
+  await expect(page.getByRole('region', { name: 'Message list', exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: 'Customer onboarding notes', exact: true }),
+  ).toHaveCount(0)
+  await message.click()
+  await expect(subject).toBeVisible()
+  await expect(message).toHaveCount(0)
+  await expect(page.getByText('2 unread', { exact: true })).toBeVisible()
   await expectNoPageOverflow(page)
 })

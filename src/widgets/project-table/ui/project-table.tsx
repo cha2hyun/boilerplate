@@ -1,6 +1,7 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   flexRender,
+  functionalUpdate,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
@@ -37,6 +38,8 @@ import {
 import { toast } from 'sonner'
 import type { Project } from '@/entities/project'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
+import { projectTableSearchSchema, type ProjectTableSearch } from '../model/search'
 import { ProjectDeleteDialog, ProjectEditorDialog } from '@/features/project-editor'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -62,8 +65,11 @@ import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 
 interface ProjectTableProps {
+  search: ProjectTableSearch
+  onSearchChange: SearchChange<ProjectTableSearch>
   projects: Project[]
   isLoading?: boolean
+  isFetching?: boolean
   hasData?: boolean
   compact?: boolean
   error?: Error | null
@@ -132,8 +138,11 @@ function exportProjects(
 }
 
 export function ProjectTable({
+  search,
+  onSearchChange,
   projects,
   isLoading = false,
+  isFetching = false,
   hasData = projects.length > 0,
   compact = false,
   error,
@@ -144,11 +153,20 @@ export function ProjectTable({
   const showLoading = isLoading && !hasData
   const showError = Boolean(error) && !hasData
   const showRefreshError = Boolean(error) && hasData
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'updatedAt', desc: true }])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const sorting = useMemo<SortingState>(
+    () => [{ id: search.sort, desc: search.order === 'desc' }],
+    [search.sort, search.order],
+  )
+  const columnFilters = useMemo<ColumnFiltersState>(
+    () => (search.status === 'all' ? [] : [{ id: 'status', value: search.status }]),
+    [search.status],
+  )
+  const pagination = useMemo(
+    () => ({ pageIndex: search.page - 1, pageSize: compact ? 5 : search.pageSize }),
+    [search.page, search.pageSize, compact],
+  )
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
-  const [search, setSearch] = useState('')
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
   const tableRef = useRef<HTMLDivElement | null>(null)
@@ -383,17 +401,31 @@ export function ProjectTable({
     columns,
     state: {
       sorting,
+      pagination,
       columnFilters,
       columnVisibility: compact ? { ...columnVisibility, updatedAt: false } : columnVisibility,
       rowSelection,
-      globalFilter: search,
+      globalFilter: search.q,
     },
     getRowId: (project) => project.id,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    onSortingChange: (updater) => {
+      const next = functionalUpdate(updater, sorting)[0]
+      if (!next) return
+      onSearchChange({
+        sort: projectTableSearchSchema.shape.sort.parse(next.id),
+        order: next.desc ? 'desc' : 'asc',
+        page: 1,
+      })
+    },
+    onPaginationChange: (updater) => {
+      const next = functionalUpdate(updater, pagination)
+      onSearchChange({
+        page: next.pageSize === pagination.pageSize ? next.pageIndex + 1 : 1,
+        pageSize: projectTableSearchSchema.shape.pageSize.parse(next.pageSize),
+      })
+    },
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
-    onGlobalFilterChange: setSearch,
     globalFilterFn: (row, _columnId, value: string) =>
       [
         row.original.name,
@@ -408,18 +440,24 @@ export function ProjectTable({
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: compact ? 5 : 8 } },
+    // URL pagination must survive the first response and browser history navigation.
+    autoResetPageIndex: false,
   })
 
   const filteredCount = table.getFilteredRowModel().rows.length
   const selectedRows = table.getFilteredSelectedRowModel().rows
-  const hasFilters = Boolean(search || columnFilters.length)
+  const hasFilters = Boolean(search.q || columnFilters.length)
   const pageCount = Math.max(1, table.getPageCount())
   const pageIndex = table.getState().pagination.pageIndex
 
+  useEffect(() => {
+    if (hasData && !isLoading && !isFetching && !error && search.page > pageCount) {
+      onSearchChange({ page: pageCount }, { replace: true })
+    }
+  }, [hasData, isLoading, isFetching, error, search.page, pageCount, onSearchChange])
+
   function clearFilters() {
-    setSearch('')
-    setColumnFilters([])
+    onSearchChange({ q: '', status: 'all', page: 1 })
     searchRef.current?.focus()
   }
 
@@ -512,17 +550,21 @@ export function ProjectTable({
                   ref={searchRef}
                   aria-label={t('table.search')}
                   placeholder={t('table.searchPlaceholder')}
-                  value={search}
+                  value={search.q}
+                  maxLength={200}
                   onChange={(event) => {
-                    setSearch(event.target.value)
+                    onSearchChange({ q: event.target.value, page: 1 }, { replace: true })
                   }}
                   className="h-9 pl-9"
                 />
               </div>
               <Select
-                value={(table.getColumn('status')?.getFilterValue() as string | undefined) ?? 'all'}
+                value={search.status}
                 onValueChange={(value) => {
-                  table.getColumn('status')?.setFilterValue(value === 'all' ? undefined : value)
+                  onSearchChange({
+                    status: projectTableSearchSchema.shape.status.parse(value),
+                    page: 1,
+                  })
                 }}
               >
                 <SelectTrigger className="w-36" aria-label={t('table.filterStatus')}>

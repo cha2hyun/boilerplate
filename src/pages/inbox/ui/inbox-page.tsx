@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Archive, ArchiveRestore, ArrowLeft, Inbox, Mail, MailOpen, Search } from 'lucide-react'
 import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
+import type { SearchChange } from '@/shared/lib/search-params'
 import { cn } from '@/shared/lib/utils'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
@@ -21,10 +22,14 @@ import { Separator } from '@/shared/ui/separator'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
 import { sampleMessages, type SampleMessage } from '../model/sample-messages'
+import type { InboxSearch } from '../model/search'
 
-type InboxView = 'all' | 'unread' | 'archived'
+interface InboxPageProps {
+  search: InboxSearch
+  onSearchChange: SearchChange<InboxSearch>
+}
 
-export function InboxPage() {
+export function InboxPage({ search, onSearchChange }: InboxPageProps) {
   const { t } = useTranslation('admin')
   const { formatDate, formatNumber } = useFormatters()
   const labelNames: Record<string, string> = {
@@ -36,9 +41,18 @@ export function InboxPage() {
   }
   const isMobile = useIsMobile()
   const [messages, setMessages] = useState(sampleMessages)
-  const [view, setView] = useState<InboxView>('all')
-  const [search, setSearch] = useState('')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const { view, q: searchText } = search
+  const [selection, setSelection] = useState<{
+    id: string
+    view: InboxSearch['view']
+    q: string
+  } | null>(null)
+  const selectedId = selection?.id ?? null
+
+  // Reading an unread message keeps its detail open until the URL filters change.
+  if (selection && (selection.view !== view || selection.q !== searchText)) {
+    setSelection(null)
+  }
   const [announcement, setAnnouncement] = useState<{
     key: 'markedRead' | 'markedUnread' | 'movedToInbox' | 'archivedMessage'
     subject: string
@@ -48,7 +62,7 @@ export function InboxPage() {
   const messageRefs = useRef(new Map<string, HTMLButtonElement>())
   const selected = messages.find((message) => message.id === selectedId)
   const unreadCount = messages.filter((message) => message.unread && !message.archived).length
-  const query = search.trim().toLowerCase()
+  const query = searchText.trim().toLowerCase()
   const visibleMessages = messages.filter((message) => {
     const inView =
       view === 'archived'
@@ -63,7 +77,7 @@ export function InboxPage() {
   })
 
   function openMessage(message: SampleMessage) {
-    setSelectedId(message.id)
+    setSelection({ id: message.id, view, q: searchText })
     setMessages((current) =>
       current.map((item) => (item.id === message.id ? { ...item, unread: false } : item)),
     )
@@ -72,7 +86,7 @@ export function InboxPage() {
 
   function closeMessage() {
     const lastSelectedId = selectedId
-    setSelectedId(null)
+    setSelection(null)
     requestAnimationFrame(() => {
       const messageButton = lastSelectedId ? messageRefs.current.get(lastSelectedId) : undefined
       if (messageButton) messageButton.focus()
@@ -96,7 +110,7 @@ export function InboxPage() {
         item.id === message.id ? { ...item, archived: !item.archived } : item,
       ),
     )
-    setSelectedId(null)
+    setSelection(null)
     setAnnouncement({
       key: message.archived ? 'movedToInbox' : 'archivedMessage',
       subject: message.subject,
@@ -133,8 +147,8 @@ export function InboxPage() {
               className="gap-0"
               onValueChange={(value) => {
                 if (value === 'all' || value === 'unread' || value === 'archived') {
-                  setView(value)
-                  setSelectedId(null)
+                  onSearchChange({ view: value })
+                  setSelection(null)
                 }
               }}
             >
@@ -151,10 +165,11 @@ export function InboxPage() {
                     aria-label={t('inbox.search')}
                     placeholder={t('inbox.searchPlaceholder')}
                     className="pl-9"
-                    value={search}
+                    maxLength={200}
+                    value={searchText}
                     onChange={(event) => {
-                      setSearch(event.target.value)
-                      setSelectedId(null)
+                      onSearchChange({ q: event.target.value }, { replace: true })
+                      setSelection(null)
                     }}
                   />
                 </div>
@@ -234,9 +249,8 @@ export function InboxPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            setSearch('')
-                            setView('all')
-                            setSelectedId(null)
+                            onSearchChange({ q: '', view: 'all' })
+                            setSelection(null)
                             searchRef.current?.focus()
                           }}
                         >
