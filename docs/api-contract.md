@@ -59,6 +59,8 @@ type Analytics = {
 
 실제 런타임 계약은 `src/entities/project/model/schema.ts`와 `src/entities/analytics/model/schema.ts`가 기준입니다. 계약 변경 시 스키마, API 어댑터, 테스트, 이 문서를 함께 수정합니다.
 
+Project의 `updatedAt`은 UTC와 offset이 있는 ISO datetime을 모두 허용하며, 화면 정렬은 문자열 대신 실제 timestamp를 비교합니다. Analytics의 `revenue`는 날짜당 최대 한 항목만 허용하고 중복 날짜는 응답 검증 실패로 처리합니다. API의 배열 순서는 자유이며 entity 검증 경계에서 날짜 오름차순으로 정규화합니다. 최근 N일은 응답의 마지막 제공일을 포함한 UTC 달력 날짜 범위로 선택합니다. 누락된 날짜를 오래된 항목으로 채우거나 매출 0으로 가정하지 않으며, 고정 기준일을 가진 데모도 현재 시스템 날짜와 무관하게 같은 범위를 표시합니다.
+
 Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`, `entities/customer`의 `model/schema.ts`가 소유합니다. Traffic은 선택 기간의 일별 방문·세션·페이지뷰와 유입/페이지/기기별 요약을 반환합니다. 주문/고객은 상세 Sheet에 필요한 필드를 포함한 읽기 전용 전체 목록입니다. 목록의 검색·정렬·페이지 나누기는 클라이언트에서 수행하며 서버 필터를 구현한 것으로 설명하지 않습니다.
 
 API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니다. Traffic의 기기 항목은 `device`와 `sessions`만 포함하며, 화면이 로컬 의미 토큰으로 색상을 지정합니다. 응답에 알 수 없는 스타일 필드가 있어도 스키마 검증 결과에서 제거되므로 화면에 전달하지 않습니다.
@@ -77,9 +79,11 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 공통 transport는 `Accept: application/json`을 설정하고 body가 있으면 JSON으로 직렬화합니다. 응답 body는 Zod 스키마로 검증합니다. `204`는 `null`로 처리합니다. 네트워크 실패는 `ApiError`의 `NETWORK_ERROR`, 비정상 HTTP 상태는 `HTTP_ERROR`, 읽을 수 없거나 스키마에 맞지 않는 응답은 `INVALID_RESPONSE`가 됩니다. HTTP 응답이 있으면 `status`도 전달합니다. 서버의 임의 오류 body를 사용자에게 그대로 출력하지 않습니다.
 
-HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. `ApiError.mayHaveSucceeded`는 기본 `false`이며 읽기 전용이 아닌 요청의 timeout에서 `true`로 설정합니다. `useErrorMessage`는 이 구조화된 값으로 언어를 바꿔도 저장 성공 가능성 안내를 유지하며 영어 오류 문자열을 해석하지 않습니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. mutation timeout은 서버에서 변경이 적용되지 않았다는 뜻이 아니므로 새로고침으로 결과를 확인한 뒤 재시도하도록 안내하며 mutation을 자동 재시도하지 않습니다.
+HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. `ApiError.mayHaveSucceeded`는 기본 `false`이며 읽기 전용(GET/HEAD)이 아닌 요청의 timeout·네트워크 실패·2xx 응답의 JSON/스키마 검증 실패에서는 `true`입니다. 응답을 받거나 해석하지 못했어도 서버 변경은 적용됐을 수 있기 때문입니다. 명시적인 HTTP 실패 응답과 읽기 요청은 기존 오류 구분을 유지합니다. `useErrorMessage`는 이 구조화된 값으로 언어를 바꿔도 저장 성공 가능성과 결과 재확인 안내를 유지하며 영어 오류 문자열을 해석하지 않습니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. 불확실한 mutation 결과는 목록을 다시 조회해 확인하고 재시도하도록 안내하며 mutation 자체를 자동 재시도하지 않습니다.
 
 GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취소한 요청은 timeout 오류나 별도 `ApiError`로 감싸지 않습니다. 프로젝트 mutation이 성공하면 진행 중인 목록 요청을 먼저 취소하고 Query 캐시를 갱신한 뒤 목록을 무효화합니다. 따라서 초기 조회가 늦게 도착해 이미 성공한 변경을 가리지 않습니다. 서버가 거부한 mutation을 성공으로 표시하지 않습니다.
+
+프로젝트 mutation 결과가 불확실하면 이전 목록 요청을 취소하고 프로젝트 Query를 무효화해 활성 목록을 재조회합니다. 확인되지 않은 응답으로 캐시를 직접 수정하거나 성공 알림을 보여주지 않으며, 원래 mutation 오류와 재확인 안내는 유지합니다. 재조회도 실패할 수 있으므로 사용자는 목록/새로고침 결과를 확인한 뒤 다시 저장해야 합니다.
 
 현재 인증 토큰 주입, refresh token 처리, 401 재인증, 권한 정책은 구현되어 있지 않습니다. 교차 출처 쿠키 인증을 선택하면 CORS, credentials, CSRF를 서버 정책과 함께 설계하고 테스트해야 합니다. 임의 토큰을 localStorage에 넣어 인증 구현을 대신하지 마세요.
 

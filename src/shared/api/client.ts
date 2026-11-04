@@ -34,6 +34,10 @@ export function createApiClient(baseUrl: string) {
     options: RequestOptions = {},
   ): Promise<T> {
     const { body, ...requestOptions } = options
+    const readOnly = ['GET', 'HEAD'].includes(options.method?.toUpperCase() ?? 'GET')
+    const uncertainWriteMessage =
+      'Your changes may have been saved. Refresh to check before trying again.'
+    const serializedBody = body !== undefined ? JSON.stringify(body) : undefined
     const headers = new Headers(options.headers)
     headers.set('Accept', 'application/json')
     if (body !== undefined) headers.set('Content-Type', 'application/json')
@@ -58,15 +62,19 @@ export function createApiClient(baseUrl: string) {
           ...requestOptions,
           headers,
           signal: controller.signal,
-          ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+          ...(serializedBody !== undefined ? { body: serializedBody } : {}),
         })
       } catch (error) {
         if (controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')) {
           throw error
         }
         throw new ApiError(
-          'Unable to connect. Check your connection and try again.',
+          readOnly
+            ? 'Unable to connect. Check your connection and try again.'
+            : `Unable to confirm the request result. ${uncertainWriteMessage}`,
           'NETWORK_ERROR',
+          null,
+          !readOnly,
         )
       }
 
@@ -89,25 +97,30 @@ export function createApiClient(baseUrl: string) {
           throw error
         }
         throw new ApiError(
-          'The server returned an unreadable response.',
+          readOnly
+            ? 'The server returned an unreadable response.'
+            : `The server returned an unreadable response. ${uncertainWriteMessage}`,
           'INVALID_RESPONSE',
           response.status,
+          !readOnly,
         )
       }
 
       const parsed = schema.safeParse(payload)
       if (!parsed.success) {
         throw new ApiError(
-          'The server returned an unexpected response.',
+          readOnly
+            ? 'The server returned an unexpected response.'
+            : `The server returned an unexpected response. ${uncertainWriteMessage}`,
           'INVALID_RESPONSE',
           response.status,
+          !readOnly,
         )
       }
 
       return parsed.data
     } catch (error) {
       if (controller.signal.reason === timeoutReason) {
-        const readOnly = ['GET', 'HEAD'].includes(options.method?.toUpperCase() ?? 'GET')
         throw new ApiError(
           readOnly
             ? 'The request timed out. Please try again.'

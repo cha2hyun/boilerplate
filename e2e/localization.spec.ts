@@ -47,8 +47,8 @@ test('persists independent language and currency choices and reuses the referenc
   await expect(page.locator('#exchange-rate-status')).toHaveCount(0)
   await englishCurrency.focus()
   await englishCurrency.press('ArrowDown')
-  await expect(currencyMenu.locator('#exchange-rate-status')).toContainText(
-    'Reference: 1 USD = ₩1,350 · Nov 3, 2026',
+  await expect(currencyMenu.locator('#exchange-rate-status')).toHaveText(
+    'Reference: 1 USD = ₩1,350',
   )
   await expect(englishUsd).toHaveAttribute('aria-checked', 'true')
   await expect(englishKrw).toHaveAttribute('aria-checked', 'false')
@@ -167,8 +167,8 @@ test('shows missing KRW amounts after a rate failure and recovers through the cu
   await currency.click()
   await page.getByRole('menuitem', { name: 'Retry rate', exact: true }).click()
   await expect(currencyMenu).toBeVisible()
-  await expect(currencyMenu.locator('#exchange-rate-status')).toContainText(
-    'Reference: 1 USD = ₩1,350 · Nov 3, 2026',
+  await expect(currencyMenu.locator('#exchange-rate-status')).toHaveText(
+    'Reference: 1 USD = ₩1,350',
   )
   await expect(revenueValue(page, 'Total revenue')).toHaveText('₩41,350,500')
   await expect(page.getByRole('menuitem', { name: 'Retry rate', exact: true })).toHaveCount(0)

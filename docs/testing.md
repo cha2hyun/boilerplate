@@ -6,10 +6,10 @@
 
 | 명령                    | 범위                                                              | 기본 실행 위치      |
 | ----------------------- | ----------------------------------------------------------------- | ------------------- |
-| `pnpm check`            | 포맷, ESLint, 타입, FSD/UI/토큰 정적 검사                         | 로컬                |
+| `pnpm check`            | 포맷, ESLint, 타입, FSD/UI/토큰 및 E2E 범주 정적 검사             | 로컬                |
 | `pnpm check:ci`         | 정적 검사 + 가드레일 테스트 + 전체 단위 테스트 + production build | Actions quality job |
 | `pnpm test:unit`        | 전체 Vitest 범주                                                  | Actions             |
-| `pnpm test:guardrails`  | 아키텍처 검사기 회귀 테스트                                       | Actions             |
+| `pnpm test:guardrails`  | 아키텍처 검사기, 경로별 HTML, E2E 범주 회귀 테스트                | Actions             |
 | `pnpm test:e2e:core`    | 워크스페이스/프로젝트/조회 캐시와 카드 치수                       | Actions core job    |
 | `pnpm test:e2e:samples` | 샘플 운영 페이지                                                  | Actions samples job |
 
@@ -49,7 +49,9 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 | `samples` | `test:e2e:commerce` → `commerce.spec.ts`               | 주문/고객 목록, 필터, 상세 및 선택 흐름                    |
 | `samples` | `test:e2e:analytics-inbox` → `analytics-inbox.spec.ts` | 분석 기간/비교와 메시지 탐색/읽음 처리                     |
 
-두 범주는 겹치지 않습니다. 같은 시나리오를 dev와 production 두 환경에서 반복하지 않습니다. E2E는 `pnpm build` 결과 `dist/`를 `pnpm preview`로 제공하며 기본적으로 Chromium만 사용합니다.
+두 범주는 겹치지 않습니다. `package.json`의 `test:e2e:core`와 `test:e2e:samples`는 기존 스펙의 경로를 명시적으로 열거합니다. 새 파일을 추가하거나 삭제하면 이 목록도 갱신하세요. `pnpm check:e2e-categories`가 `e2e` 아래 스펙을 재귀적으로 찾아 누락·중복·없는 경로를 거부하며, 로컬 `pnpm check`와 CI의 정적 검사에 포함됩니다. 검사기 회귀 테스트는 기존 `test:guardrails`에서 실행합니다. 개별 파일용 편의 명령은 CI 범주에 포함하지 않습니다.
+
+같은 시나리오를 dev와 production 두 환경에서 반복하지 않습니다. E2E는 `pnpm build` 결과 `dist/`를 `pnpm preview`로 제공하며 기본적으로 Chromium만 사용합니다.
 
 `core`에는 `e2e/localization.spec.ts`도 포함됩니다. 언어·통화의 독립 전환과 저장 복원, 환산 값, 환율 캐시 재사용, 오류/재시도, 세 화면 구간의 컨트롤 정렬을 확인합니다. 필요한 로컬 재현에서는 이 파일과 `--project`로 범위를 좁힙니다.
 

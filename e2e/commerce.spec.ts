@@ -5,10 +5,52 @@ type CommerceRecord =
   | { id: string; customer: { name: string; email: string } }
   | { id: string; name: string; email: string }
 
+async function recoverInitialRead(page: Page, route: 'orders' | 'customers') {
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  // Override this first read after the real demo worker starts, then restore it for retry.
+  const restoreFetch = await page.evaluateHandle((endpoint) => {
+    const originalFetch = window.fetch.bind(window)
+    window.fetch = (input, init) => {
+      const url = input instanceof Request ? input.url : String(input)
+      if (new URL(url, window.location.origin).pathname === endpoint) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ message: 'The read is unavailable.' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        )
+      }
+      return originalFetch(input, init)
+    }
+    return () => {
+      window.fetch = originalFetch
+    }
+  }, `/api/${route}`)
+  const title = route === 'orders' ? 'Orders' : 'Customers'
+  if ((page.viewportSize()?.width ?? 1440) < 768) {
+    await page.getByRole('button', { name: 'Toggle Sidebar', exact: true }).click()
+  }
+  await page.getByRole('link', { name: title, exact: true }).click()
+  const error = page.getByRole('alert').filter({ hasText: `${title} couldn’t load` })
+  await expect(error).toBeVisible()
+  await expect(page.getByText(`0 ${route}`, { exact: true })).toHaveCount(0)
+  await expect(
+    page.locator('[aria-live="polite"]').filter({ hasText: `${title} couldn’t load` }),
+  ).toHaveCount(0)
+  await restoreFetch.evaluate((restore) => {
+    restore()
+  })
+  await restoreFetch.dispose()
+  await error.getByRole('button', { name: 'Try again', exact: true }).click()
+  await expect(error).toBeHidden()
+  await expect(page.getByText(`Showing 1–6 of 12 ${route}`, { exact: true })).toBeVisible()
+}
+
 test('combines order status and customer search, and recovers from empty results', async ({
   page,
 }) => {
-  await page.goto('/orders')
+  await recoverInitialRead(page, 'orders')
   await expect(page.getByRole('heading', { name: 'Orders', exact: true })).toBeVisible()
   await page.getByRole('tab', { name: 'Processing', exact: true }).click()
   await expect(page.getByRole('tab', { name: 'Processing', exact: true })).toHaveAttribute(
@@ -62,7 +104,7 @@ test('paginates and sorts orders, then opens details with keyboard focus restore
 })
 
 test('filters, sorts, paginates and inspects sample customer profiles', async ({ page }) => {
-  await page.goto('/customers')
+  await recoverInitialRead(page, 'customers')
   await expect(page.getByRole('heading', { name: 'Customers', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Next customers page', exact: true }).click()
   await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
@@ -99,6 +141,9 @@ test('filters, sorts, paginates and inspects sample customer profiles', async ({
 
 test('keeps commerce tables and detail sheets inside the viewport', async ({ page }) => {
   for (const route of ['orders', 'customers'] as const) {
+    if (route === 'customers' && (page.viewportSize()?.width ?? 1440) < 768) {
+      await page.setViewportSize({ width: 320, height: 915 })
+    }
     await page.goto(`/${route}`)
     const title = route === 'orders' ? 'Orders' : 'Customers'
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
@@ -116,7 +161,13 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
     expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport)
     expect(layout.overflowX).toBe('auto')
     if (layout.viewport < 768) expect(layout.contentWidth).toBeGreaterThan(layout.containerWidth)
-    await region.getByRole('button').first().click()
+    if (route === 'customers') {
+      await page.getByRole('button', { name: 'Display currency', exact: true }).click()
+      await page.getByRole('menuitemradio', { name: 'Korean won (KRW)', exact: true }).click()
+      await region.getByRole('button', { name: 'View customer Lana Steiner', exact: true }).click()
+    } else {
+      await region.getByRole('button').first().click()
+    }
     const sheet = page.getByRole('dialog')
     await expect(sheet).toBeVisible()
     await expect(async () => {
@@ -126,6 +177,25 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
       expect(box.x).toBeGreaterThanOrEqual(0)
       expect(box.x + box.width).toBeLessThanOrEqual(layout.viewport + 1)
     }).toPass()
+    if (route === 'customers') {
+      const amount = sheet.locator('[data-number-state]').last()
+      await expect(amount.locator('.sr-only')).toHaveText('₩2,062,800')
+      await expect(amount).toHaveAttribute('data-number-state', 'idle')
+      const bounds = await amount.evaluate((element) => {
+        const card = element.closest('[data-slot="card"]')
+        if (!card) throw new Error('The customer amount has no summary card.')
+        const amountBox = element.getBoundingClientRect()
+        const cardBox = card.getBoundingClientRect()
+        return {
+          left: amountBox.left,
+          right: amountBox.right,
+          cardLeft: cardBox.left,
+          cardRight: cardBox.right,
+        }
+      })
+      expect(bounds.left).toBeGreaterThanOrEqual(bounds.cardLeft)
+      expect(bounds.right).toBeLessThanOrEqual(bounds.cardRight)
+    }
     await page.keyboard.press('Escape')
     await expect(sheet).toBeHidden()
   }

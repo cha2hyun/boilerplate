@@ -1,4 +1,5 @@
-import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { ApiError } from '@/shared/api'
 import { env } from '@/shared/config'
 import type { Project, ProjectInput } from '../model/schema'
 import { createDemoProjectAdapter } from './demo'
@@ -19,10 +20,17 @@ export function projectsQueryOptions() {
   })
 }
 
+async function reconcileUncertainMutation(error: Error, queryClient: QueryClient) {
+  if (!(error instanceof ApiError) || !error.mayHaveSucceeded) return
+  await queryClient.cancelQueries({ queryKey: projectKeys.all })
+  await queryClient.invalidateQueries({ queryKey: projectKeys.all })
+}
+
 export function useCreateProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (input: ProjectInput) => adapter.create(input),
+    onError: (error) => reconcileUncertainMutation(error, queryClient),
     onSuccess: async (project) => {
       await queryClient.cancelQueries({ queryKey: projectKeys.all })
       queryClient.setQueryData<Project[]>(projectKeys.lists(), (current) =>
@@ -37,6 +45,7 @@ export function useUpdateProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, input }: { id: string; input: ProjectInput }) => adapter.update(id, input),
+    onError: (error) => reconcileUncertainMutation(error, queryClient),
     onSuccess: async (updated) => {
       await queryClient.cancelQueries({ queryKey: projectKeys.all })
       queryClient.setQueryData<Project[]>(projectKeys.lists(), (current) =>
@@ -51,6 +60,7 @@ export function useDeleteProject() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => adapter.delete(id),
+    onError: (error) => reconcileUncertainMutation(error, queryClient),
     onSuccess: async (_result, id) => {
       await queryClient.cancelQueries({ queryKey: projectKeys.all })
       queryClient.setQueryData<Project[]>(projectKeys.lists(), (current) =>

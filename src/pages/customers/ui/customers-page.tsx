@@ -53,6 +53,7 @@ export function CustomersPage() {
   const customersQuery = useQuery(customersQueryOptions())
   const customers = customersQuery.data ?? []
   const isLoading = customersQuery.isPending && !customersQuery.data
+  const hasLoadError = customersQuery.isError && !customersQuery.data
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<CustomerStatus | 'all'>('all')
   const [sort, setSort] = useState<CustomerSort>('newest')
@@ -344,27 +345,30 @@ export function CustomersPage() {
               </Table>
             </div>
           ) : (
-            <Empty className="h-120 rounded-none border-y py-12">
+            <Empty
+              className="h-120 rounded-none border-y py-12"
+              role={hasLoadError ? 'alert' : undefined}
+            >
               <EmptyHeader>
                 <EmptyMedia variant="icon">
                   <Search aria-hidden="true" />
                 </EmptyMedia>
                 <EmptyTitle>
-                  {customersQuery.isError && !customersQuery.data
+                  {hasLoadError
                     ? t('customers.loadError')
                     : customers.length
                       ? t('customers.noMatch')
                       : t('customers.empty')}
                 </EmptyTitle>
                 <EmptyDescription>
-                  {customersQuery.isError && !customersQuery.data
+                  {hasLoadError
                     ? errorMessage(customersQuery.error)
                     : customers.length
                       ? t('common.searchHint')
                       : t('customers.emptyHint')}
                 </EmptyDescription>
               </EmptyHeader>
-              {customersQuery.isError && !customersQuery.data ? (
+              {hasLoadError ? (
                 <Button variant="outline" onClick={() => void customersQuery.refetch()}>
                   {t('common.tryAgain')}
                 </Button>
@@ -378,18 +382,23 @@ export function CustomersPage() {
             </Empty>
           )}
           <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-            <p className="text-xs text-muted-foreground" aria-live="polite">
+            <p
+              className="text-xs text-muted-foreground"
+              aria-live={hasLoadError ? 'off' : 'polite'}
+            >
               {isLoading
                 ? t('customers.loading')
-                : filteredCustomers.length
-                  ? t('customers.showing', {
-                      start: formatNumber(currentPage * pageSize + 1),
-                      end: formatNumber(
-                        Math.min((currentPage + 1) * pageSize, filteredCustomers.length),
-                      ),
-                      total: formatNumber(filteredCustomers.length),
-                    })
-                  : t('customers.count', { total: formatNumber(0) })}
+                : hasLoadError
+                  ? t('customers.loadError')
+                  : filteredCustomers.length
+                    ? t('customers.showing', {
+                        start: formatNumber(currentPage * pageSize + 1),
+                        end: formatNumber(
+                          Math.min((currentPage + 1) * pageSize, filteredCustomers.length),
+                        ),
+                        total: formatNumber(filteredCustomers.length),
+                      })
+                    : t('customers.count', { total: formatNumber(0) })}
             </p>
             <div className="flex items-center gap-3">
               <p className="text-xs font-medium tabular-nums">
@@ -456,7 +465,7 @@ export function CustomersPage() {
             </SheetDescription>
           </SheetHeader>
           {selectedCustomer && (
-            <div className="space-y-6 px-6 pb-6 text-sm">
+            <div className="@container/customer-details space-y-6 px-6 pb-6 text-sm">
               <div className="flex items-center gap-3">
                 <Avatar className="size-12">
                   <AvatarFallback className="font-medium">
@@ -468,7 +477,7 @@ export function CustomersPage() {
                   <CustomerStatusBadge status={selectedCustomer.status} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 @xs/customer-details:grid-cols-2">
                 <Card className="gap-2 py-4 shadow-none">
                   <CardHeader className="px-4">
                     <CardTitle className="text-xs font-normal text-muted-foreground">

@@ -16,6 +16,12 @@ test('analytics period updates the metrics, charts, and traffic tables together'
   await page.goto('/analytics')
   await expect(page.getByRole('heading', { name: 'Analytics', exact: true })).toBeVisible()
   await expect(page.getByText('Sample', { exact: true })).toBeVisible()
+  await expect(
+    page.getByRole('application', { name: 'Daily visitors and sessions', exact: true }),
+  ).toBeVisible()
+  await expect(
+    page.getByRole('application', { name: 'Sessions by desktop, mobile, and tablet', exact: true }),
+  ).toBeVisible()
   const visitors = page.locator(
     '[data-slot="card"][aria-label="Visitors"] [data-slot="card-title"]',
   )

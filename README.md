@@ -8,7 +8,7 @@ Overview·Analytics·Orders·Customers는 MSW가 실제 fetch에 목업 응답�
 
 ## 실행
 
-헤더의 언어·통화 아이콘 메뉴에서 한국어·영어와 USD·KRW 표시를 각각 선택할 수 있으며 설정은 브라우저에 저장됩니다. 환율은 demo/api 모드 모두 Frankfurter 공개 API에서 실제로 조회합니다. 통화 메뉴 안에 기준일과 환율을 표시하고, 원본 USD 금액을 환산합니다. 유효한 환율이 없으면 원화 금액은 `—`로 표시하며 같은 메뉴에서 재시도를 제공합니다. 번역·숫자·날짜·환율의 소유 경계는 [언어와 표시 통화](docs/i18n.md)를 따릅니다.
+헤더의 언어·통화 아이콘 메뉴에서 한국어·영어와 USD·KRW 표시를 각각 선택할 수 있으며 설정은 브라우저에 저장됩니다. 환율은 demo/api 모드 모두 Frankfurter 공개 API에서 실제로 조회합니다. 통화 메뉴 안에 환율을 표시하고, 원본 USD 금액을 환산합니다. 유효한 환율이 없으면 원화 금액은 `—`로 표시하며 같은 메뉴에서 재시도를 제공합니다. 번역·숫자·날짜·환율의 소유 경계는 [언어와 표시 통화](docs/i18n.md)를 따릅니다.
 
 Node.js 24 LTS와 pnpm 11을 사용합니다. 정확한 pnpm 버전은 `package.json`의 `packageManager`를 따릅니다.
 
@@ -77,13 +77,14 @@ Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이�
 | -------------------------------- | ------------------------------------------------- |
 | `pnpm dev`                       | 로컬 개발 서버                                    |
 | `pnpm build` / `pnpm preview`    | 타입 검사 및 정적 번들 / 로컬 빌드 확인           |
-| `pnpm check`                     | 로컬 정적 검사: 포맷, 린트, 타입, 구조            |
+| `pnpm check`                     | 로컬 정적 검사: 포맷, 린트, 타입, 구조, E2E 범주  |
 | `pnpm check:ci`                  | Actions용 정적 검사, 가드레일/단위 테스트, 빌드   |
 | `pnpm test` / `pnpm test:watch`  | 단위/컴포넌트 테스트 / watch                      |
 | `pnpm test:coverage`             | 테스트 커버리지 리포트                            |
 | `pnpm test:e2e`                  | Playwright 브라우저 테스트 (`pnpm build` 후 실행) |
 | `pnpm check:architecture`        | FSD, shadcn 컨트롤, 스타일/토큰 규칙 검사         |
-| `pnpm test:guardrails`           | 구조 검사기의 회귀 테스트                         |
+| `pnpm check:e2e-categories`      | E2E 범주의 누락·중복·없는 스펙 경로 검사          |
+| `pnpm test:guardrails`           | 구조 검사기, 경로별 HTML, E2E 범주 회귀 테스트    |
 | `pnpm format` / `pnpm lint`      | 포맷 적용 / 린트 검사                             |
 | `pnpm ui:add <component>`        | 설정된 shadcn registry에서 컴포넌트 추가          |
 | `pnpm ui:mcp` / `pnpm check:mcp` | shadcn MCP 서버 / 실제 도구 연결 점검             |
@@ -106,6 +107,7 @@ src/
 ```
 
 - [작업별 문서 지도](docs/README.md) — 필요한 책임의 문서만 선택
+- [새 제품 도입·브랜드·데모 정리](docs/new-project.md)
 - [아키텍처와 경계](docs/architecture.md)
 - [폰트·색상·반응형 규칙](docs/design-system.md)
 - [테스트 범주와 Actions 실행 정책](docs/testing.md)

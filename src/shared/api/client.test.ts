@@ -58,6 +58,7 @@ describe('HTTP client', () => {
       name: 'ApiError',
       code: 'INVALID_RESPONSE',
       status: 200,
+      mayHaveSucceeded: false,
     })
   })
 
@@ -92,6 +93,46 @@ describe('HTTP client', () => {
     await expect(request('/projects', schema)).rejects.toMatchObject({
       code: 'NETWORK_ERROR',
       status: null,
+      mayHaveSucceeded: false,
+    })
+  })
+
+  it.each([
+    { method: 'POST', failure: 'network', code: 'NETWORK_ERROR', status: null },
+    { method: 'PATCH', failure: 'json', code: 'INVALID_RESPONSE', status: 200 },
+    { method: 'POST', failure: 'schema', code: 'INVALID_RESPONSE', status: 201 },
+    { method: 'DELETE', failure: 'json', code: 'INVALID_RESPONSE', status: 200 },
+  ])(
+    'marks $method $failure failures as possibly applied writes',
+    async ({ method, failure, code, status }) => {
+      const fetchMock = vi.fn<typeof fetch>()
+      if (failure === 'network') fetchMock.mockRejectedValue(new TypeError('Failed to fetch'))
+      else if (failure === 'json')
+        fetchMock.mockResolvedValue(new Response('{incomplete', { status: status ?? 200 }))
+      else
+        fetchMock.mockResolvedValue(
+          Response.json({ id: 123, count: -1 }, { status: status ?? 200 }),
+        )
+      vi.stubGlobal('fetch', fetchMock)
+
+      const pending = request('/projects', schema, { method })
+      await expect(pending).rejects.toMatchObject({
+        code,
+        status,
+        mayHaveSucceeded: true,
+      })
+      await expect(pending).rejects.toThrow(
+        'Your changes may have been saved. Refresh to check before trying again.',
+      )
+    },
+  )
+
+  it('keeps an explicit rejected write distinct from an uncertain result', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 409 })))
+    await expect(request('/projects', schema, { method: 'POST' })).rejects.toMatchObject({
+      code: 'HTTP_ERROR',
+      status: 409,
+      mayHaveSucceeded: false,
     })
   })
 

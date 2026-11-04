@@ -11,13 +11,18 @@ export const analyticsSchema = z.object({
       description: z.string(),
     }),
   ),
-  revenue: z.array(
-    z.object({
-      date: z.iso.date(),
-      revenue: z.number().nonnegative(),
-      previousRevenue: z.number().nonnegative(),
-    }),
-  ),
+  revenue: z
+    .array(
+      z.object({
+        date: z.iso.date(),
+        revenue: z.number().nonnegative(),
+        previousRevenue: z.number().nonnegative(),
+      }),
+    )
+    .refine((days) => new Set(days.map((day) => day.date)).size === days.length, {
+      message: 'Revenue must contain at most one entry per calendar date.',
+    })
+    .transform((days) => days.toSorted((left, right) => left.date.localeCompare(right.date))),
   activity: z.array(
     z.object({
       id: z.string(),

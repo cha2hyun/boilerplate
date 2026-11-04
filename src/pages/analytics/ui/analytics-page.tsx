@@ -190,13 +190,10 @@ export function AnalyticsPage() {
             {isLoading ? (
               <Skeleton className="h-72 w-full" aria-label={t('analytics.loadingAudience')} />
             ) : data?.days.length ? (
-              <ChartContainer
-                config={trafficConfig}
-                className="aspect-auto h-72 w-full"
-                aria-label={t('analytics.dailyAudience')}
-              >
+              <ChartContainer config={trafficConfig} className="aspect-auto h-72 w-full">
                 <AreaChart
                   accessibilityLayer
+                  aria-label={t('analytics.dailyAudience')}
                   data={data.days}
                   margin={{ left: 8, right: 8, top: 10 }}
                 >
@@ -265,13 +262,10 @@ export function AnalyticsPage() {
             {isLoading ? (
               <Skeleton className="h-48 w-full" aria-label={t('analytics.loadingDevices')} />
             ) : data?.devices.length ? (
-              <ChartContainer
-                config={deviceConfig}
-                className="aspect-auto h-48 w-full"
-                aria-label={t('analytics.deviceChart')}
-              >
+              <ChartContainer config={deviceConfig} className="aspect-auto h-48 w-full">
                 <BarChart
                   accessibilityLayer
+                  aria-label={t('analytics.deviceChart')}
                   data={data.devices.map(({ device, sessions }, index) => ({
                     device: deviceLabels[device] ?? device,
                     sessions,

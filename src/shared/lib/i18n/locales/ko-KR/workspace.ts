@@ -213,9 +213,7 @@ const workspace = {
     currency: '표시 통화',
     currencyUsd: '미국 달러 (USD)',
     currencyKrw: '대한민국 원 (KRW)',
-    exchangeRate: '기준 환율: 1 USD = {{rate}} · {{date}}',
-    exchangeRateDescription:
-      'USD 금액을 공개 기준 환율로 환산합니다. 표시 날짜는 환율 기준일이며 실시간 거래 환율이 아닙니다.',
+    exchangeRate: '기준 환율: 1 USD = {{rate}}',
     exchangeRateLoading: '환율을 불러오는 중…',
     exchangeRateUnavailable: '환율을 불러올 수 없습니다',
     retryExchangeRate: '환율 다시 시도',
