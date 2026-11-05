@@ -1,4 +1,4 @@
-import { useId, useRef, useState, type SubmitEvent } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type RefObject, type SubmitEvent } from 'react'
 import { LoaderCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -9,6 +9,7 @@ import {
   type ProjectInput,
 } from '@/entities/project'
 import { ApiError } from '@/shared/api'
+import { useUnsavedChanges } from '@/shared/hooks/use-unsaved-changes'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import {
@@ -24,6 +25,7 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { VStack } from '@/shared/ui/stack'
 import { Textarea } from '@/shared/ui/textarea'
+import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog'
 
 interface ProjectEditorDialogProps {
   open: boolean
@@ -40,11 +42,16 @@ type FieldErrorKey =
 type FieldErrors = Partial<Record<keyof ProjectInput, FieldErrorKey>>
 
 function ProjectForm({
+  open,
   project,
   onOpenChange,
   onPendingChange,
-}: Pick<ProjectEditorDialogProps, 'project' | 'onOpenChange'> & {
+  onRequestClose,
+  leaveGuardRef,
+}: Pick<ProjectEditorDialogProps, 'open' | 'project' | 'onOpenChange'> & {
   onPendingChange: (pending: boolean) => void
+  onRequestClose: () => void
+  leaveGuardRef: RefObject<(() => Promise<boolean>) | null>
 }) {
   const { t } = useTranslation('workspace')
   const { formatNumber } = useFormatters()
@@ -52,14 +59,32 @@ function ProjectForm({
   const formId = useId()
   const createProject = useCreateProject()
   const updateProject = useUpdateProject()
-  const [input, setInput] = useState<ProjectInput>({
+  const [initialInput] = useState<ProjectInput>({
     name: project?.name ?? '',
     description: project?.description ?? '',
     status: project?.status ?? 'active',
   })
+  const [input, setInput] = useState(initialInput)
   const [errors, setErrors] = useState<FieldErrors>({})
   const [serverError, setServerError] = useState<Error | null>(null)
   const isPending = createProject.isPending || updateProject.isPending
+  const nameRef = useRef<HTMLInputElement>(null)
+  const protection = useUnsavedChanges({
+    dirty:
+      open &&
+      (input.name !== initialInput.name ||
+        input.description !== initialInput.description ||
+        input.status !== initialInput.status),
+    pending: open && isPending,
+    focusRef: nameRef,
+  })
+  const requestLeave = protection.requestLeave
+  useLayoutEffect(() => {
+    leaveGuardRef.current = requestLeave
+    return () => {
+      leaveGuardRef.current = null
+    }
+  }, [leaveGuardRef, requestLeave])
 
   function updateField<Key extends keyof ProjectInput>(field: Key, value: ProjectInput[Key]) {
     setInput((current) => ({ ...current, [field]: value }))
@@ -103,6 +128,7 @@ function ProjectForm({
       toast.success(t(project ? 'editor.updated' : 'editor.created'), {
         description: t('editor.ready', { name: result.data.name }),
       })
+      protection.markSaved()
       onOpenChange(false)
     } catch (error) {
       setServerError(error instanceof Error ? error : new Error())
@@ -123,6 +149,7 @@ function ProjectForm({
           <Label htmlFor={`${formId}-name`}>{t('editor.name')}</Label>
           <Input
             id={`${formId}-name`}
+            ref={nameRef}
             autoComplete="off"
             placeholder={t('editor.namePlaceholder')}
             value={input.name}
@@ -208,14 +235,7 @@ function ProjectForm({
           </div>
         )}
         <DialogFooter className="pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending}
-            onClick={() => {
-              onOpenChange(false)
-            }}
-          >
+          <Button type="button" variant="outline" disabled={isPending} onClick={onRequestClose}>
             {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={isPending}>
@@ -228,6 +248,7 @@ function ProjectForm({
             {t(isPending ? 'editor.saving' : project ? 'common.save' : 'editor.create')}
           </Button>
         </DialogFooter>
+        <UnsavedChangesDialog {...protection.dialogProps} />
       </form>
     </VStack>
   )
@@ -242,12 +263,19 @@ export function ProjectEditorDialog({
   const { t } = useTranslation('workspace')
   const [isPending, setIsPending] = useState(false)
   const triggerRef = useRef<HTMLElement | null>(null)
+  const leaveGuardRef = useRef<(() => Promise<boolean>) | null>(null)
+
+  async function requestClose() {
+    if (isPending) return
+    if (!leaveGuardRef.current || (await leaveGuardRef.current())) onOpenChange(false)
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!isPending) onOpenChange(nextOpen)
+        if (nextOpen) onOpenChange(true)
+        else void requestClose()
       }}
     >
       <DialogContent
@@ -275,9 +303,14 @@ export function ProjectEditorDialog({
         </DialogHeader>
         <ProjectForm
           key={project?.id ?? 'new-project'}
+          open={open}
           project={project}
           onOpenChange={onOpenChange}
           onPendingChange={setIsPending}
+          onRequestClose={() => {
+            void requestClose()
+          }}
+          leaveGuardRef={leaveGuardRef}
         />
       </DialogContent>
     </Dialog>

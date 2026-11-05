@@ -3,10 +3,14 @@ import { createRootRouteWithContext, Link } from '@tanstack/react-router'
 import type { QueryClient } from '@tanstack/react-query'
 import { TriangleAlert } from 'lucide-react'
 import { useTranslation } from '@/shared/lib/i18n'
+import { reportError } from '@/shared/lib/error-reporting'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootLayout,
+  onCatch: (error) => {
+    reportError(error, { source: 'route' })
+  },
   notFoundComponent: function NotFound() {
     const { t } = useTranslation('common')
     return (

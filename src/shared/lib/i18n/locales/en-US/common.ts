@@ -21,6 +21,17 @@ export default {
   nextPage: 'Go to next page',
   notifications: 'Notifications',
   linkNewTab: 'Opens in a new tab',
+  unsaved: {
+    title: 'Discard unsaved changes?',
+    description: "Your changes haven't been saved. Leaving will discard them.",
+    stay: 'Keep editing',
+    discard: 'Discard changes',
+  },
+  appError: {
+    title: 'Unable to display this screen',
+    description: 'Something went wrong. Reload this page to try again.',
+    reload: 'Reload page',
+  },
   errors: {
     timeoutWrite:
       'The request timed out. Your changes may have been saved. Refresh to check before trying again.',

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware'
 import { z } from 'zod'
+import { localePreferenceStorage } from '@/shared/config/preference-keys'
 import { createPreferenceStorage } from '../preference-storage'
 
 export const localeSchema = z.enum(['en-US', 'ko-KR'])
@@ -28,8 +29,8 @@ export function createLocalePreferencesStore(storage: StateStorage = createPrefe
         },
       }),
       {
-        name: 'blueprint-locale-preferences',
-        version: 1,
+        name: localePreferenceStorage.key,
+        version: localePreferenceStorage.version,
         storage: createJSONStorage<LocalePreferences>(() => storage),
         partialize: ({ locale, currency }) => ({ locale, currency }),
         migrate: () => defaults,

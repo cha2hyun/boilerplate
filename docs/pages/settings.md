@@ -14,6 +14,7 @@ PageHeader → 일반/외관 탭입니다. 일반에는 이름 입력·compact �
 
 - 일반 입력은 로컬 초안입니다. 저장 전에는 전역 이름/밀도를 바꾸지 않으며 변경이 없으면 저장이 비활성화됩니다. 저장은 스키마 검증과 정규화를 거쳐 전역 설정에 반영합니다.
 - 일반 초기화는 저장된 이름·밀도와 현재 폼을 함께 구성된 기본값으로 돌리고 오류를 지웁니다. 테마·언어·통화를 초기화하지 않습니다.
+- 저장하지 않은 이름·밀도가 있으면 앱 이동과 뒤로/앞으로에서 폐기를 확인하고, 새로고침·탭 닫기는 브라우저 기본 경고를 사용합니다. 계속 편집하면 초안을 유지하고 이름 입력 또는 일반 탭으로 초점을 복구합니다. clean·원복·저장·초기화 후에는 경고하지 않습니다. 자동 초안 복원은 없으며 [미저장 입력 보호 계약](../unsaved-changes.md)을 따릅니다.
 - 테마는 별도 저장 없이 즉시 적용·지속합니다. 일반 폼 저장과 묶지 않습니다. 탭은 URL에 보존되지 않으며 페이지 재진입 시 초안도 새로 초기화됩니다. 내보내기는 없습니다.
 
 ## 상태별 화면
@@ -35,9 +36,11 @@ PageHeader → 일반/외관 탭입니다. 일반에는 이름 입력·compact �
 - URL/Query: [라우트](../../src/app/routes/settings.tsx)는 페이지별 조회 조건과 Query를 만들지 않습니다.
 - 영구 설정: [preferences store와 스키마](../../src/features/workspace-preferences/model/store.ts), [저장 경계](../../src/shared/lib/preference-storage.ts), [theme provider](../../src/app/providers/theme-provider.tsx).
 - 임시 상태: [화면](../../src/pages/settings/ui/settings-page.tsx)의 이름·밀도 초안과 오류, Tabs의 선택. 이름과 밀도의 기본값은 store만 소유합니다.
+- 탐색 보호: [공통 hook](../../src/shared/hooks/use-unsaved-changes.ts)과 [AlertDialog 조합](../../src/shared/ui/unsaved-changes-dialog.tsx). Router가 앱 이동과 브라우저 종료 경고 등록을 소유합니다.
 
 ## 수용 기준
 
 - 검증·저장·새로고침·초기화: [workspace E2E](../../e2e/workspace.spec.ts)의 `validates, saves and resets workspace preferences across reloads`.
 - 초기화 후 폼과 저장 값 일치, 미저장 변경 없음: [설정 테스트](../../src/pages/settings/ui/settings-page.test.tsx)의 `resets the form and persisted store to configured defaults without leaving unsaved changes`.
+- 초안 유지·폐기·원복·저장 이후 해제와 일반 탭 초점 복구: 같은 설정 테스트의 `settings unsaved input`. 실제 앱 탐색과 브라우저 기록·새로고침: [입력 보호 E2E](../../e2e/unsaved-changes.spec.ts)의 `keeps settings drafts when navigation is cancelled and discards only on confirmation`, `protects settings against browser history and reload without trapping a saved form`.
 - 테마 지속과 shell 유지: [workspace E2E](../../e2e/workspace.spec.ts)의 `persists the theme and keeps the shell stable through command palette navigation`. 저장 경계의 복구는 [store 테스트](../../src/features/workspace-preferences/model/store.test.ts)를 확인합니다.

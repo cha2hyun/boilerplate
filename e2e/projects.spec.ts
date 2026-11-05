@@ -276,6 +276,10 @@ test('keeps an edit open and explains the error when another tab deletes the pro
   await expect(editDialog.getByLabel('Project name', { exact: true })).toHaveValue('A stale edit')
   await expect(editDialog.getByRole('button', { name: 'Save changes', exact: true })).toBeEnabled()
   await editDialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page
+    .getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true })
+    .getByRole('button', { name: 'Discard changes', exact: true })
+    .click()
   await expect(editDialog).toBeHidden()
   await otherTab.close()
 })

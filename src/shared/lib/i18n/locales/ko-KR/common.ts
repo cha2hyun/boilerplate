@@ -23,6 +23,17 @@ export default {
   nextPage: '다음 페이지로 이동',
   notifications: '알림',
   linkNewTab: '새 탭에서 열림',
+  unsaved: {
+    title: '저장하지 않은 변경 내용을 버릴까요?',
+    description: '아직 저장하지 않은 내용이 있어요. 나가면 변경 내용이 사라져요.',
+    stay: '계속 편집',
+    discard: '변경 내용 버리기',
+  },
+  appError: {
+    title: '화면을 표시하지 못했어요',
+    description: '문제가 발생했어요. 새로고침 후 다시 시도해 주세요.',
+    reload: '새로고침',
+  },
   errors: {
     timeoutWrite:
       '요청 시간이 초과됐어요. 변경 내용이 저장됐을 수 있으니 새로고침으로 확인한 후 다시 시도해 주세요.',

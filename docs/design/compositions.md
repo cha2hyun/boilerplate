@@ -46,3 +46,4 @@
 - Label의 `htmlFor`, 컨트롤 `id`, 도움말/오류의 `aria-describedby`를 연결합니다. 검증 오류는 `aria-invalid`와 `role="alert"`로 전달합니다. placeholder가 레이블을 대체하지 않습니다.
 - Settings는 로컬 환경 설정, 프로젝트 편집은 feature의 검증·mutation을 유지합니다. 제출·취소·초기화의 버튼 종류와 초점 복귀는 해당 흐름이 소유합니다. 반복 외형을 맞추려고 저장 수명·URL·입력 제한을 변경하지 않습니다.
 - 긴 오류/도움말을 고정 높이로 가리지 않습니다. Dialog/Sheet의 제목·설명·초점·닫기 동작은 설치된 공통 컴포넌트에 맡깁니다.
+- 저장 전 입력을 잃는 이동·닫기는 [미저장 입력 보호](../unsaved-changes.md)를 따릅니다. 확인창은 공통 shadcn AlertDialog 조합을 사용하며 폼마다 다른 문구·색·버튼 순서를 만들지 않습니다.

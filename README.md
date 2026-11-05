@@ -146,6 +146,7 @@ src/
 - [카드 로딩·숫자 모션](docs/loading-and-motion.md)
 - [운영 전환 체크리스트](docs/production-readiness.md)
 - [AI 작업 흐름](docs/ai-workflow.md) · [에이전트 지침](AGENTS.md)
+- [미저장 입력 보호](docs/unsaved-changes.md) · [앱 오류 복구와 보고 연결](docs/error-handling.md)
 - [기여/커밋/PR 규칙](CONTRIBUTING.md)
 - [작업 계획 템플릿](docs/plans/_template.md)
 - [외부 소스 라이선스 고지](THIRD_PARTY_NOTICES.md)
