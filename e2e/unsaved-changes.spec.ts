@@ -1,7 +1,8 @@
 import { expect, test, type Page } from './fixtures.js'
 
 async function choosePage(page: Page, name: string) {
-  await page.keyboard.press('ControlOrMeta+k')
+  // Wait for the actual shell control instead of sending a shortcut before app startup.
+  await page.getByRole('button', { name: 'Search workspace', exact: true }).click()
   const palette = page.getByRole('dialog', { name: 'Search workspace', exact: true })
   await palette.getByRole('combobox', { name: 'Search workspace', exact: true }).fill(name)
   await page.keyboard.press('Enter')
