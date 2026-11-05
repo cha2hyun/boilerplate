@@ -1,5 +1,43 @@
 # Lighthouse 실측과 개선
 
+## 2026-11-06: 라우트 분리와 숫자 계산 재사용
+
+기준은 main `7758183`의 [CI production artifact](https://github.com/cha2hyun/boilerplate/actions/runs/42038839255), 변경은 `52f1e27`의 [PR CI artifact](https://github.com/cha2hyun/boilerplate/actions/runs/42051214037)다. 조회 스키마와 Page를 같은 barrel에서 가져오던 정적 연결을 [ADR 006](../adr/006-search-public-entrypoints.md)의 제한된 `search.ts`로 분리했다. formatter와 숫자 모션의 계산·예약 트리를 재사용하고 초기 언어 변경 이벤트 중복을 제거했다. URL·표시값·300ms 모션·폭 예약·reduced motion 계약은 유지한다.
+
+### 확정한 코드 크기 변화
+
+| 범위                                  | 이전 raw bytes | 이후 raw bytes |  감소 |
+| ------------------------------------- | -------------: | -------------: | ----: |
+| main entry 하나                       |        781,385 |        304,777 | 61.0% |
+| entry와 정적 의존 파일 합             |      1,428,104 |        808,425 | 43.4% |
+| Overview 첫 진입 JS 합, demo MSW 포함 |      1,826,833 |      1,725,214 |  5.6% |
+| Projects 첫 진입 JS 합, demo MSW 포함 |      1,826,828 |      1,344,231 | 26.4% |
+
+파일의 중복을 제거하고 CI artifact의 실제 bytes를 합산했다. 첫 진입 합은 entry·해당 route·demo MSW의 정적 의존 그래프와 실제 브라우저의 요청 파일 목록을 대조한다. main 감소율을 전체 다운로드 감소율로 해석하지 않는다. Projects에서 Recharts와 Orders/Customers/Inbox UI를 가져오지 않으며, Overview는 화면에 필요한 차트를 계속 가져온다. HTML modulepreload는 14→6개다. 전체 요청 JS 파일 수는 Overview 17→26개, Projects 17→24개로 늘어 네트워크 환경에 따른 비용이 남는다. Vite는 route의 정적 의존 파일을 병렬 preload하며 추가 중첩 lazy wrapper는 없다.
+
+Lighthouse/Resource Timing의 전송 크기 합은 절감률 근거에서 제외했다. 변경 후 뒤늦게 요청한 청크가 demo Service Worker를 거치면서 `fromServiceWorker: true`, `fromDiskCache: false`, `transferSize: 0`으로 기록됐다. 표시상 약 642KB→464KB는 이 집계 차이를 포함한다. 위 표는 압축 전 파일 크기이며 배포 CDN의 실제 전송량이 아니다. 같은 파일별 gzip(level 6) 합계는 Overview 584,062→562,659 bytes(3.7%), Projects 584,059→451,934 bytes(22.6%) 감소했다. 이것도 동일한 압축 조건의 잠재 body 크기이며 네트워크 실측은 아니다.
+
+### Lighthouse와 CPU 관측
+
+동일 Lighthouse 13.6.0 설정, 모바일 412×823/DPR 1.75, simulated CPU 4배, 기본 light/demo, 실제 폰트 CDN으로 각 조합을 한 번 실행했다. 전후 configSettings는 같다.
+
+| 화면     | 성능    | FCP / LCP (ms) | TBT (ms)      | raw main-thread (ms) | benchmark index   |
+| -------- | ------- | -------------- | ------------- | -------------------- | ----------------- |
+| Overview | 69 → 73 | 1,638 → 1,644  | 2,447 → 1,562 | 1,667 → 1,358        | 1,378.5 → 1,919.5 |
+| Projects | 67 → 75 | 2,611 → 1,625  | 1,142 → 1,191 | 812 → 734            | 2,478 → 2,831     |
+
+FCP/LCP/TBT는 시뮬레이션 지표이고 raw main-thread는 `diagnostics.totalTaskTime`의 관측 합이다. Lighthouse의 main-thread breakdown은 simulate 모드에서 4배가 적용되므로 raw 합과 섞지 않는다. TBT를 단순히 4로 나눠 실제 지연으로 추정하지 않는다. 접근성·Best Practices는 전후 모두 100, SEO는 의도된 noindex로 63이며, CLS는 Overview 0.000138 / Projects 0으로 유지됐다.
+
+실행 근거: [이전 Overview](https://github.com/cha2hyun/boilerplate/actions/runs/42048704323), [이후 Overview](https://github.com/cha2hyun/boilerplate/actions/runs/42051281153), [이전 Projects](https://github.com/cha2hyun/boilerplate/actions/runs/42047207907), [이후 Projects](https://github.com/cha2hyun/boilerplate/actions/runs/42051287191). 네 비교 보고서에 runtime error/warning은 없다. 최초 [Overview 기준 실행](https://github.com/cha2hyun/boilerplate/actions/runs/42047202837)은 benchmark 241과 명시적인 CPU 경고가 있어 제외하고 해당 화면만 한 번 재측정했다.
+
+runner 차이는 남는다. 이후 Overview는 AMD EPYC 7763 / Chrome 156.0.8078.79 / image `20261101.186.1`, Projects는 EPYC 9V45 / Chrome 156.0.8078.47 / image `20261026.180.1`이다. 이전에는 정확한 CPU 모델과 Chrome patch를 기록하지 않았다. benchmark 차이도 있어 점수 상승을 코드 효과로 확정하지 않는다. Projects의 TBT는 오히려 49ms 증가했으며 일괄적인 CPU 시간 개선을 주장하지 않는다.
+
+별도 동일 Mac/Playwright Chromium 156.0.8078.4의 CDP CPU 4배 진단에서도 긴 작업 합은 Overview 593→722ms, Projects 328→351ms였다. 양쪽 모두 production artifact, 새 브라우저 context, 412×823/light, 고정 폰트·환율 응답을 사용하고 데이터 loading/skeleton/숫자 전환 종료 후까지 기록했다. 브라우저 오류는 없었다. 이 단일 trace는 profiler 오버헤드를 포함한 병목 진단이며 Lighthouse나 실제 사용자 성능과 직접 비교하지 않는다. 현재 LCP는 페이지 설명문이므로 LCP가 데이터 준비 완료를 뜻하지도 않는다.
+
+현재 확정한 효과는 불필요한 페이지 코드 제거와 반복 계산 재사용이다. 잔여 main-thread 비용과 청크 수 증가의 네트워크 영향은 실제 배포 조건에서 재검토해야 한다. 기능·모션을 숨기거나 테스트 데이터를 축소해 점수를 높이지 않았다.
+
+새 workflow는 기존 조건을 유지하며 source SHA, runner/CPU/Chrome, warning, raw/simulated 지표의 summary JSON과 trace/DevTools log를 보관한다. 이후 두 실행에서 모두 유효한 파일을 확인했으며 artifact 보관은 기존 3일이다. 원본은 저장소에 커밋하지 않는다.
+
 ## 2026-11-05: 현재 CDN 구성의 Actions 재측정
 
 폰트 CDN 전환 이후 실제 production 번들을 표준 GitHub-hosted Ubuntu/Chrome 156 runner에서 Lighthouse 13.6.0의 기본 모바일 프로필로 측정했다. 기본 demo, 기본 light 테마, 실제 폰트 CDN 요청, 공개 origin 미설정이다. E2E의 외부 요청 fixture는 사용하지 않았다. 아래는 각 조합 1회의 실험실 측정이다.

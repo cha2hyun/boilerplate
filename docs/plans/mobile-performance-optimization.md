@@ -1,6 +1,6 @@
 # 작업 계획: 모바일 초기 실행 비용 줄이기
 
-상태: 진행
+상태: 구현·측정 완료
 
 ## 문제와 완료 조건
 
@@ -34,5 +34,6 @@
 
 - 실제 변경 동작: 숫자 formatter/날짜 formatter와 모션 예약 트리를 재사용하고 초기 언어 이벤트 중복을 제거했다. 조회 진입점 분리와 실제 청크 preload/history/실패 복구 회귀를 추가했다. 라우트 오류 화면에서 현재 URL을 유지하는 Reload page를 제공한다.
 - 실행한 명령과 결과: 시작 main `7758183` CI 성공, 열린 Dependabot PR/보안 알림 0건. baseline production artifact의 두 화면 CPU profile을 수집했다. 선택 단위 74개·아키텍처 회귀 55개·URL 회귀 47개와 pnpm check를 통과했다. Lighthouse summary에 source SHA·runner/Chrome/CPU·warning·raw/simulated 지표를 기록하고 trace를 보관한다.
-- Actions 실행 결과 또는 미실행 사유 (로컬 전체 테스트는 기본 절차가 아님): 변경 후 PR CI·대표 Lighthouse·병합 후 최신 main 확인 예정.
-- 남은 제약: 실험실 성능이며 실제 운영 API·배포 네트워크·실기기를 대표하지 않는다.
+- Actions 실행 결과: [PR #38](https://github.com/cha2hyun/boilerplate/pull/38)의 구현 `52f1e27` [전체 CI](https://github.com/cha2hyun/boilerplate/actions/runs/42051214037)가 통과했다. 단위 502개, 가드레일 92개, core/samples 브라우저 169개 성공 및 화면 구간에 따른 명시적 skip 28개다. 새 intent preload/history·청크 실패/버튼 복구도 실제 production 번들에서 통과했다. 두 Lighthouse 실행의 summary/trace 생성도 확인했다. 후속 문서 커밋과 병합 후 최신 main 검증은 최종 PR/작업 보고의 SHA·실행으로 확인한다.
+- 측정 결과: 실제 요청 파일 합에서 Projects 초기 JS 26.4%, Overview 5.6%, main 자체 61.0% 감소했다. [상세 측정](../reviews/lighthouse-audit.md)에 기준 SHA·실행·압축 크기·CPU 관측을 기록했다. Service Worker 때문에 0으로 표시되는 transferSize를 절감 근거로 사용하지 않는다.
+- 남은 제약: CPU/TBT 개선은 확정하지 않는다. 동일 로컬 진단에서 긴 작업 합은 증가했고, Lighthouse도 runner별 CPU/Chrome·benchmark 차이가 있다. 청크 수 증가의 네트워크 비용은 배포 환경에서 확인해야 한다. 실험실 측정은 실제 운영 API·배포 네트워크·실기기를 대표하지 않는다. 5173 개발 서버는 사용자 요청에 따라 유지한다.
