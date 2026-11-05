@@ -1,3 +1,3 @@
 export { AnalyticsPage } from './ui/analytics-page'
-export { analyticsSearchDefaults, analyticsSearchSchema } from './model/search'
-export type { AnalyticsSearch } from './model/search'
+export { analyticsSearchDefaults, analyticsSearchSchema } from './search'
+export type { AnalyticsSearch } from './search'

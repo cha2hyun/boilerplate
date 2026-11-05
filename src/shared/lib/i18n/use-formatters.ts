@@ -1,47 +1,42 @@
-import { useMemo } from 'react'
-import { formatNumber as formatNumericValue, type NumberFormatOptions } from '../format'
+import { useCallback, useMemo } from 'react'
+import {
+  formatDate as formatDateValue,
+  formatNumber as formatNumericValue,
+  formatRelativeTime as formatRelativeTimeValue,
+  type DateFormatOptions,
+  type NumberFormatOptions,
+} from '../format'
 import { convertUsdAmount, type MoneyFormatOptions } from './money'
 import { useUsdKrwRate } from './exchange-rate-context'
 import { useLocalePreferences } from './preferences'
-
-type DateOptions = Intl.DateTimeFormatOptions & { locale?: string }
 
 export function useFormatters() {
   const locale = useLocalePreferences((state) => state.locale)
   const currency = useLocalePreferences((state) => state.currency)
   const rate = useUsdKrwRate()
-  return useMemo(
+  const conversionRate = currency === 'KRW' ? rate : null
+  const localized = useMemo(
     () => ({
       formatNumber: (value: number | null | undefined, options?: NumberFormatOptions) =>
         formatNumericValue(value, { locale, ...options }),
-      formatMoney: (value: number | null | undefined, options?: MoneyFormatOptions) =>
-        formatNumericValue(convertUsdAmount(value, currency, rate), {
-          locale,
-          style: 'currency',
-          currency,
-          ...options,
-        }),
-      formatDate: (value: string | Date, options: DateOptions = {}) => {
+      formatDate: (value: string | Date, options: DateFormatOptions = {}) => {
         const { locale: dateLocale = locale, ...dateOptions } = options
-        const defaults =
-          dateOptions.dateStyle || dateOptions.timeStyle
-            ? {}
-            : { month: 'short' as const, day: 'numeric' as const }
-        return new Intl.DateTimeFormat(dateLocale, {
-          ...defaults,
-          timeZone: 'UTC',
-          ...dateOptions,
-        }).format(new Date(value))
+        return formatDateValue(value, { ...dateOptions, locale: dateLocale })
       },
-      formatRelativeTime: (value: string, now = new Date()) => {
-        const seconds = Math.round((new Date(value).getTime() - now.getTime()) / 1000)
-        const formatter = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
-        if (Math.abs(seconds) < 60) return locale === 'ko-KR' ? '방금 전' : 'Just now'
-        if (Math.abs(seconds) < 3600) return formatter.format(Math.round(seconds / 60), 'minute')
-        if (Math.abs(seconds) < 86400) return formatter.format(Math.round(seconds / 3600), 'hour')
-        return formatter.format(Math.round(seconds / 86400), 'day')
-      },
+      formatRelativeTime: (value: string, now = new Date()) =>
+        formatRelativeTimeValue(value, now, locale),
     }),
-    [locale, currency, rate],
+    [locale],
   )
+  const formatMoney = useCallback(
+    (value: number | null | undefined, options?: MoneyFormatOptions) =>
+      formatNumericValue(convertUsdAmount(value, currency, conversionRate), {
+        locale,
+        style: 'currency',
+        currency,
+        ...options,
+      }),
+    [locale, currency, conversionRate],
+  )
+  return useMemo(() => ({ ...localized, formatMoney }), [localized, formatMoney])
 }

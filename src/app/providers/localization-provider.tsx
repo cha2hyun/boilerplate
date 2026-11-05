@@ -7,7 +7,7 @@ export function LocalizationProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     document.documentElement.lang = locale
     document.documentElement.dir = 'ltr'
-    void i18n.changeLanguage(locale)
+    if (i18n.language !== locale) void i18n.changeLanguage(locale)
   }, [locale])
   return <I18nextProvider i18n={i18n}>{children}</I18nextProvider>
 }

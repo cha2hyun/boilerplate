@@ -1,11 +1,7 @@
 import { useCallback } from 'react'
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
-import {
-  OrdersPage,
-  ordersSearchDefaults,
-  ordersSearchSchema,
-  type OrdersSearch,
-} from '@/pages/orders'
+import { OrdersPage } from '@/pages/orders'
+import { ordersSearchDefaults, ordersSearchSchema, type OrdersSearch } from '@/pages/orders/search'
 import type { SearchChange } from '@/shared/lib/search-params'
 
 export const Route = createFileRoute('/orders')({

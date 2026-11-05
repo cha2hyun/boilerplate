@@ -1,6 +1,6 @@
 import type { z } from 'zod'
-import { projectTableSearchSchema } from '@/widgets/project-table'
-import { revenueChartSearchSchema } from '@/widgets/revenue-chart'
+import { projectTableSearchSchema } from '@/widgets/project-table/search'
+import { revenueChartSearchSchema } from '@/widgets/revenue-chart/search'
 
 export const overviewSearchSchema = projectTableSearchSchema
   .pick({ sort: true, order: true })

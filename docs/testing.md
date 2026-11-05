@@ -111,7 +111,11 @@ main에는 `CI Gate`와 `Conventional PR title`을 GitHub Actions 제공 필수 
 
 `Lighthouse` workflow는 수동 `workflow_dispatch`로만 실행합니다. `page`는 `overview`(`/`) 또는 `projects`(`/projects`), `device`는 `mobile` 또는 `desktop`을 선택합니다. 표준 Ubuntu runner의 Chrome에서 Lighthouse `13.6.0`을 사용하며, job 하나가 production build를 한 번 만든 뒤 선택한 페이지/기기 조합을 한 번 검사합니다. PR/push 자동 실행, 전체 단위/E2E, dev 서버 중복 검사는 추가하지 않습니다.
 
-성능·접근성·권장사항·SEO의 HTML/JSON 보고서와 preview 로그를 `test-results/lighthouse/`에 생성하고 `lighthouse-<page>-<device>` artifact로 성공/실패 시 모두 최대 3일 보관합니다. 점수 임계값은 강제하지 않지만 CLI 오류나 보고서 생성 실패는 job 실패로 처리합니다. 데모의 기본 `noindex`와 공개 origin 미설정은 그대로 검사하며, SEO 점수를 높이려고 가짜 `VITE_SITE_URL`을 주입하지 않습니다. 성능 점수는 runner 부하에 따라 달라질 수 있으므로 같은 페이지/기기에서 상세 지표와 함께 비교하세요. 수동 실행도 비공개 저장소의 Actions 사용량에 포함됩니다.
+성능·접근성·권장사항·SEO의 HTML/JSON 보고서, 원본 trace·DevTools network 로그(`--save-assets`), 환경·지표 요약 `<page>-<device>.summary.json`, preview 로그를 `test-results/lighthouse/`에 생성하고 `lighthouse-<page>-<device>` artifact로 성공/실패 시 생성된 파일을 최대 3일 보관합니다. 요약에는 source SHA, runner image/OS/CPU, 정확한 Chrome 버전, benchmark index, 화면·throttling 설정, 0~1 범위의 category score와 run warning을 기록합니다. 점수 임계값은 강제하지 않지만 CLI 오류나 보고서 생성 실패는 job 실패로 처리합니다.
+
+기본 `simulate` 설정은 유지합니다. 요약의 `reportMetrics` FCP/LCP/TBT/Speed Index는 시뮬레이션 값이며, `observedMetrics`와 `rawDiagnostics`는 원본 trace의 관측값입니다. CLS는 관측값이며 CPU 배율을 적용하지 않습니다. `mainThreadScaled`는 보고서의 main-thread 시간과 적용 CPU 배율을 함께 기록하므로 실제 CPU 실행시간과 혼동하지 마세요. 같은 페이지·기기·데모 상태·측정 환경에서 상세 지표와 원본 trace를 함께 비교하고, runner CPU나 외부 CDN 응답이 다른 단일 실행의 작은 점수 차이를 코드 개선으로 단정하지 않습니다.
+
+데모의 기본 `noindex`와 공개 origin 미설정은 그대로 검사하며, SEO 점수를 높이려고 가짜 `VITE_SITE_URL`을 주입하지 않습니다. 수동 실행도 비공개 저장소의 Actions 사용량에 포함됩니다.
 
 ## GitHub Free 사용량
 

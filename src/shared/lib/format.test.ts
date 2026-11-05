@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { formatNumber, type NumberFormatOptions } from './format'
+import {
+  createNumberFormatter,
+  formatDate,
+  formatNumber,
+  formatRelativeTime,
+  type NumberFormatOptions,
+} from './format'
 
 describe('formatNumber', () => {
   it('uses English grouping by default and supports disabling it', () => {
@@ -160,4 +166,112 @@ describe('formatNumber', () => {
     formatFreshNumber(1.25, { maximumFractionDigits: 0 })
     expect(constructor).toHaveBeenCalledTimes(66)
   })
+})
+
+describe('bound number formatting', () => {
+  it('reuses one resolved formatter for a batch without rebuilding cache keys', () => {
+    const options = {
+      style: 'currency',
+      currency: 'USD',
+      currencySign: 'accounting',
+      showCurrency: false,
+    } satisfies NumberFormatOptions
+    const format = createNumberFormatter(options)
+    const serialize = vi.spyOn(JSON, 'stringify')
+    expect([-1234.5, -0, 12.5, null, NaN].map(format)).toEqual([
+      '(1,234.50)',
+      '0.00',
+      '12.50',
+      '—',
+      '—',
+    ])
+    expect(serialize).not.toHaveBeenCalled()
+    serialize.mockRestore()
+    expect(
+      createNumberFormatter({
+        showCurrency: false,
+        currencySign: 'accounting',
+        currency: 'USD',
+        style: 'currency',
+      }),
+    ).toBe(format)
+  })
+
+  it('retains bound options when caller objects change and validates options when bound', () => {
+    const options: NumberFormatOptions = { style: 'percent', maximumFractionDigits: 1 }
+    const format = createNumberFormatter(options)
+    options.maximumFractionDigits = 0
+    expect(format(12.45)).toBe('12.5%')
+    expect(createNumberFormatter(options)(12.45)).toBe('12%')
+    expect(() => createNumberFormatter({ maximumFractionDigits: NaN })).toThrow(RangeError)
+    expect(() => createNumberFormatter({ locale: 'invalid_locale' })).toThrow(RangeError)
+  })
+})
+
+describe('cached date and relative-time formatting', () => {
+  it('preserves UTC defaults, locale overrides, time zones and Intl style validation', () => {
+    const value = '2026-11-04T00:15:00+09:00'
+    expect(formatDate(value)).toBe('Nov 3')
+    expect(formatDate(value, { locale: 'ko-KR', timeZone: 'Asia/Seoul' })).toBe('11월 4일')
+    expect(formatDate(value, { dateStyle: 'medium', timeStyle: 'short' })).toBe(
+      new Intl.DateTimeFormat('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'UTC',
+      }).format(new Date(value)),
+    )
+    expect(() => formatDate(value, { dateStyle: 'short', month: 'long' })).toThrow(TypeError)
+    expect(() => formatDate(value, { timeZone: 'invalid-zone' })).toThrow(RangeError)
+    expect(() => formatDate(value, { locale: 'invalid_locale' })).toThrow(RangeError)
+    expect(() => formatDate(value, { fractionalSecondDigits: NaN as 1 })).toThrow(RangeError)
+  })
+
+  it('shares date instances across option order while formatting each current value', async () => {
+    vi.resetModules()
+    const { formatDate: formatFreshDate } = await import('./format')
+    const constructor = vi.spyOn(Intl, 'DateTimeFormat')
+    expect(formatFreshDate('2026-11-04', { locale: 'ko-KR', year: 'numeric' })).toBe(
+      '2026년 11월 4일',
+    )
+    expect(formatFreshDate('2026-11-05', { year: 'numeric', locale: 'ko-KR' })).toBe(
+      '2026년 11월 5일',
+    )
+    expect(constructor).toHaveBeenCalledTimes(1)
+  })
+
+  it('reuses relative-time instances without caching the current-time result', async () => {
+    vi.resetModules()
+    const { formatRelativeTime: formatFreshRelativeTime } = await import('./format')
+    const constructor = vi.spyOn(Intl, 'RelativeTimeFormat')
+    const value = '2026-11-04T00:00:00Z'
+    expect(formatFreshRelativeTime(value, new Date('2026-11-04T00:02:00Z'))).toBe('2 minutes ago')
+    expect(formatFreshRelativeTime(value, new Date('2026-11-04T00:03:00Z'))).toBe('3 minutes ago')
+    expect(constructor).toHaveBeenCalledTimes(1)
+    expect(formatFreshRelativeTime(value, new Date('2026-11-04T00:02:00Z'), 'ko-KR')).toBe('2분 전')
+    expect(constructor).toHaveBeenCalledTimes(2)
+    expect(formatRelativeTime(value, new Date(value), 'ko-KR')).toBe('방금 전')
+    expect(() => formatFreshRelativeTime(value, new Date(value), 'invalid_locale')).toThrow(
+      RangeError,
+    )
+  })
+
+  it.each(['date', 'relative'] as const)(
+    'bounds the %s formatter cache to 64 entries',
+    async (kind) => {
+      vi.resetModules()
+      const fresh = await import('./format')
+      const constructor = vi.spyOn(Intl, kind === 'date' ? 'DateTimeFormat' : 'RelativeTimeFormat')
+      const format = (index: number) => {
+        const locale = `en-US-x-cache-${String(index)}`
+        return kind === 'date'
+          ? fresh.formatDate('2026-11-04', { locale })
+          : fresh.formatRelativeTime('2026-11-04', new Date('2026-11-05'), locale)
+      }
+      for (let index = 0; index <= 64; index++) format(index)
+      format(64)
+      expect(constructor).toHaveBeenCalledTimes(65)
+      format(0)
+      expect(constructor).toHaveBeenCalledTimes(66)
+    },
+  )
 })
