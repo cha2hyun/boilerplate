@@ -62,7 +62,7 @@ VITE_API_BASE_URL=/api
 | 구조            | Feature-Sliced Design, 슬라이스 공개 API, 자동 import 경계 검사   |
 | UI              | shadcn/ui, Radix, Tailwind CSS 4, shadcn neutral 의미 토큰        |
 | 아이콘          | lucide-react                                                      |
-| 폰트            | Pretendard 동적 subset 자체 호스팅, 400 / 500 / 600               |
+| 폰트            | Pretendard 동적 subset CDN(jsDelivr), 400 / 500 / 600             |
 | URL/탐색        | TanStack Router                                                   |
 | 서버 데이터     | TanStack Query, 취소 가능한 요청, Zod 응답 검증                   |
 | 목업 HTTP       | demo 전용 MSW, 요청 횟수와 Query 캐시 재사용 검증                 |

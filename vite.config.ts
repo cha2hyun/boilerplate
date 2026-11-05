@@ -26,8 +26,6 @@ export default defineConfig({
   },
   build: {
     sourcemap: false,
-    // Keep even tiny font subsets demand-loaded through their unicode-range.
-    assetsInlineLimit: (filePath) => (/\.(?:woff2?|ttf|otf)$/i.test(filePath) ? false : undefined),
     rolldownOptions: {
       output: {
         codeSplitting: {

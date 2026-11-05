@@ -2,6 +2,8 @@
 
 측정일: 2026-11-03. Chrome 156.0.8078.80 / Lighthouse 13.6.0 / macOS / production `pnpm preview` (`127.0.0.1:4173`). 기본 demo 데이터와 OS를 따르는 dark 테마에서 측정했다. `VITE_SITE_URL`은 설정하지 않았다.
 
+후속 변경(2026-11-05): 폰트 제공을 [jsDelivr CDN](../design/typography.md)으로 전환해 번들 폰트와 Vite font inlining 설정을 제거했다. 아래 폰트/CSS 용량과 성능 수치는 전환 전 기록이며 CDN 전환 후 재측정한 값이 아니다.
+
 ## 범위와 결과
 
 Overview의 모바일·PC, Projects의 모바일을 수정 전후 각각 한 번씩 **순차 실행**했다. 모바일은 Lighthouse 기본 simulated throttling과 412×823 화면, PC는 공식 desktop preset을 사용했다. 각 실행은 별도 headless Chrome 프로필을 사용한다. 개발 서버/전체 단위/E2E suite를 중복 검사하지 않았다. 모든 보고서에 runtime error와 run warning은 없다.

@@ -1,10 +1,6 @@
 /* shadcn neutral surfaces and controls; brand is reserved for explicit identity emphasis. */
 @import 'tailwindcss';
 @import 'tw-animate-css';
-/* Official Unicode-range subsets: self-hosted by Vite, exactly three static weights. */
-@import 'pretendard/dist/web/static/Pretendard-Regular.css';
-@import 'pretendard/dist/web/static/Pretendard-Medium.css';
-@import 'pretendard/dist/web/static/Pretendard-SemiBold.css';
 
 @custom-variant dark (&:is(.dark *));
 
