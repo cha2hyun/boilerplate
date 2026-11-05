@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures.js'
+import { expect, test, type Locator, type Page } from './fixtures.js'
 
 // The browser suite consumes HTTP payloads, independently of Vite's application module graph.
 type CommerceRecord =
@@ -266,7 +266,7 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
       expect(layout.contentWidth).toBeGreaterThan(layout.containerWidth)
     }
     if (route === 'orders') {
-      await expect(table.getByRole('columnheader')).toHaveCount(12)
+      await expect(table.getByRole('columnheader')).toHaveCount(13)
       for (const name of ['Products', 'Quantity', 'City', 'Country', 'Subtotal', 'Shipping']) {
         await expect(table.getByRole('columnheader', { name, exact: true })).toBeVisible()
       }
@@ -401,7 +401,8 @@ async function refreshCommerceResponse(
       const originalFetch = window.fetch.bind(window)
       window.fetch = (input, init) => {
         const url = input instanceof Request ? input.url : String(input)
-        if (new URL(url, window.location.origin).pathname === path) {
+        const method = init?.method ?? (input instanceof Request ? input.method : 'GET')
+        if (new URL(url, window.location.origin).pathname === path && method === 'GET') {
           return Promise.resolve(
             new Response(JSON.stringify(data), {
               headers: { 'Content-Type': 'application/json' },
@@ -419,6 +420,303 @@ async function refreshCommerceResponse(
     window.dispatchEvent(new Event('online'))
   })
 }
+
+async function expectCommerceMetric(page: Page, label: string, value: string) {
+  const card = page.locator('[data-metric-card]').filter({
+    has: page.getByText(label, { exact: true }),
+  })
+  await expect(card.locator('[data-slot="metric-value"] .sr-only')).toHaveText(value)
+}
+
+async function fillCustomerForm(dialog: Locator, name: string) {
+  await dialog.getByLabel('Name', { exact: true }).fill(name)
+  await dialog.getByLabel('Email', { exact: true }).fill('commerce.customer@example.com')
+  await dialog.getByLabel('City', { exact: true }).fill('Seoul')
+  await dialog.getByLabel('Country', { exact: true }).fill('South Korea')
+  // A backdated record is deliberately outside the first page in the default sort.
+  await dialog.getByLabel('Joined', { exact: true }).fill('2026-01-01')
+}
+
+test('creates, edits and deletes an order with protected drafts and persisted totals', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/orders?q=olivia&status=Processing&sort=highest')
+  await expectCommerceMetric(page, 'Total orders', '12')
+  const trigger = page.getByRole('button', { name: 'New order', exact: true })
+  await trigger.click()
+  const editor = page.getByRole('dialog', { name: 'Create order', exact: true })
+  const customerName = editor.getByLabel('Customer name', { exact: true })
+  await customerName.fill('Commerce order buyer')
+  await page.keyboard.press('Escape')
+  const discard = page.getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true })
+  await discard.getByRole('button', { name: 'Keep editing', exact: true }).click()
+  await expect(customerName).toHaveValue('Commerce order buyer')
+  await expect(customerName).toBeFocused()
+  await editor.getByLabel('Customer email', { exact: true }).fill('commerce.order@example.com')
+  await editor.getByLabel('Order date', { exact: true }).fill('2026-01-01')
+  await editor.getByLabel('City', { exact: true }).fill('Seoul')
+  await editor.getByLabel('Country', { exact: true }).fill('South Korea')
+  await editor.getByLabel('Shipping (USD)', { exact: true }).fill('0.29')
+  await editor.getByLabel('Item name', { exact: true }).fill('Precision notebook')
+  await editor.getByLabel('Quantity', { exact: true }).fill('3')
+  await editor.getByLabel('Unit price (USD)', { exact: true }).fill('10.25')
+  await editor.getByRole('button', { name: 'Add item', exact: true }).click()
+  await editor.getByLabel('Item name', { exact: true }).nth(1).fill('Small envelope')
+  await editor.getByLabel('Quantity', { exact: true }).nth(1).fill('2')
+  await editor.getByLabel('Unit price (USD)', { exact: true }).nth(1).fill('0.10')
+  await editor.getByRole('heading', { name: 'Create order', exact: true }).scrollIntoViewIfNeeded()
+  await testInfo.attach('populated-order-editor', {
+    body: await editor.screenshot(),
+    contentType: 'image/png',
+  })
+  const createdResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === '/api/orders' && response.request().method() === 'POST',
+  )
+  await editor.getByRole('button', { name: 'Create order', exact: true }).click()
+  const created = (await (await createdResponse).json()) as { id: string }
+  await expect(editor).toBeHidden()
+  const details = page.getByRole('dialog', { name: `Order ${created.id}`, exact: true })
+  await expect(details.getByText('Precision notebook', { exact: true })).toBeVisible()
+  await expect(details.getByText('$31.24', { exact: true })).toBeVisible()
+  await details.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(trigger).toBeFocused()
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get('q') === 'olivia' &&
+      url.searchParams.get('status') === 'Processing' &&
+      url.searchParams.get('sort') === 'highest',
+  )
+  await expectCommerceMetric(page, 'Total orders', '13')
+  await expectCommerceMetric(page, 'Processing', '4')
+
+  const search = page.getByRole('textbox', { name: 'Search orders', exact: true })
+  await search.fill('commerce.order@example.com')
+  await expect(page).toHaveURL((url) => url.searchParams.get('q') === 'commerce.order@example.com')
+  await page.reload()
+  const row = page.getByRole('row').filter({ hasText: created.id })
+  await expect(row).toContainText('Commerce order buyer')
+  const actions = page.getByRole('button', { name: `Actions for ${created.id}`, exact: true })
+  await actions.click()
+  await page.getByRole('menuitem', { name: 'Edit order', exact: true }).click()
+  const edit = page.getByRole('dialog', { name: 'Edit order', exact: true })
+  await expect(edit.getByLabel('Shipping (USD)', { exact: true })).toHaveValue('0.29')
+  await edit.getByLabel('Quantity', { exact: true }).first().fill('4')
+  await edit.getByLabel('Order status', { exact: true }).click()
+  await page.getByRole('option', { name: 'Shipped', exact: true }).click()
+  await edit.getByRole('button', { name: 'Save changes', exact: true }).click()
+  await expect(edit).toBeHidden()
+  await expect(row).toHaveCount(0)
+  await expect(search).toBeFocused()
+  await expectCommerceMetric(page, 'Processing', '3')
+  await expectCommerceMetric(page, 'Shipped', '3')
+  await page.getByRole('tab', { name: 'Shipped', exact: true }).click()
+  await expect(page).toHaveURL((url) => url.searchParams.get('status') === 'Shipped')
+  await page.reload()
+  await page.getByRole('button', { name: `View order ${created.id}`, exact: true }).click()
+  await expect(details.getByText('$41.49', { exact: true })).toBeVisible()
+  await details.getByRole('button', { name: 'Close', exact: true }).click()
+  await actions.focus()
+  await page.keyboard.press('ArrowDown')
+  await page.getByRole('menuitem', { name: 'Delete order', exact: true }).click()
+  const remove = page.getByRole('alertdialog', { name: 'Delete order?', exact: true })
+  await remove.getByRole('button', { name: 'Keep order', exact: true }).click()
+  await expect(actions).toBeFocused()
+  await actions.click()
+  await page.getByRole('menuitem', { name: 'Delete order', exact: true }).click()
+  await remove.getByRole('button', { name: 'Delete order', exact: true }).click()
+  await expect(remove).toBeHidden()
+  await expect(search).toBeFocused()
+  await expectCommerceMetric(page, 'Total orders', '12')
+  await page.reload()
+  await expect(page.getByText('No matching orders', { exact: true })).toBeVisible()
+  await expectCommerceMetric(page, 'Shipped', '2')
+})
+
+test('retains failed customer input and persists CRUD while clamping the final page', async ({
+  page,
+}, testInfo) => {
+  await page.goto('/customers?q=olivia&status=Active&sort=name')
+  await expectCommerceMetric(page, 'Total customers', '12')
+  const trigger = page.getByRole('button', { name: 'New customer', exact: true })
+  await trigger.click()
+  const editor = page.getByRole('dialog', { name: 'Create customer', exact: true })
+  await editor.getByLabel('Name', { exact: true }).fill('Discarded customer')
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
+  const discard = page.getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true })
+  await discard.getByRole('button', { name: 'Discard changes', exact: true }).click()
+  await expect(editor).toBeHidden()
+  await expect(trigger).toBeFocused()
+  await trigger.click()
+  await expect(editor.getByLabel('Name', { exact: true })).toHaveValue('')
+  await fillCustomerForm(editor, 'Commerce customer')
+  await editor
+    .getByRole('heading', { name: 'Create customer', exact: true })
+    .scrollIntoViewIfNeeded()
+  await testInfo.attach('populated-customer-editor', {
+    body: await editor.screenshot(),
+    contentType: 'image/png',
+  })
+
+  const restoreFetch = await page.evaluateHandle(() => {
+    const originalFetch = window.fetch.bind(window)
+    window.fetch = (input, init) => {
+      const url = input instanceof Request ? input.url : String(input)
+      const method = init?.method ?? (input instanceof Request ? input.method : 'GET')
+      if (new URL(url, window.location.origin).pathname === '/api/customers' && method === 'POST') {
+        return Promise.resolve(new Response(null, { status: 400 }))
+      }
+      return originalFetch(input, init)
+    }
+    return () => {
+      window.fetch = originalFetch
+    }
+  })
+  await editor.getByRole('button', { name: 'Create customer', exact: true }).click()
+  await expect(editor.getByRole('alert')).toHaveText(
+    'The request could not be completed. Please try again.',
+  )
+  await expect(editor.getByLabel('Name', { exact: true })).toHaveValue('Commerce customer')
+  await expect(editor.getByLabel('Joined', { exact: true })).toHaveValue('2026-01-01')
+  await expectCommerceMetric(page, 'Total customers', '12')
+  await restoreFetch.evaluate((restore) => {
+    restore()
+  })
+  await restoreFetch.dispose()
+  await editor.getByRole('button', { name: 'Create customer', exact: true }).click()
+  await expect(editor).toBeHidden()
+  const details = page.getByRole('dialog', { name: 'Commerce customer', exact: true })
+  await expect(details.getByText('commerce.customer@example.com', { exact: true })).toBeVisible()
+  await expect(details.locator('[data-number-state] .sr-only')).toHaveText(['0', '$0.00'])
+  await details.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(trigger).toBeFocused()
+  await expect(page).toHaveURL(
+    (url) =>
+      url.searchParams.get('q') === 'olivia' &&
+      url.searchParams.get('status') === 'Active' &&
+      url.searchParams.get('sort') === 'name',
+  )
+  await expectCommerceMetric(page, 'Total customers', '13')
+  await expectCommerceMetric(page, 'Active customers', '9')
+  const search = page.getByRole('textbox', { name: 'Search customers', exact: true })
+  await search.fill('Commerce customer')
+  await expect(page).toHaveURL((url) => url.searchParams.get('q') === 'Commerce customer')
+  await page.reload()
+  await page.getByRole('button', { name: 'Actions for Commerce customer', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Edit customer', exact: true }).click()
+  const edit = page.getByRole('dialog', { name: 'Edit customer', exact: true })
+  await edit.getByLabel('Name', { exact: true }).fill('Commerce customer updated')
+  await edit.getByLabel('Status', { exact: true }).click()
+  await page.getByRole('option', { name: 'Inactive', exact: true }).click()
+  await edit.getByRole('button', { name: 'Save changes', exact: true }).click()
+  await expect(edit).toBeHidden()
+  await expect(search).toBeFocused()
+  await expect(page.getByText('No matching customers', { exact: true })).toBeVisible()
+  await expectCommerceMetric(page, 'Active customers', '8')
+  await page.getByRole('combobox', { name: 'Filter customers by status', exact: true }).click()
+  await page.getByRole('option', { name: 'All statuses', exact: true }).click()
+  await expect(page).toHaveURL((url) => !url.searchParams.has('status'))
+  await page.reload()
+  const updated = page.getByRole('button', {
+    name: 'View customer Commerce customer updated',
+    exact: true,
+  })
+  await updated.click()
+  const updatedDetails = page.getByRole('dialog', {
+    name: 'Commerce customer updated',
+    exact: true,
+  })
+  await expect(updatedDetails.getByText('Inactive', { exact: true })).toBeVisible()
+  await expect(updatedDetails.locator('[data-number-state] .sr-only')).toHaveText(['0', '$0.00'])
+  await expect(updatedDetails.getByText('No orders yet', { exact: true })).toBeVisible()
+  await expect(updatedDetails.getByText('No purchase history', { exact: true })).toBeVisible()
+  await updatedDetails.getByRole('button', { name: 'Close', exact: true }).click()
+
+  await page.getByRole('button', { name: 'Reset', exact: true }).click()
+  await page.getByRole('button', { name: 'Next customers page', exact: true }).click()
+  await page.getByRole('button', { name: 'Next customers page', exact: true }).click()
+  await expect(page.getByText('Page 3 of 3', { exact: true })).toBeVisible()
+  await expect(updated).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Actions for Commerce customer updated', exact: true })
+    .click()
+  await page.getByRole('menuitem', { name: 'Delete customer', exact: true }).click()
+  const remove = page.getByRole('alertdialog', { name: 'Delete customer?', exact: true })
+  await remove.getByRole('button', { name: 'Delete customer', exact: true }).click()
+  await expect(remove).toBeHidden()
+  await expect(search).toBeFocused()
+  await expect(page.getByText('Page 2 of 2', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL((url) => url.searchParams.get('page') === '2')
+  await expectCommerceMetric(page, 'Total customers', '12')
+  await page.reload()
+  await search.fill('Commerce customer')
+  await expect(page.getByText('No matching customers', { exact: true })).toBeVisible()
+})
+
+test('reconciles a committed customer with a lost response without resending the draft', async ({
+  page,
+}) => {
+  await page.goto('/customers')
+  await expectCommerceMetric(page, 'Total customers', '12')
+  await page.getByRole('button', { name: 'New customer', exact: true }).click()
+  const editor = page.getByRole('dialog', { name: 'Create customer', exact: true })
+  await fillCustomerForm(editor, 'Lost response customer')
+  const traffic = await page.evaluateHandle(() => {
+    const originalFetch = window.fetch.bind(window)
+    let writes = 0
+    let reads = 0
+    window.fetch = async (input, init) => {
+      const url = input instanceof Request ? input.url : String(input)
+      const method = init?.method ?? (input instanceof Request ? input.method : 'GET')
+      if (new URL(url, window.location.origin).pathname === '/api/customers') {
+        if (method === 'GET') reads += 1
+        if (method === 'POST') {
+          writes += 1
+          // Let the real demo HTTP handler commit, then lose only its response.
+          await originalFetch(input, init)
+          throw new TypeError('Connection lost after commit')
+        }
+      }
+      return originalFetch(input, init)
+    }
+    return {
+      counts: () => ({ writes, reads }),
+      restore: () => {
+        window.fetch = originalFetch
+      },
+    }
+  })
+  await editor.getByRole('button', { name: 'Create customer', exact: true }).click()
+  await expect(editor.locator('button[type="submit"]')).toBeDisabled()
+  await page.keyboard.press('Enter')
+  await expect(editor.getByRole('alert')).toContainText('Your changes may have been saved.')
+  await expect(editor.getByLabel('Name', { exact: true })).toHaveValue('Lost response customer')
+  await expect(editor.getByLabel('Email', { exact: true })).toHaveValue(
+    'commerce.customer@example.com',
+  )
+  await expectCommerceMetric(page, 'Total customers', '13')
+  const counts = await traffic.evaluate((state) => state.counts())
+  expect(counts.writes).toBe(1)
+  expect(counts.reads).toBeGreaterThanOrEqual(1)
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
+  const discard = page.getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true })
+  await discard.getByRole('button', { name: 'Discard changes', exact: true }).click()
+  await expect(editor).toBeHidden()
+  await traffic.evaluate((state) => {
+    state.restore()
+  })
+  await traffic.dispose()
+  const search = page.getByRole('textbox', { name: 'Search customers', exact: true })
+  await search.fill('Lost response customer')
+  const saved = page.getByRole('button', {
+    name: 'View customer Lost response customer',
+    exact: true,
+  })
+  await expect(saved).toHaveCount(1)
+  await page.reload()
+  await expect(saved).toBeVisible()
+  await expectCommerceMetric(page, 'Total customers', '13')
+})
 
 for (const route of ['orders', 'customers'] as const) {
   test(`${route} keeps open details current and contains long customer text`, async ({ page }) => {

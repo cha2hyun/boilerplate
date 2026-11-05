@@ -1,21 +1,27 @@
 # API 계약과 데이터 모드
 
-`src/shared/config/parse-env.ts`가 환경 변수 계약을 소유합니다. Vite가 mode·envDir·process 우선순위를 적용한 값은 `scripts/application-env.ts`에서 dev/build 설정 확정 시 검증하고, 브라우저의 `env.ts`도 같은 parser를 사용합니다. 잘못된 값은 앱 번들을 만들거나 서버를 시작하기 전에 실패합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. 실제 백엔드 서버는 포함하지 않으며 demo의 조회 HTTP는 MSW가 브라우저에서 처리합니다.
+`src/shared/config/parse-env.ts`가 환경 변수 계약을 소유합니다. Vite가 mode·envDir·process 우선순위를 적용한 값은 `scripts/application-env.ts`에서 dev/build 설정 확정 시 검증하고, 브라우저의 `env.ts`도 같은 parser를 사용합니다. 잘못된 값은 앱 번들을 만들거나 서버를 시작하기 전에 실패합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. 실제 백엔드 서버는 포함하지 않으며 demo의 주문·고객 조회/쓰기 HTTP와 분석 조회는 MSW가 브라우저에서 처리합니다.
 
 ## HTTP 계약
 
 JSON 요청/응답을 사용하며 envelope 없이 아래 객체/배열을 반환합니다. 현재 목록 필터/정렬/페이지 나누기는 클라이언트에서 처리합니다. 서버 페이지네이션을 도입하면 Query key, API 계약, UI를 함께 변경해야 합니다.
 
-| 요청                            | 요청 body      | 성공 응답              |
-| ------------------------------- | -------------- | ---------------------- |
-| `GET /projects`                 | 없음           | `200 Project[]`        |
-| `POST /projects`                | `ProjectInput` | `200/201 Project`      |
-| `PATCH /projects/:id`           | `ProjectInput` | `200 Project`          |
-| `DELETE /projects/:id`          | 없음           | `204` (body 없음)      |
-| `GET /analytics`                | 없음           | `200 Analytics`        |
-| `GET /traffic?period=7\|14\|30` | 없음           | `200 Traffic`          |
-| `GET /orders`                   | 없음           | `200 SampleOrder[]`    |
-| `GET /customers`                | 없음           | `200 SampleCustomer[]` |
+| 요청                            | 요청 body       | 성공 응답              |
+| ------------------------------- | --------------- | ---------------------- |
+| `GET /projects`                 | 없음            | `200 Project[]`        |
+| `POST /projects`                | `ProjectInput`  | `200/201 Project`      |
+| `PATCH /projects/:id`           | `ProjectInput`  | `200 Project`          |
+| `DELETE /projects/:id`          | 없음            | `204` (body 없음)      |
+| `GET /analytics`                | 없음            | `200 Analytics`        |
+| `GET /traffic?period=7\|14\|30` | 없음            | `200 Traffic`          |
+| `GET /orders`                   | 없음            | `200 SampleOrder[]`    |
+| `GET /customers`                | 없음            | `200 SampleCustomer[]` |
+| `POST /orders`                  | `OrderInput`    | `201 SampleOrder`      |
+| `PATCH /orders/:id`             | `OrderInput`    | `200 SampleOrder`      |
+| `DELETE /orders/:id`            | 없음            | `204` (body 없음)      |
+| `POST /customers`               | `CustomerInput` | `201 SampleCustomer`   |
+| `PATCH /customers/:id`          | `CustomerInput` | `200 SampleCustomer`   |
+| `DELETE /customers/:id`         | 없음            | `204` (body 없음)      |
 
 경로는 `VITE_API_BASE_URL` 뒤에 연결됩니다. `PATCH`에는 현재 계약상 수정 가능한 모든 필드를 보냅니다.
 
@@ -61,7 +67,13 @@ type Analytics = {
 
 Project의 `updatedAt`은 UTC와 offset이 있는 ISO datetime을 모두 허용하며, 화면 정렬은 문자열 대신 실제 timestamp를 비교합니다. Analytics의 `revenue`는 날짜당 최대 한 항목만 허용하고 중복 날짜는 응답 검증 실패로 처리합니다. API의 배열 순서는 자유이며 entity 검증 경계에서 날짜 오름차순으로 정규화합니다. 최근 N일은 응답의 마지막 제공일을 포함한 UTC 달력 날짜 범위로 선택합니다. 누락된 날짜를 오래된 항목으로 채우거나 매출 0으로 가정하지 않으며, 고정 기준일을 가진 데모도 현재 시스템 날짜와 무관하게 같은 범위를 표시합니다.
 
-Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`, `entities/customer`의 `model/schema.ts`가 소유합니다. Traffic은 선택 기간의 일별 방문·세션·페이지뷰와 유입/페이지/기기별 요약을 반환합니다. 주문/고객은 상세 Sheet에 필요한 필드를 포함한 읽기 전용 전체 목록입니다. 목록의 검색·정렬·페이지 나누기는 클라이언트에서 수행하며 서버 필터를 구현한 것으로 설명하지 않습니다.
+Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`, `entities/customer`의 `model/schema.ts`가 소유합니다. Traffic은 선택 기간의 일별 방문·세션·페이지뷰와 유입/페이지/기기별 요약을 반환합니다. 주문/고객은 상세 Sheet에 필요한 필드를 포함한 전체 목록이며 생성·편집·삭제를 지원합니다. 목록의 검색·정렬·페이지 나누기는 클라이언트에서 수행하며 서버 필터를 구현한 것으로 설명하지 않습니다.
+
+주문 입력은 `customer: { name, email }`, `date`, `status`, `payment`, `city`, `country`, `shipping`, `items: [{ name, quantity, unitPrice }]`입니다. `shipping`/`unitPrice`는 USD 정수 cents이며 상품은 최소 한 개가 필요합니다. 화면의 USD 소수 입력은 저장 전에 cents로 변환하며 빈 값·음수·지원 범위를 넘는 값은 거부합니다. 허용 상태, 길이·금액·수량·상품 개수 상한은 `orderInputSchema`가 소유합니다.
+
+고객 입력은 `name`, `email`, `status`, `city`, `country`, `joined`입니다. 서버/데모 어댑터가 ID와 이니셜을 생성하며 구매 이력(`orders`, `spent`, `lastOrder`)은 사용자 입력으로 받지 않습니다. 새 고객 이력은 0/0/null이고 프로필 편집은 기존 이력을 유지합니다. 주문 고객 정보는 시점별 스냅샷이며 고객 프로필 삭제·수정에 연쇄 변경하지 않습니다. 기존 고객 이력은 주문 목록과 독립된 샘플이므로 주문 쓰기로 구매 합계를 만들어내지 않습니다. 실제 연결 관계·집계가 필요하면 백엔드 계약부터 바꿉니다.
+
+잘못된 JSON/입력은 `400`, 없는 수정·삭제 대상은 `404`입니다. 입력·응답은 각각 entity 스키마로 검증하고 알 수 없는 속성을 저장하지 않습니다. PATCH는 모든 편집 가능한 필드를 보내는 계약이며 부분 입력을 임의로 채우지 않습니다.
 
 API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니다. Traffic의 기기 항목은 `device`와 `sessions`만 포함하며, 화면이 로컬 의미 토큰으로 색상을 지정합니다. 응답에 알 수 없는 스타일 필드가 있어도 스키마 검증 결과에서 제거되므로 화면에 전달하지 않습니다.
 
@@ -71,7 +83,7 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 `app/mocks/start.ts`는 demo에서만 MSW를 동적으로 가져와 worker 준비를 기다린 뒤 React 앱을 시작합니다. 운영 API 모드에서는 해당 import/worker 시작을 수행하지 않습니다. 실패하면 shadcn 오류 화면과 Reload 버튼을 제공하며 가짜 성공 데이터로 바꾸지 않습니다. worker에는 secure context(HTTPS 또는 localhost)가 필요합니다.
 
-핸들러는 위 네 개 조회 endpoint만 처리합니다. 프로젝트는 기존 demo 저장 어댑터를 유지하고, 그 외 요청은 통과시킵니다. 따라서 외부 환율은 demo에서도 실제 API를 사용하며 런타임 샘플 환율을 주입하지 않습니다. 고정된 450ms 지연과 `Cache-Control: no-store`로 Query 캐시의 동작을 구분할 수 있습니다. HTTP 목업은 dev와 production demo preview에서 동일하게 동작합니다. 실제 API의 인증/권한/백엔드를 제공하는 기능은 아닙니다.
+핸들러는 분석·방문·주문·고객 조회와 주문·고객 POST/PATCH/DELETE만 처리합니다. 주문·고객은 도메인별 데모 저장 어댑터를 공유하며, 테스트에서는 새 어댑터를 주입해 저장 상태를 격리합니다. 프로젝트는 기존 직접 호출 demo 저장 어댑터를 유지하고, 그 외 요청은 통과시킵니다. 따라서 외부 환율은 demo에서도 실제 API를 사용하며 런타임 샘플 환율을 주입하지 않습니다. 고정된 450ms 지연과 `Cache-Control: no-store`로 Query 캐시의 동작을 구분할 수 있습니다. HTTP 목업은 dev와 production demo preview에서 동일하게 동작합니다. 실제 API의 인증/권한/백엔드를 제공하는 기능은 아닙니다.
 
 `public/mockServiceWorker.js`는 MSW CLI가 생성하는 자산이며 내용/무결성 코드를 직접 편집하지 않습니다. MSW 버전을 바꾸면 `pnpm exec msw init public --save`로 재생성합니다. formatter/ESLint는 이 생성 파일 하나만 제외합니다. 정적 호스트는 이 파일을 SPA fallback보다 먼저 JavaScript로 제공해야 합니다. Query 키/캐시 수명·검증 방법은 [Query 캐시](query-cache.md)가 소유합니다.
 
@@ -81,9 +93,9 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. `ApiError.mayHaveSucceeded`는 기본 `false`이며 읽기 전용(GET/HEAD)이 아닌 요청의 timeout·네트워크 실패·2xx 응답의 JSON/스키마 검증 실패에서는 `true`입니다. 응답을 받거나 해석하지 못했어도 서버 변경은 적용됐을 수 있기 때문입니다. 명시적인 HTTP 실패 응답과 읽기 요청은 기존 오류 구분을 유지합니다. `useErrorMessage`는 이 구조화된 값으로 언어를 바꿔도 저장 성공 가능성과 결과 재확인 안내를 유지하며 영어 오류 문자열을 해석하지 않습니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. 불확실한 mutation 결과는 목록을 다시 조회해 확인하고 재시도하도록 안내하며 mutation 자체를 자동 재시도하지 않습니다.
 
-GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취소한 요청은 timeout 오류나 별도 `ApiError`로 감싸지 않습니다. 프로젝트 mutation이 성공하면 진행 중인 목록 요청을 먼저 취소하고 Query 캐시를 갱신한 뒤 목록을 무효화합니다. 따라서 초기 조회가 늦게 도착해 이미 성공한 변경을 가리지 않습니다. 서버가 거부한 mutation을 성공으로 표시하지 않습니다.
+GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취소한 요청은 timeout 오류나 별도 `ApiError`로 감싸지 않습니다. 프로젝트·주문·고객 mutation이 성공하면 진행 중인 목록 요청을 먼저 취소하고 Query 캐시를 갱신한 뒤 목록을 무효화합니다. 따라서 초기 조회가 늦게 도착해 이미 성공한 변경을 가리지 않습니다. 서버가 거부한 mutation을 성공으로 표시하지 않습니다.
 
-프로젝트 mutation 결과가 불확실하면 이전 목록 요청을 취소하고 프로젝트 Query를 무효화해 활성 목록을 재조회합니다. 확인되지 않은 응답으로 캐시를 직접 수정하거나 성공 알림을 보여주지 않으며, 원래 mutation 오류와 재확인 안내는 유지합니다. 재조회도 실패할 수 있으므로 사용자는 목록/새로고침 결과를 확인한 뒤 다시 저장해야 합니다.
+프로젝트·주문·고객 mutation 결과가 불확실하면 이전 목록 요청을 취소하고 해당 도메인 Query를 무효화해 활성 목록을 재조회합니다. 확인되지 않은 응답으로 캐시를 직접 수정하거나 성공 알림을 보여주지 않으며, 원래 mutation 오류와 재확인 안내는 유지합니다. 재조회도 실패할 수 있으므로 사용자는 목록/새로고침 결과를 확인한 뒤 다시 저장해야 합니다.
 
 현재 인증 토큰 주입, refresh token 처리, 401 재인증, 권한 정책은 구현되어 있지 않습니다. 교차 출처 쿠키 인증을 선택하면 CORS, credentials, CSRF를 서버 정책과 함께 설계하고 테스트해야 합니다. 임의 토큰을 localStorage에 넣어 인증 구현을 대신하지 마세요.
 
@@ -91,7 +103,9 @@ GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취�
 
 데모 프로젝트는 `orbit.demo.projects.v1` localStorage 키에 `{ version: 1, projects }` 형태로 저장됩니다. 잘못된 JSON/스키마는 샘플 데이터로 복구합니다. 저장소 접근이 거부되면 메모리로 동작하며 새로고침 이후 보존을 보장하지 않습니다.
 
-데모 생성 항목에는 샘플 소유자 Alex Morgan과 0% 진행률을 부여합니다. 이것은 현재 로그인 사용자로부터 얻은 값이 아닙니다. 분석 데이터와 활동은 2026-10-05~2026-11-03 기준의 고정 샘플이며 프로젝트 편집과 결제/수익 데이터가 연동되어 있지 않습니다.
+주문은 `orbit.demo.orders.v1`에 `{ version: 1, orders }`, 고객은 `orbit.demo.customers.v1`에 `{ version: 1, customers }`를 저장합니다. 각 어댑터가 복원 데이터를 검증하고 저장소 실패 시 현재 세션의 메모리를 유지합니다. 이 저장소는 Query의 메모리 캐시와 별개입니다. 새로고침 후 HTTP GET이 저장 데이터를 다시 읽습니다. API 모드에서는 이 어댑터를 쓰지 않으며 실제 서버가 영속성을 소유합니다.
+
+데모 프로젝트 생성 항목에는 샘플 소유자 Alex Morgan과 0% 진행률을 부여합니다. 이것은 현재 로그인 사용자로부터 얻은 값이 아닙니다. 분석 데이터와 활동은 2026-10-05~2026-11-03 기준의 고정 샘플이며 프로젝트 편집과 결제/수익 데이터가 연동되어 있지 않습니다.
 
 데모 데이터 전체를 초기화하려면 브라우저 개발자 도구의 저장소 화면에서 해당 키만 삭제한 뒤 새로고침하세요. API 모드에서는 데모 저장소가 실제 서버 데이터로 업로드되거나 마이그레이션되지 않습니다.
 

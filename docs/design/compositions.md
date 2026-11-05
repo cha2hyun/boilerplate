@@ -38,12 +38,14 @@
 4. colgroup, Skeleton 셀 수, 빈 행 colspan을 실제 열과 맞춥니다. 로딩·빈 결과·오류의 프레임과 페이지 안내 공간을 유지합니다. 숫자 정렬은 우측·`tabular-nums`, 문자열은 전체 확인 경로에 따라 줄바꿈 또는 목록 생략을 선택합니다.
 5. 페이지 안내와 이동 버튼은 좁은 화면에서 쌓이는 grid를 사용합니다. Table의 데이터/상태/액션은 각 페이지와 widget에 남기며 범용 Table/Filter 프레임워크로 감싸지 않습니다.
 
+편집 가능한 레코드 표는 PageHeader의 생성 버튼과 마지막 열의 행 메뉴를 사용합니다. 행 메뉴의 접근 가능한 이름에는 대상 이름/ID를 포함하고 수정은 Dialog, 삭제는 AlertDialog로 확인합니다. 집계·설명용 표에는 임의의 CRUD를 추가하지 않습니다. 생성 성공 후 기존 URL 필터를 보존하고 새 레코드의 상세를 열어 필터에 가려진 결과도 확인할 수 있게 합니다. 모달이 닫히면 연결된 열기 버튼으로, 삭제로 버튼이 사라졌다면 검색 입력으로 초점을 복구합니다.
+
 ## 폼
 
 소유 예제: [`SettingsPage`](../../src/pages/settings/ui/settings-page.tsx), [`ProjectEditorDialog`](../../src/features/project-editor/ui/project-editor-dialog.tsx).
 
 - `VStack asChild align="stretch"` 안의 실제 `form`이 제출을 소유합니다. 필드 묶음은 `gap-2`, 폼 내용은 `gap-4/6`을 사용하며 Label, Input/Textarea/Select, 도움말 또는 오류를 가까이 배치합니다.
 - Label의 `htmlFor`, 컨트롤 `id`, 도움말/오류의 `aria-describedby`를 연결합니다. 검증 오류는 `aria-invalid`와 `role="alert"`로 전달합니다. placeholder가 레이블을 대체하지 않습니다.
-- Settings는 로컬 환경 설정, 프로젝트 편집은 feature의 검증·mutation을 유지합니다. 제출·취소·초기화의 버튼 종류와 초점 복귀는 해당 흐름이 소유합니다. 반복 외형을 맞추려고 저장 수명·URL·입력 제한을 변경하지 않습니다.
+- Settings는 로컬 환경 설정, 프로젝트·주문·고객 편집은 각 feature의 검증·mutation을 유지합니다. 제출·취소·초기화의 버튼 종류와 초점 복귀는 해당 흐름이 소유합니다. 반복 외형을 맞추려고 저장 수명·URL·입력 제한을 변경하지 않습니다.
 - 긴 오류/도움말을 고정 높이로 가리지 않습니다. Dialog/Sheet의 제목·설명·초점·닫기 동작은 설치된 공통 컴포넌트에 맡깁니다.
 - 저장 전 입력을 잃는 이동·닫기는 [미저장 입력 보호](../unsaved-changes.md)를 따릅니다. 확인창은 공통 shadcn AlertDialog 조합을 사용하며 폼마다 다른 문구·색·버튼 순서를 만들지 않습니다.

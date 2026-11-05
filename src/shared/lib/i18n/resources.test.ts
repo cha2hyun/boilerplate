@@ -28,13 +28,15 @@ describe('bundled locale resource completeness', () => {
     expect(Object.keys(resources['en-US']).sort()).toEqual([
       'admin',
       'common',
+      'customerEditor',
       'examples',
+      'orderEditor',
       'workspace',
     ])
     expect(Object.keys(resources['ko-KR']).sort()).toEqual(Object.keys(resources['en-US']).sort())
   })
 
-  it.each(['common', 'workspace', 'admin', 'examples'] as const)(
+  it.each(Object.keys(resources['en-US']) as (keyof (typeof resources)['en-US'])[])(
     '%s has matching nonempty messages and interpolation names without relying on fallback',
     (namespace) => {
       // Inspect the raw resources: i18next fallback could conceal a missing Korean message.

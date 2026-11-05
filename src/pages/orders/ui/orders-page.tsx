@@ -6,12 +6,22 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock3,
+  MoreHorizontal,
   Package,
+  Pencil,
+  Plus,
   Search,
+  Trash2,
   Truck,
   X,
 } from 'lucide-react'
-import { ordersQueryOptions, orderStatuses, type OrderStatus } from '@/entities/order'
+import {
+  ordersQueryOptions,
+  orderStatuses,
+  type OrderStatus,
+  type SampleOrder,
+} from '@/entities/order'
+import { OrderDeleteDialog, OrderEditorDialog } from '@/features/order-editor'
 import { NumberDisplay } from '@/features/number-motion'
 import {
   useErrorMessage,
@@ -26,6 +36,13 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/shared/ui/empty'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/ui/page-header'
@@ -41,7 +58,7 @@ import { compareOrders, orderSortOptions, orderSubtotal, orderTotal } from '../m
 import { ordersSearchDefaults, type OrdersSearch } from '../model/search'
 
 const pageSize = 6
-const orderTableColumnCount = 12
+const orderTableColumnCount = 13
 const countFormat = { maximumFractionDigits: 0 }
 
 function OrderStatusBadge({ status }: { status: OrderStatus }) {
@@ -65,6 +82,7 @@ interface OrdersPageProps {
 
 export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   const { t } = useTranslation('admin')
+  const { t: editor } = useTranslation('orderEditor')
   const errorMessage = useErrorMessage()
   const { formatNumber, formatMoney, formatDate } = useFormatters()
   const currency = useLocalePreferences((state) => state.currency)
@@ -74,8 +92,13 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   const hasLoadError = ordersQuery.isError && !ordersQuery.data
   const { q, status, sort, page } = search
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null)
+  const [creatingOrder, setCreatingOrder] = useState(false)
+  const [editingOrder, setEditingOrder] = useState<SampleOrder | null>(null)
+  const [deletingOrder, setDeletingOrder] = useState<SampleOrder | null>(null)
   const selectedOrder = orders.find((item) => item.id === selectedOrderId)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
+  const actionTrigger = useRef<HTMLButtonElement | null>(null)
+  const savedOrderId = useRef<string | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const scrollHintId = useId()
   const query = q.trim().toLowerCase()
@@ -92,10 +115,26 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
 
   useEffect(() => {
-    if (ordersQuery.isSuccess && !ordersQuery.isFetching && page > pageCount) {
+    if (
+      ordersQuery.isSuccess &&
+      !ordersQuery.isFetching &&
+      !creatingOrder &&
+      !editingOrder &&
+      !deletingOrder &&
+      page > pageCount
+    ) {
       onSearchChange({ page: pageCount }, { replace: true })
     }
-  }, [ordersQuery.isSuccess, ordersQuery.isFetching, page, pageCount, onSearchChange])
+  }, [
+    ordersQuery.isSuccess,
+    ordersQuery.isFetching,
+    creatingOrder,
+    editingOrder,
+    deletingOrder,
+    page,
+    pageCount,
+    onSearchChange,
+  ])
 
   // A refreshed response may remove the selected record; keep only valid UI selection.
   if (selectedOrderId !== null && ordersQuery.data && !selectedOrder) {
@@ -105,6 +144,18 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   function resetFilters() {
     onSearchChange(ordersSearchDefaults)
     requestAnimationFrame(() => searchRef.current?.focus())
+  }
+
+  function restoreActionFocus(event: Event) {
+    event.preventDefault()
+    if (savedOrderId.current) {
+      detailTrigger.current = actionTrigger.current
+      setSelectedOrderId(savedOrderId.current)
+      savedOrderId.current = null
+      return
+    }
+    const target = actionTrigger.current?.isConnected ? actionTrigger.current : searchRef.current
+    target?.focus()
   }
 
   const summaries = [
@@ -140,6 +191,17 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
         title={t('orders.title')}
         description={t('orders.intro')}
         badgeLabel={t('common.sample')}
+        actions={
+          <Button
+            onClick={(event) => {
+              actionTrigger.current = event.currentTarget
+              setCreatingOrder(true)
+            }}
+          >
+            <Plus aria-hidden="true" />
+            {editor('newOrder')}
+          </Button>
+        }
       />
 
       {ordersQuery.isError && ordersQuery.data && (
@@ -270,7 +332,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                   {isLoading || visibleOrders.length ? (
                     <div className="h-124 min-w-0 border-y">
                       <Table
-                        className="min-w-[1840px] table-fixed"
+                        className="min-w-[1912px] table-fixed"
                         containerProps={{
                           tabIndex: 0,
                           role: 'region',
@@ -294,6 +356,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                           <col className="w-[136px]" />
                           <col className="w-[128px]" />
                           <col className="w-[144px]" />
+                          <col className="w-[72px]" />
                         </colgroup>
                         <TableHeader>
                           <TableRow className="bg-muted hover:bg-muted">
@@ -311,6 +374,9 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                             <TableHead className="text-right">{t('orders.subtotal')}</TableHead>
                             <TableHead className="text-right">{t('orders.shipping')}</TableHead>
                             <TableHead className="pr-5 text-right">{t('orders.total')}</TableHead>
+                            <TableHead className="pr-5">
+                              <span className="sr-only">{editor('actionsColumn')}</span>
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -413,6 +479,59 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                                   </TableCell>
                                   <TableCell className="pr-5 text-right font-medium wrap-anywhere whitespace-normal tabular-nums">
                                     {formatMoney(orderTotal(order) / 100)}
+                                  </TableCell>
+                                  <TableCell className="pr-5">
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          aria-label={editor('actions', { id: order.id })}
+                                          onFocus={(event) => {
+                                            actionTrigger.current = event.currentTarget
+                                          }}
+                                          onPointerDown={(event) => {
+                                            actionTrigger.current = event.currentTarget
+                                          }}
+                                        >
+                                          <MoreHorizontal aria-hidden="true" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent
+                                        align="end"
+                                        onCloseAutoFocus={(event) => {
+                                          if (editingOrder || deletingOrder || selectedOrderId)
+                                            event.preventDefault()
+                                        }}
+                                      >
+                                        <DropdownMenuItem
+                                          onSelect={() => {
+                                            detailTrigger.current = actionTrigger.current
+                                            setSelectedOrderId(order.id)
+                                          }}
+                                        >
+                                          {editor('view')}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                          onSelect={() => {
+                                            setEditingOrder(order)
+                                          }}
+                                        >
+                                          <Pencil aria-hidden="true" />
+                                          {editor('edit')}
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          variant="destructive"
+                                          onSelect={() => {
+                                            setDeletingOrder(order)
+                                          }}
+                                        >
+                                          <Trash2 aria-hidden="true" />
+                                          {editor('remove')}
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </TableCell>
                                 </TableRow>
                               ))}
@@ -570,8 +689,8 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                 <section aria-label={t('orders.orderItems')}>
                   <h2 className="font-medium">{t('orders.items')}</h2>
                   <ul className="divide-y rounded-lg border px-4">
-                    {selectedOrder.items.map((item) => (
-                      <HStack asChild key={item.name} justify="between" wrap className="gap-3 py-4">
+                    {selectedOrder.items.map((item, index) => (
+                      <HStack asChild key={index} justify="between" wrap className="gap-3 py-4">
                         <li>
                           <VStack align="stretch" className="min-w-0 flex-1 gap-1">
                             <p className="font-medium">{item.name}</p>
@@ -641,6 +760,28 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
           )}
         </SheetContent>
       </Sheet>
+      <OrderEditorDialog
+        open={creatingOrder || Boolean(editingOrder)}
+        order={editingOrder ?? undefined}
+        onSaved={(order) => {
+          if (creatingOrder) savedOrderId.current = order.id
+        }}
+        onCloseAutoFocus={restoreActionFocus}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCreatingOrder(false)
+            setEditingOrder(null)
+          }
+        }}
+      />
+      <OrderDeleteDialog
+        open={Boolean(deletingOrder)}
+        order={deletingOrder}
+        onCloseAutoFocus={restoreActionFocus}
+        onOpenChange={(open) => {
+          if (!open) setDeletingOrder(null)
+        }}
+      />
     </VStack>
   )
 }

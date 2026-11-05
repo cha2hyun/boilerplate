@@ -4,16 +4,21 @@ import { http, HttpResponse } from 'msw/http'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { analyticsQueryOptions } from '@/entities/analytics'
-import { customersQueryOptions } from '@/entities/customer'
-import { orderKeys, ordersQueryOptions, sampleOrders } from '@/entities/order'
+import { createDemoCustomerAdapter, customersQueryOptions } from '@/entities/customer'
+import {
+  createDemoOrderAdapter,
+  orderKeys,
+  ordersQueryOptions,
+  sampleOrders,
+} from '@/entities/order'
 import { getSampleTraffic, trafficKeys, trafficQueryOptions } from '@/entities/traffic'
-import { handlers } from './handlers'
+import { createDemoHandlers } from './handlers'
 
 vi.mock('@/shared/config', () => ({
-  env: { dataSource: 'demo', apiBaseUrl: 'http://localhost/api' },
+  env: { dataSource: 'demo', apiBaseUrl: 'http://localhost/api/' },
 }))
 
-const server = setupServer(...handlers)
+const server = setupServer()
 const requests: string[] = []
 let client: QueryClient
 
@@ -26,6 +31,13 @@ beforeAll(() => {
 })
 
 beforeEach(() => {
+  server.resetHandlers(
+    ...createDemoHandlers({
+      orders: createDemoOrderAdapter({ storage: null, delayMs: 0 }),
+      customers: createDemoCustomerAdapter({ storage: null, delayMs: 0 }),
+      delayMs: 0,
+    }),
+  )
   requests.length = 0
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 })
@@ -186,4 +198,96 @@ describe('demo HTTP queries and Query cache', () => {
     expect(data.devices).toEqual(traffic.devices)
     for (const device of data.devices) expect(device).not.toHaveProperty('fill')
   })
+})
+
+const commerceInputs = [
+  {
+    endpoint: 'orders',
+    input: {
+      customer: { name: 'Demo Buyer', email: 'buyer@example.com' },
+      date: '2026-11-05',
+      status: 'Processing',
+      payment: 'Pending',
+      city: 'Seoul',
+      country: 'South Korea',
+      shipping: 500,
+      items: [{ name: 'Notebook', quantity: 2, unitPrice: 1250 }],
+    },
+    update: { city: 'Busan' },
+  },
+  {
+    endpoint: 'customers',
+    input: {
+      name: 'Demo Buyer',
+      email: 'buyer@example.com',
+      status: 'Active',
+      city: 'Seoul',
+      country: 'South Korea',
+      joined: '2026-11-05',
+    },
+    update: { city: 'Busan' },
+  },
+] as const
+
+async function sendJson(path: string, method: string, body?: unknown) {
+  return fetch(`http://localhost/api/${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  })
+}
+
+describe('demo commerce HTTP mutations', () => {
+  it.each(commerceInputs)(
+    'creates, updates, reads and deletes $endpoint through HTTP',
+    async ({ endpoint, input, update }) => {
+      const createdResponse = await sendJson(endpoint, 'POST', {
+        ...input,
+        id: 'untrusted-id',
+        orders: 999,
+        spent: 999999,
+      })
+      expect(createdResponse.status).toBe(201)
+      expect(createdResponse.headers.get('cache-control')).toBe('no-store')
+      const created = (await createdResponse.json()) as { id: string }
+      expect(created).toMatchObject(input)
+      expect(created.id).not.toBe('untrusted-id')
+      if (endpoint === 'customers') {
+        expect(created).toMatchObject({ orders: 0, spent: 0, lastOrder: null })
+      }
+
+      const updatedResponse = await sendJson(`${endpoint}/${created.id}`, 'PATCH', {
+        ...input,
+        ...update,
+      })
+      expect(updatedResponse.status).toBe(200)
+      expect(await updatedResponse.json()).toMatchObject({ id: created.id, ...update })
+      const records = (await (await sendJson(endpoint, 'GET')).json()) as { id: string }[]
+      expect(records.find(({ id }) => id === created.id)).toMatchObject(update)
+      expect(records).toHaveLength(13)
+
+      const removed = await sendJson(`${endpoint}/${created.id}`, 'DELETE')
+      expect(removed.status).toBe(204)
+      expect(await removed.text()).toBe('')
+      expect(await (await sendJson(endpoint, 'GET')).json()).toHaveLength(12)
+      expect((await sendJson(`${endpoint}/${created.id}`, 'PATCH', input)).status).toBe(404)
+      expect((await sendJson(`${endpoint}/${created.id}`, 'DELETE')).status).toBe(404)
+    },
+  )
+
+  it.each(commerceInputs)(
+    'rejects malformed or incomplete $endpoint writes without changing data',
+    async ({ endpoint }) => {
+      const before: unknown = await (await sendJson(endpoint, 'GET')).json()
+      expect((await sendJson(endpoint, 'POST', {})).status).toBe(400)
+      expect((await sendJson(`${endpoint}/missing`, 'PATCH', {})).status).toBe(400)
+      const malformed = await fetch(`http://localhost/api/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{',
+      })
+      expect(malformed.status).toBe(400)
+      expect(await (await sendJson(endpoint, 'GET')).json()).toEqual(before)
+    },
+  )
 })
