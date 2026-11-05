@@ -29,6 +29,8 @@ PageHeader → 기본/레이아웃/콘텐츠/피드백 탭입니다. 기본은 �
 | PC `≥ 1280px`       | 기본 카드 2열을 유지하며 내부 구성/로딩 예제는 3열, 숫자 옵션은 내부 2열을 사용합니다.      |
 
 예제에서 보이는 축약은 전문 확인 경로와 함께 검토하며 문구/숫자 폭은 [긴 콘텐츠](../design/content-overflow.md), [숫자 표시](../number-formatting.md)를 따릅니다.
+레이아웃 예제의 보고서 이름은 별도 상세 화면이 없으므로 줄바꿈으로 전체를 표시합니다. 터치·키보드 사용자가 확인할 수 없는 hover title에 의존하지 않습니다.
+확대 텍스트에서는 보고서·탐색 레일·문구 예제 행이 줄바꿈해 읽기 너비를 확보합니다. 키보드 초점을 받은 탭은 자체 스크롤 영역 안에 표시합니다. 복구 버튼과 알림 제목은 전체 문구를 보존하고 로딩 예제는 카드 내부 폭을 넘지 않습니다.
 
 ## 상태 소유권과 구현 근거
 
@@ -41,3 +43,4 @@ PageHeader → 기본/레이아웃/콘텐츠/피드백 탭입니다. 기본은 �
 - 숫자 형식·통화 기호·축약·모션과 예약 폭: [workspace E2E](../../e2e/workspace.spec.ts)의 `switches shared number formats and keeps compact motion text within its reserved width`.
 - 헤더/화면 구간별 탐색: 같은 파일의 `keeps page titles and header badges consistent through responsive sidebar navigation`. 서체 로딩: `loads Korean and Latin Pretendard subsets at only the three approved weights`.
 - 레일·언어/시간대 미리보기·복구 토글 전체는 현재 개별 자동 검사가 없습니다. 변경 시 예제가 전역 설정을 쓰지 않는지와 키보드 조작을 수동 확인합니다.
+- 작은 화면·확대 텍스트의 탭 이동과 보고서 이름 전체 표시: 같은 workspace E2E의 `keeps support-page actions, tabs, and example text within narrow content areas`.

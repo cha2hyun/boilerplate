@@ -6,7 +6,7 @@
 
 스켈레톤이 나타나거나 사라져도 **Card의 width/height가 바뀌지 않아야 합니다**. 성공 Card를 대략 비슷한 높이의 Skeleton 하나로 교체하지 않습니다. 같은 Card/Header/Content/Footer, grid 열, padding, gap, border를 유지하고 내용 슬롯만 바꿉니다.
 
-- KPI 레이블/설명/아이콘을 유지하고 `MetricCard`의 같은 수치 프레임을 사용합니다. 공통 최소 카드 높이는 192px, 수치 슬롯은 `min-h-18`(72px), footer는 `min-h-8`(32px)로 두 줄을 예약합니다. 일반 USD/KRW 샘플의 로딩/성공 치수를 유지하며 예약 영역보다 긴 예외 데이터는 잘리지 않도록 확장합니다. 상세 기준은 [화면 조합](design/compositions.md)과 [긴 콘텐츠](design/content-overflow.md)가 소유합니다.
+- KPI 레이블/설명/아이콘을 유지하고 `MetricCard`의 같은 수치 프레임을 사용합니다. 모바일은 카드 최소 136px·수치 슬롯 최소 36px, 768px 이상은 카드 최소 192px·수치 슬롯 최소 72px입니다. footer는 공통 최소 32px로 두 줄을 예약합니다. 일반 USD/KRW 샘플의 로딩/성공 치수를 유지하며 예약 영역보다 긴 예외 데이터는 잘리지 않도록 확장합니다. 상세 기준은 [화면 조합](design/compositions.md)과 [긴 콘텐츠](design/content-overflow.md)가 소유합니다.
 - 차트는 같은 높이의 프레임 안에서 Skeleton/차트/빈 상태/오류를 전환합니다.
 - 표는 열 구성·너비·행 높이·페이지 영역을 예약합니다. 데이터가 적거나 오류가 있어도 바깥 Card가 접히지 않게 고정 viewport 안에 empty/error 콘텐츠를 표시합니다. 초과 데이터는 그 영역에서 스크롤하거나 페이지를 나눕니다.
 - footer의 페이지 안내나 긴 설명이 로딩/성공 때 서로 다르게 줄바꿈하지 않도록 같은 responsive grid를 사용합니다.

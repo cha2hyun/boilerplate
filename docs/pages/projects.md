@@ -43,6 +43,7 @@ PageHeader의 새 프로젝트 → 전체 프로젝트 요약 → 조회 도구�
 ## 수용 기준
 
 - 생성·수정·삭제와 새로고침 지속성: [프로젝트 E2E](../../e2e/projects.spec.ts)의 `validates, creates, edits and deletes a project with persistence across reloads`.
+- 삭제 확인의 이름은 공백 없는 최대 80자도 줄바꿈하며 제목·설명·유지/삭제 버튼이 모달과 화면 안에 남습니다. 같은 CRUD E2E가 저장된 긴 이름과 삭제창의 가로 스크롤 너비·두 버튼의 전체 노출을 확인합니다.
 - 검색·상태·초기화·열 표시: 같은 파일의 `searches owners and projects, filters status, resets empty results, and changes visible columns`. 선택 CSV: `paginates projects and exports only selected rows as a safe CSV`.
 - 짧은 화면의 폼과 삭제된 대상 수정 오류: 같은 파일의 `keeps project validation and save controls reachable in a short viewport`, `keeps an edit open and explains the error when another tab deletes the project`.
 - 닫기 경로별 폐기 확인과 초점: [입력 보호 E2E](../../e2e/unsaved-changes.spec.ts)의 `protects project drafts for Escape, cancel, outside click and close while retaining focus`. clean·원복·폐기 후 재진입·저장 중 이동 차단·성공 후 해제·응답 손실 오류 보존: [편집창 테스트](../../src/features/project-editor/ui/project-editor-dialog.test.tsx).

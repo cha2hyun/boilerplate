@@ -542,11 +542,32 @@ test('creates, edits and deletes an order with protected drafts and persisted to
   await page.goto('/orders?q=olivia&status=Processing&sort=highest')
   await expectCommerceMetric(page, 'Total orders', '12')
   const trigger = page.getByRole('button', { name: 'New order', exact: true })
+  const originalViewport = page.viewportSize()
+  if (testInfo.project.name === 'mobile') {
+    await page.setViewportSize({ width: 390, height: 360 })
+  }
   await trigger.click()
   const editor = page.getByRole('dialog', { name: 'Create order', exact: true })
+  const customerName = editor.getByLabel('Customer name', { exact: true })
+  if (testInfo.project.name === 'mobile') {
+    await expect(customerName).toBeFocused()
+    await expect(customerName).toBeInViewport({ ratio: 1 })
+    const close = editor.getByRole('button', { name: 'Close', exact: true })
+    for (let step = 0; step < 24; step += 1) {
+      await page.keyboard.press('Tab')
+      if (await close.evaluate((element) => element === document.activeElement)) break
+    }
+    await expect(close).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(customerName).toBeFocused()
+    await expect(customerName).toBeInViewport({ ratio: 1 })
+    await page.keyboard.press('Shift+Tab')
+    await expect(close).toBeFocused()
+    await expect(close).toBeInViewport({ ratio: 1 })
+    if (originalViewport) await page.setViewportSize(originalViewport)
+  }
   // Customer name occupies the same grid column as Order date at every viewport.
   await expectEditorDateLayout(editor, 'Order date', 'Customer name')
-  const customerName = editor.getByLabel('Customer name', { exact: true })
   await customerName.fill('Commerce order buyer')
   await page.keyboard.press('Escape')
   const discard = page.getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true })
@@ -638,6 +659,7 @@ test('creates, edits and deletes an order with protected drafts and persisted to
 test('retains failed customer input and persists CRUD while clamping the final page', async ({
   page,
 }, testInfo) => {
+  const updatedName = `Commerce customer ${'A'.repeat(62)}`
   await page.goto('/customers?q=olivia&status=Active&sort=name')
   await expectCommerceMetric(page, 'Total customers', '12')
   const trigger = page.getByRole('button', { name: 'New customer', exact: true })
@@ -652,6 +674,29 @@ test('retains failed customer input and persists CRUD while clamping the final p
   await trigger.click()
   await expect(editor.getByLabel('Name', { exact: true })).toHaveValue('')
   await expectEditorDateLayout(editor, 'Joined', 'Name')
+  if (testInfo.project.name === 'mobile') {
+    const originalViewport = page.viewportSize()
+    await page.setViewportSize({ width: 412, height: 844 })
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%'
+    })
+    const create = editor.getByRole('button', { name: 'Create customer', exact: true })
+    await create.click()
+    await expect(editor.getByLabel('Name', { exact: true })).toBeFocused()
+    await expectEditorDateLayout(editor, 'Joined', 'Name')
+    await create.scrollIntoViewIfNeeded()
+    await expect(create).toBeInViewport({ ratio: 1 })
+    await expect
+      .poll(() => create.evaluate((element) => element.scrollWidth - element.clientWidth))
+      .toBeLessThanOrEqual(1)
+    const cancel = editor.getByRole('button', { name: 'Cancel', exact: true })
+    await cancel.scrollIntoViewIfNeeded()
+    await expect(cancel).toBeInViewport({ ratio: 1 })
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = ''
+    })
+    if (originalViewport) await page.setViewportSize(originalViewport)
+  }
   await fillCustomerForm(editor, 'Commerce customer')
   await editor
     .getByRole('heading', { name: 'Create customer', exact: true })
@@ -709,7 +754,7 @@ test('retains failed customer input and persists CRUD while clamping the final p
   await page.getByRole('menuitem', { name: 'Edit customer', exact: true }).click()
   const edit = page.getByRole('dialog', { name: 'Edit customer', exact: true })
   await expectEditorDateLayout(edit, 'Joined', 'Name')
-  await edit.getByLabel('Name', { exact: true }).fill('Commerce customer updated')
+  await edit.getByLabel('Name', { exact: true }).fill(updatedName)
   await edit.getByLabel('Status', { exact: true }).click()
   await page.getByRole('option', { name: 'Inactive', exact: true }).click()
   await edit.getByRole('button', { name: 'Save changes', exact: true }).click()
@@ -722,12 +767,12 @@ test('retains failed customer input and persists CRUD while clamping the final p
   await expect(page).toHaveURL((url) => !url.searchParams.has('status'))
   await page.reload()
   const updated = page.getByRole('button', {
-    name: 'View customer Commerce customer updated',
+    name: `View customer ${updatedName}`,
     exact: true,
   })
   await updated.click()
   const updatedDetails = page.getByRole('dialog', {
-    name: 'Commerce customer updated',
+    name: updatedName,
     exact: true,
   })
   await expect(updatedDetails.getByText('Inactive', { exact: true })).toBeVisible()
@@ -741,11 +786,15 @@ test('retains failed customer input and persists CRUD while clamping the final p
   await page.getByRole('button', { name: 'Next customers page', exact: true }).click()
   await expect(page.getByText('Page 3 of 3', { exact: true })).toBeVisible()
   await expect(updated).toBeVisible()
-  await page
-    .getByRole('button', { name: 'Actions for Commerce customer updated', exact: true })
-    .click()
+  await page.getByRole('button', { name: `Actions for ${updatedName}`, exact: true }).click()
   await page.getByRole('menuitem', { name: 'Delete customer', exact: true }).click()
   const remove = page.getByRole('alertdialog', { name: 'Delete customer?', exact: true })
+  await expect(remove).toBeInViewport({ ratio: 1 })
+  await expect
+    .poll(() => remove.evaluate((element) => element.scrollWidth - element.clientWidth))
+    .toBeLessThanOrEqual(1)
+  await expect(remove.getByRole('button', { name: 'Keep customer' })).toBeInViewport({ ratio: 1 })
+  await expect(remove.getByRole('button', { name: 'Delete customer' })).toBeInViewport({ ratio: 1 })
   await remove.getByRole('button', { name: 'Delete customer', exact: true }).click()
   await expect(remove).toBeHidden()
   await expect(search).toBeFocused()

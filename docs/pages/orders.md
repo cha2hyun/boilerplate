@@ -45,6 +45,7 @@ PageHeader의 새 주문 → 전체 주문 상태 요약 → 상태 탭/검색/�
 ## 수용 기준
 
 - 주문 생성·수정 모달의 날짜 입력은 일반 입력과 높이·같은 열의 좌우 경계를 맞춥니다. 빈 값/입력된 값 모두 폼과 모달 내부에 가로 넘침이 없어야 하며 하단 저장·취소는 세로 스크롤과 함께 접근할 수 있어야 합니다. 아래 CRUD E2E가 실제 치수와 모든 입력 조상의 스크롤 너비를 검사하고 [폼 조합](../design/compositions.md#폼)이 공통 규칙을 소유합니다.
+- 짧은 모바일 390×360에서도 초기 초점과 Tab 순환으로 돌아온 고객 이름 입력이 고정 푸터 뒤에 가려지지 않습니다. 아래 CRUD E2E가 실제 Tab·Shift+Tab 이동과 초점 대상의 전체 노출을 확인합니다.
 - 상태와 검색 조합·빈 결과 복구: [상거래 E2E](../../e2e/commerce.spec.ts)의 `combines order status and customer search, and recovers from empty results`.
 - 페이지·정렬·상세·초점: 같은 파일의 `paginates and sorts orders, then opens details with keyboard focus restored`. 실제 터치/키보드 스크롤·화면 폭: `keeps commerce tables and detail sheets inside the viewport`.
 - 잘못된 URL과 로드 뒤 페이지 보정: 같은 파일의 `recovers invalid commerce URL filters and clamps pages after data loads`. 상세 최신성: `/orders keeps open details current and contains long customer text`.

@@ -25,11 +25,11 @@ export function MetricCard({
   return (
     <Card
       data-metric-card
-      className="min-h-48 min-w-0 gap-3 py-5 shadow-xs"
+      className="min-h-34 min-w-0 gap-2 py-4 shadow-xs md:min-h-48 md:gap-3 md:py-5"
       aria-label={label}
       aria-busy={loading}
     >
-      <HStack asChild justify="between" className="gap-3 px-5">
+      <HStack asChild justify="between" className="gap-3 px-4 md:px-5">
         <CardHeader>
           <CardDescription className="min-w-0 text-xs font-medium wrap-anywhere">
             <span data-slot="metric-label">{label}</span>
@@ -37,7 +37,7 @@ export function MetricCard({
           <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
         </CardHeader>
       </HStack>
-      <VStack asChild align="stretch" justify="center" className="min-h-18 px-5">
+      <VStack asChild align="stretch" justify="center" className="min-h-9 px-4 md:min-h-18 md:px-5">
         <CardContent>
           <CardTitle className="text-3xl leading-9 font-semibold tracking-tight tabular-nums">
             <div data-slot="metric-value" className="min-w-0 wrap-anywhere">
@@ -48,7 +48,8 @@ export function MetricCard({
       </VStack>
       <HStack
         asChild
-        className="mt-auto min-h-8 min-w-0 gap-2 px-5 text-xs wrap-anywhere text-muted-foreground"
+        wrap
+        className="mt-auto min-h-8 min-w-0 gap-2 px-4 text-xs wrap-anywhere text-muted-foreground md:px-5"
       >
         <CardFooter data-metric-footer data-testid={footerTestId}>
           {footer}

@@ -14,6 +14,7 @@ async function createProject(page: Page, name: string, description = '') {
 test('validates, creates, edits and deletes a project with persistence across reloads', async ({
   page,
 }) => {
+  const updatedName = `Launchplanningupdated${'A'.repeat(59)}`
   await page.goto('/projects')
   await expect(page.getByRole('heading', { name: 'Projects', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'New project', exact: true }).click()
@@ -40,50 +41,44 @@ test('validates, creates, edits and deletes a project with persistence across re
   await expect(editDialog.getByLabel('Description')).toHaveValue(
     'Align the team around our next launch.',
   )
-  await editDialog.getByLabel('Project name', { exact: true }).fill('Launch planning updated')
+  await editDialog.getByLabel('Project name', { exact: true }).fill(updatedName)
   await editDialog.getByLabel('Status', { exact: true }).click()
   await page.getByRole('option', { name: 'Paused', exact: true }).click()
   await editDialog.getByRole('button', { name: 'Save changes', exact: true }).click()
   await expect(editDialog).toBeHidden()
-  await expect(
-    page.getByRole('button', { name: 'Launch planning updated', exact: true }),
-  ).toBeFocused()
-  await expect(page.getByRole('row').filter({ hasText: 'Launch planning updated' })).toContainText(
-    'Paused',
-  )
+  await expect(page.getByRole('button', { name: updatedName, exact: true })).toBeFocused()
+  await expect(page.getByRole('row').filter({ hasText: updatedName })).toContainText('Paused')
 
   await page.reload()
-  await expect(page.getByRole('row').filter({ hasText: 'Launch planning updated' })).toContainText(
-    'Paused',
-  )
-  await page
-    .getByRole('button', { name: 'Actions for Launch planning updated', exact: true })
-    .click()
+  await expect(page.getByRole('row').filter({ hasText: updatedName })).toContainText('Paused')
+  await page.getByRole('button', { name: `Actions for ${updatedName}`, exact: true }).click()
   await page.getByRole('menuitem', { name: 'Delete project', exact: true }).click()
   const deleteDialog = page.getByRole('alertdialog', { name: 'Delete this project?' })
+  await expect(deleteDialog).toBeInViewport({ ratio: 1 })
+  await expect
+    .poll(() => deleteDialog.evaluate((element) => element.scrollWidth - element.clientWidth))
+    .toBeLessThanOrEqual(1)
+  await expect(deleteDialog.getByRole('button', { name: 'Delete project' })).toBeInViewport({
+    ratio: 1,
+  })
+  await expect(deleteDialog.getByRole('button', { name: 'Keep project' })).toBeInViewport({
+    ratio: 1,
+  })
   await deleteDialog.getByRole('button', { name: 'Keep project' }).click()
   await expect(
-    page.getByRole('button', { name: 'Actions for Launch planning updated', exact: true }),
+    page.getByRole('button', { name: `Actions for ${updatedName}`, exact: true }),
   ).toBeFocused()
-  await expect(
-    page.getByRole('button', { name: 'Launch planning updated', exact: true }),
-  ).toBeVisible()
+  await expect(page.getByRole('button', { name: updatedName, exact: true })).toBeVisible()
 
-  await page
-    .getByRole('button', { name: 'Actions for Launch planning updated', exact: true })
-    .click()
+  await page.getByRole('button', { name: `Actions for ${updatedName}`, exact: true }).click()
   await page.getByRole('menuitem', { name: 'Delete project', exact: true }).click()
   await deleteDialog.getByRole('button', { name: 'Delete project', exact: true }).click()
   await expect(deleteDialog).toBeHidden()
   await expect(page.getByLabel('All projects', { exact: true })).toBeFocused()
-  await expect(
-    page.getByRole('button', { name: 'Launch planning updated', exact: true }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('button', { name: updatedName, exact: true })).toHaveCount(0)
   await page.reload()
   await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
-  await expect(
-    page.getByRole('button', { name: 'Launch planning updated', exact: true }),
-  ).toHaveCount(0)
+  await expect(page.getByRole('button', { name: updatedName, exact: true })).toHaveCount(0)
 })
 
 test('searches owners and projects, filters status, resets empty results, and changes visible columns', async ({

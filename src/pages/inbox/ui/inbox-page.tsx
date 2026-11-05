@@ -128,9 +128,13 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
 
       <Card className="gap-0 overflow-hidden py-0 shadow-xs">
         <HStack justify="between" wrap className="gap-3 border-b p-4 md:px-5">
-          <HStack className="gap-2 text-sm font-medium">
-            <Inbox className="size-4" />
-            {t('inbox.allMessages')}
+          <HStack wrap className="min-w-0 gap-2 text-sm font-medium">
+            <HStack asChild className="min-w-0 gap-2">
+              <span>
+                <Inbox className="size-4 shrink-0" />
+                <span className="min-w-0 wrap-anywhere">{t('inbox.allMessages')}</span>
+              </span>
+            </HStack>
             <Badge variant="outline">
               {t('inbox.unreadCount', { total: formatNumber(unreadCount) })}
             </Badge>
@@ -153,11 +157,22 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
               }}
             >
               <VStack align="stretch" className="gap-4 border-b p-4">
-                <TabsList className="w-full" aria-label={t('inbox.messageViews')}>
-                  <TabsTrigger value="all">{t('inbox.all')}</TabsTrigger>
-                  <TabsTrigger value="unread">{t('inbox.unread')}</TabsTrigger>
-                  <TabsTrigger value="archived">{t('inbox.archived')}</TabsTrigger>
-                </TabsList>
+                <HStack asChild wrap>
+                  <TabsList
+                    className="min-h-9 w-full group-data-[orientation=horizontal]/tabs:h-auto"
+                    aria-label={t('inbox.messageViews')}
+                  >
+                    <TabsTrigger className="h-auto min-h-7 whitespace-normal" value="all">
+                      {t('inbox.all')}
+                    </TabsTrigger>
+                    <TabsTrigger className="h-auto min-h-7 whitespace-normal" value="unread">
+                      {t('inbox.unread')}
+                    </TabsTrigger>
+                    <TabsTrigger className="h-auto min-h-7 whitespace-normal" value="archived">
+                      {t('inbox.archived')}
+                    </TabsTrigger>
+                  </TabsList>
+                </HStack>
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground" />
                   <Input
@@ -276,10 +291,11 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
                           {t('inbox.back')}
                         </Button>
                       )}
-                      <HStack wrap className="ml-auto gap-2">
+                      <HStack wrap className="ml-auto max-w-full min-w-0 gap-2">
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-auto min-h-8 max-w-full py-1.5 whitespace-normal"
                           onClick={() => {
                             toggleRead(selected)
                           }}
@@ -290,6 +306,7 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-auto min-h-8 max-w-full py-1.5 whitespace-normal"
                           onClick={() => {
                             toggleArchive(selected)
                           }}
@@ -321,7 +338,7 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
                         <Avatar className="size-9">
                           <AvatarFallback className="text-xs">{selected.initials}</AvatarFallback>
                         </Avatar>
-                        <VStack align="stretch" className="min-w-0 flex-1">
+                        <VStack align="stretch" className="min-w-0 flex-[1_1_10rem]">
                           <p className="text-sm font-medium wrap-anywhere">{selected.sender}</p>
                           <p className="text-xs wrap-anywhere text-muted-foreground">
                             {selected.email}

@@ -536,6 +536,134 @@ test('validates, saves and resets workspace preferences across reloads', async (
   await expectNoPageOverflow(page)
 })
 
+test('keeps support-page actions, tabs, and example text within narrow content areas', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'mobile',
+    'Exercise the narrow and enlarged-text layouts once.',
+  )
+  for (const { width, fontSize } of [
+    { width: 320, fontSize: '100%' },
+    { width: 390, fontSize: '100%' },
+    { width: 412, fontSize: '200%' },
+  ]) {
+    await page.setViewportSize({ width, height: 915 })
+    const openPage = async (path: string) => {
+      await page.goto(path)
+      await expect(page.locator('#main-content h1')).toBeVisible()
+      await page.addStyleTag({ content: `:root { font-size: ${fontSize}; }` })
+      await page.evaluate(() => document.fonts.ready)
+    }
+    const expectCardContentsInside = async () => {
+      const overflow = await page
+        .locator('[role="tabpanel"][data-state="active"]')
+        .evaluate((panel) => {
+          const pageBox = document
+            .querySelector('[data-slot="page-content"]')!
+            .getBoundingClientRect()
+          return [...panel.querySelectorAll('[data-slot="card"], button, [data-slot="skeleton"]')]
+            .filter((element) => element.getBoundingClientRect().width > 0)
+            .map((element) => {
+              const box = element.getBoundingClientRect()
+              const card = element.parentElement?.closest('[data-slot="card"]')
+              const boundary = card?.getBoundingClientRect() ?? pageBox
+              return Math.max(boundary.left - box.left, box.right - boundary.right)
+            })
+        })
+      expect(Math.max(...overflow)).toBeLessThanOrEqual(1)
+      await expectNoPageOverflow(page)
+    }
+
+    await openPage('/settings')
+    const name = page.getByRole('textbox', { name: 'Workspace name', exact: true })
+    await name.fill(`Workspace ${width} ${'A'.repeat(26)}`)
+    const save = page.getByRole('button', { name: 'Save changes', exact: true })
+    await name.focus()
+    for (let step = 0; step < 6; step += 1) {
+      if (await save.evaluate((element) => element === document.activeElement)) break
+      await page.keyboard.press('Tab')
+    }
+    await expect(save).toBeFocused()
+    await expect(save).toBeInViewport({ ratio: 1 })
+    await expectCardContentsInside()
+    await page.keyboard.press('Enter')
+    await expect(save).toBeDisabled()
+    await page.getByRole('tab', { name: 'Appearance', exact: true }).click()
+    await expectCardContentsInside()
+
+    for (const route of ['/components', '/foundations']) {
+      await openPage(route)
+      const tabs = page.getByRole('tab')
+      await tabs.first().focus()
+      await page.keyboard.press('End')
+      await expect(tabs.last()).toBeFocused()
+      await expect(async () => {
+        const boundaries = await tabs.last().evaluate((tab) => {
+          const box = tab.getBoundingClientRect()
+          const content = document
+            .querySelector('[data-slot="page-content"]')!
+            .getBoundingClientRect()
+          return { left: box.left - content.left, right: content.right - box.right }
+        })
+        expect(boundaries.left).toBeGreaterThanOrEqual(-1)
+        expect(boundaries.right).toBeGreaterThanOrEqual(-1)
+      }).toPass()
+      await page.keyboard.press('Home')
+      await expect(tabs.first()).toBeFocused()
+      for (const tab of await tabs.all()) {
+        await tab.click()
+        await expectCardContentsInside()
+      }
+      if (route === '/foundations') {
+        await page.getByRole('tab', { name: 'Layout', exact: true }).click()
+        const report = page.getByText('Global operations report · second half of 2026', {
+          exact: true,
+        })
+        const text = await report.evaluate((element) => ({
+          width: element.clientWidth,
+          contentWidth: element.scrollWidth,
+          height: element.clientHeight,
+          contentHeight: element.scrollHeight,
+        }))
+        expect(text.contentWidth).toBeLessThanOrEqual(text.width + 1)
+        expect(text.contentHeight).toBeLessThanOrEqual(text.height + 1)
+      }
+    }
+  }
+})
+
+test('aligns paired component example card edges on desktop', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Only the desktop examples use paired cards.')
+  await page.goto('/components')
+  const cardElements = page.locator('[role="tabpanel"][data-state="active"] > [data-slot="card"]')
+  await expect(cardElements).toHaveCount(7)
+  await page.evaluate(() => document.fonts.ready)
+  const cards = await cardElements.evaluateAll((elements) =>
+    elements.map((element) => {
+      const box = element.getBoundingClientRect()
+      return { top: box.top, bottom: box.bottom }
+    }),
+  )
+  expect(cards).toHaveLength(7)
+  for (let index = 0; index + 1 < cards.length; index += 2) {
+    expect(Math.abs(cards[index]!.top - cards[index + 1]!.top)).toBeLessThanOrEqual(1)
+    expect(Math.abs(cards[index]!.bottom - cards[index + 1]!.bottom)).toBeLessThanOrEqual(1)
+  }
+  const buttons = await page
+    .getByRole('tabpanel')
+    .getByRole('button')
+    .evaluateAll((elements) =>
+      elements.map((element) => ({
+        size: element.getAttribute('data-size'),
+        height: element.getBoundingClientRect().height,
+      })),
+    )
+  for (const button of buttons) {
+    expect(button.height).toBe(button.size === 'sm' ? 32 : 36)
+  }
+})
+
 test('keeps page titles and header badges consistent through responsive sidebar navigation', async ({
   page,
   viewport,

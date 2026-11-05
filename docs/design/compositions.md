@@ -32,11 +32,15 @@
 
 - 기존 `Card`, `CardHeader`, `CardContent`, `CardTitle`, `CardFooter`, `HStack`, `VStack`, `Skeleton`의 조합입니다. 비즈니스 데이터·Query·formatter·환율을 소유하지 않습니다.
 - `label`, `icon`, `value`, `footer`, `loading`만으로 화면을 구성합니다. 페이지가 패딩·글자 크기·테두리·그림자를 재정의하는 `className` API는 제공하지 않습니다. `footerTestId`는 기존 비교 행 테스트의 식별자를 보존합니다.
-- 공통 바깥 기준은 `rounded-xl`, `shadow-xs`, 가로/세로 `20px` 패딩, `min-height: 192px`입니다. 레이블은 `text-xs font-medium`, 값은 `text-3xl leading-9 font-semibold tabular-nums`, footer는 `text-xs`입니다.
-- 값 영역은 최소 `72px`로 두 줄, footer는 최소 `32px`로 두 줄을 예약합니다. Skeleton과 값은 같은 프레임을 사용합니다. 더 긴 내용은 안전하게 높이를 늘리며 고정 높이·클리핑으로 숨기지 않습니다. 이 예외와 확인 범위는 [긴 콘텐츠](content-overflow.md)를 따릅니다.
-- 설명형 footer는 문자열, Overview의 비교형 footer는 기존 Badge와 기간 설명을 전달합니다. 둘 다 공통 중앙 정렬·간격·최소 높이를 사용합니다. 색상만으로 증감을 전달하지 않고 아이콘과 부호를 함께 유지합니다.
+- 공통 바깥 기준은 `rounded-xl`, `shadow-xs`입니다. 모바일 `<768px`는 패딩 `16px`·섹션 간격 `8px`·최소 높이 `136px`, 태블릿/PC는 패딩 `20px`·간격 `12px`·최소 높이 `192px`를 사용합니다. 페이지별로 별도 밀도를 지정하지 않습니다. 레이블은 `text-xs font-medium`, 값은 `text-3xl leading-9 font-semibold tabular-nums`, footer는 `text-xs`입니다.
+- 값 영역은 모바일 최소 `36px`, 태블릿/PC 최소 `72px`, footer는 공통 최소 `32px`를 예약합니다. 모바일에서 짧은 숫자에 두 줄 높이를 비워 두지 않습니다. Skeleton과 일반 값은 같은 프레임을 사용합니다. 긴 금액·확대된 글자가 필요한 경우 자연스럽게 높이를 늘리며 고정 높이·클리핑으로 숨기지 않습니다. 이 예외와 확인 범위는 [긴 콘텐츠](content-overflow.md)를 따릅니다.
+- 설명형 footer는 문자열, Overview의 비교형 footer는 기존 Badge와 기간 설명을 전달합니다. 둘 다 공통 중앙 정렬·간격·최소 높이를 사용합니다. 배지·설명이 한 행에 들어가면 세로 중앙을 맞추고, 확대된 글자나 좁은 폭에서는 footer 안에서 줄바꿈하며 높이를 늘립니다. 색상만으로 증감을 전달하지 않고 아이콘과 부호를 함께 유지합니다.
 - 숫자는 `NumberDisplay`/`MoneyDisplay`에 `animate wrap`을 명시합니다. 금액만 작은 글자로 바꾸거나 자동 축약하지 않습니다. 값이 없으면 기존 `—` 표현을 유지하고, 오류·재시도 안내는 페이지의 Alert/목록이 소유합니다.
 - `aria-label`은 레이블, `aria-busy`는 최초 로딩 상태입니다. 기존 shadcn `card`·`card-title`·`card-footer` 슬롯을 유지합니다. 공통 조합은 `[data-metric-card]`, `metric-label`·`metric-value` 슬롯, `[data-metric-footer]`로 찾을 수 있습니다.
+
+## 차트
+
+차트 헤더의 설명과 기간 필터가 좁은 열을 경쟁하지 않도록 작은 화면에서는 필터를 다음 행으로 옮깁니다. 차트 툴팁의 이름·수치는 공통 `ChartTooltipContent`에서 최소 `gap-3` 간격을 유지합니다. 가장 긴 이름과 원화 금액에서도 실제 경계가 붙거나 겹치지 않는지 확인합니다.
 
 ## 표와 필터
 

@@ -169,8 +169,10 @@ test('honors live reduced motion for overlays, loading feedback, and spatial tra
 
 test('keeps named shell actions and project validation reachable at 200% text on mobile', async ({
   page,
+  viewport,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'mobile', 'This check uses the 412px mobile viewport.')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/projects')
   await page.addStyleTag({ content: ':root { font-size: 200%; }' })
   await expect(page.locator('html')).toHaveCSS('font-size', '32px')
@@ -187,6 +189,41 @@ test('keeps named shell actions and project validation reachable at 200% text on
   }
   await expect(page.locator('[data-sidebar="trigger"]')).toHaveAccessibleName('Toggle Sidebar')
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(412)
+
+  const sidebarTrigger = page.locator('[data-sidebar="trigger"]')
+  for (const width of [412, 320]) {
+    await page.setViewportSize({ width, height: viewport?.height ?? 915 })
+    await sidebarTrigger.tap()
+    const sidebar = page.getByRole('dialog', { name: 'Sidebar', exact: true })
+    await expect(sidebar).toBeInViewport({ ratio: 1 })
+    const sidebarClose = sidebar.getByRole('button', { name: 'Close', exact: true })
+    await expect(sidebarClose).toBeInViewport({ ratio: 1 })
+    const brand = sidebar.getByRole('link', { name: 'Blueprint overview', exact: true })
+    const brandBox = await brand.boundingBox()
+    const closeBox = await sidebarClose.boundingBox()
+    if (!brandBox || !closeBox) throw new Error('The sidebar header controls are missing.')
+    expect(brandBox.x + brandBox.width).toBeLessThanOrEqual(closeBox.x)
+    expect(
+      Math.abs(brandBox.y + brandBox.height / 2 - closeBox.y - closeBox.height / 2),
+    ).toBeLessThanOrEqual(1)
+    await sidebarClose.tap()
+    await expect(sidebar).toBeHidden()
+    await expect(sidebarTrigger).toBeFocused()
+
+    await page.getByRole('button', { name: 'Search workspace', exact: true }).tap()
+    const search = page.getByRole('dialog', { name: 'Search workspace', exact: true })
+    const searchInput = search.getByRole('combobox')
+    await searchInput.fill('A long search value that reaches the end of the input')
+    const searchClose = search.getByRole('button', { name: 'Close', exact: true })
+    const inputBox = await searchInput.boundingBox()
+    const searchCloseBox = await searchClose.boundingBox()
+    if (!inputBox || !searchCloseBox) throw new Error('The search controls are missing.')
+    expect(inputBox.x + inputBox.width).toBeLessThanOrEqual(searchCloseBox.x)
+    await expect(searchClose).toBeInViewport({ ratio: 1 })
+    await searchClose.tap()
+    await expect(search).toBeHidden()
+  }
+  await page.setViewportSize({ width: 412, height: viewport?.height ?? 915 })
 
   const trigger = page.getByRole('button', { name: 'New project', exact: true })
   await trigger.click()
@@ -217,4 +254,24 @@ test('keeps named shell actions and project validation reachable at 200% text on
   await page.keyboard.press('Enter')
   await expect(dialog).toBeHidden()
   await expect(trigger).toBeFocused()
+})
+
+test('keeps the collapsed navigation scrollable in a short landscape viewport', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'tablet', 'This check uses the collapsed tablet sidebar.')
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.goto('/projects')
+  const sidebar = page.locator('[data-slot="sidebar"][data-state="collapsed"]')
+  const content = sidebar.locator('[data-slot="sidebar-content"]')
+  await expect(content).toHaveCSS('overflow-y', 'auto')
+  const settings = content.getByRole('link', { name: 'Settings', exact: true })
+  await expect(settings).not.toBeInViewport()
+  await content.hover()
+  await page.mouse.wheel(0, 600)
+  await expect.poll(() => content.evaluate((element) => element.scrollTop)).toBeGreaterThan(0)
+  await expect(settings).toBeInViewport({ ratio: 1 })
+  await settings.click()
+  await expect(page).toHaveURL('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
 })

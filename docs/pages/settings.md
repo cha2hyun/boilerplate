@@ -23,13 +23,14 @@ PageHeader → 일반/외관 탭입니다. 일반에는 이름 입력·compact �
 
 ## 반응형 동작
 
-| 구간                | 배치·스크롤·초점                                                                |
-| ------------------- | ------------------------------------------------------------------------------- |
-| 모바일 `< 768px`    | 한 열 폼과 세로 테마 선택. 입력·도움말·오류·저장/초기화가 도달 가능해야 합니다. |
-| 태블릿 `768–1279px` | 제한된 본문 폭의 폼, 테마 선택 3열입니다.                                       |
-| PC `≥ 1280px`       | 동일한 최대 폭을 유지해 폼이 불필요하게 넓어지지 않습니다.                      |
+| 구간                | 배치·스크롤·초점                                                                                                                 |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 모바일 `< 768px`    | 한 열 폼과 세로 테마 선택. 작은 화면에서는 저장/초기화를 같은 너비로 세로 배치하며 입력·도움말·오류와 함께 도달 가능해야 합니다. |
+| 태블릿 `768–1279px` | 제한된 본문 폭의 폼, 테마 선택 3열입니다.                                                                                        |
+| PC `≥ 1280px`       | 동일한 최대 폭을 유지해 폼이 불필요하게 넓어지지 않습니다.                                                                       |
 
 긴 번역과 이름에서도 설명/오류를 잘라내지 않고 스위치와 저장 버튼을 밀어내지 않습니다. [긴 콘텐츠](../design/content-overflow.md)를 따릅니다.
+320px 영어와 200% 텍스트에서도 저장/초기화 문구와 테마 설명을 줄바꿈해 버튼 전체를 카드 안에 유지합니다.
 
 ## 상태 소유권과 구현 근거
 
@@ -44,3 +45,4 @@ PageHeader → 일반/외관 탭입니다. 일반에는 이름 입력·compact �
 - 초기화 후 폼과 저장 값 일치, 미저장 변경 없음: [설정 테스트](../../src/pages/settings/ui/settings-page.test.tsx)의 `resets the form and persisted store to configured defaults without leaving unsaved changes`.
 - 초안 유지·폐기·원복·저장 이후 해제와 일반 탭 초점 복구: 같은 설정 테스트의 `settings unsaved input`. 실제 앱 탐색과 브라우저 기록·새로고침: [입력 보호 E2E](../../e2e/unsaved-changes.spec.ts)의 `keeps settings drafts when navigation is cancelled and discards only on confirmation`, `protects settings against browser history and reload without trapping a saved form`.
 - 테마 지속과 shell 유지: [workspace E2E](../../e2e/workspace.spec.ts)의 `persists the theme and keeps the shell stable through command palette navigation`. 저장 경계의 복구는 [store 테스트](../../src/features/workspace-preferences/model/store.test.ts)를 확인합니다.
+- 작은 화면과 확대 텍스트의 버튼 경계·키보드 도달: 같은 workspace E2E의 `keeps support-page actions, tabs, and example text within narrow content areas`.
