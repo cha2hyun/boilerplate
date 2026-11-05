@@ -29,6 +29,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/ui/page-header'
+import { MetricCard } from '@/shared/ui/metric-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
@@ -134,7 +135,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   ]
 
   return (
-    <VStack align="stretch" className="min-w-0 gap-6">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('orders.title')}
         description={t('orders.intro')}
@@ -155,33 +156,20 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaries.map(({ title, value, description, Icon }) => (
-          <Card
+          <MetricCard
             key={title}
-            className="gap-3 py-5 shadow-none"
-            aria-label={title}
-            aria-busy={isLoading}
-          >
-            <HStack asChild justify="between" className="px-5">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-                <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-              </CardHeader>
-            </HStack>
-            <VStack asChild align="stretch" className="gap-1 px-5">
-              <CardContent>
-                <HStack className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-16" />
-                  ) : ordersQuery.data ? (
-                    <NumberDisplay animate value={value} format={countFormat} />
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </HStack>
-                <p className="text-xs text-muted-foreground">{description}</p>
-              </CardContent>
-            </VStack>
-          </Card>
+            label={title}
+            icon={Icon}
+            loading={isLoading}
+            value={
+              ordersQuery.data ? (
+                <NumberDisplay animate wrap value={value} format={countFormat} />
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )
+            }
+            footer={description}
+          />
         ))}
       </div>
 
@@ -351,7 +339,8 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                                   <TableCell className="sticky left-0 z-10 border-r bg-card py-2 pl-5 group-hover/order-row:bg-muted">
                                     <Button
                                       variant="link"
-                                      className="h-auto p-0 font-medium text-foreground"
+                                      className="block h-auto max-w-full truncate p-0 font-medium text-foreground"
+                                      title={order.id}
                                       aria-label={t('orders.viewOrder', { id: order.id })}
                                       onClick={(event) => {
                                         detailTrigger.current = event.currentTarget
@@ -401,7 +390,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                                       {order.items.map((item) => item.name).join(', ')}
                                     </p>
                                   </TableCell>
-                                  <TableCell className="text-right tabular-nums">
+                                  <TableCell className="text-right wrap-anywhere whitespace-normal tabular-nums">
                                     {formatNumber(
                                       order.items.reduce((sum, item) => sum + item.quantity, 0),
                                     )}
@@ -416,13 +405,13 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                                       {order.country}
                                     </p>
                                   </TableCell>
-                                  <TableCell className="text-right tabular-nums">
+                                  <TableCell className="text-right wrap-anywhere whitespace-normal tabular-nums">
                                     {formatMoney(orderSubtotal(order) / 100)}
                                   </TableCell>
-                                  <TableCell className="text-right tabular-nums">
+                                  <TableCell className="text-right wrap-anywhere whitespace-normal tabular-nums">
                                     {formatMoney(order.shipping / 100)}
                                   </TableCell>
-                                  <TableCell className="pr-5 text-right font-medium tabular-nums">
+                                  <TableCell className="pr-5 text-right font-medium wrap-anywhere whitespace-normal tabular-nums">
                                     {formatMoney(orderTotal(order) / 100)}
                                   </TableCell>
                                 </TableRow>
@@ -558,7 +547,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
           }}
         >
           <SheetHeader className="border-b p-6 pr-12">
-            <SheetTitle>
+            <SheetTitle className="wrap-anywhere">
               {selectedOrder ? t('orders.orderId', { id: selectedOrder.id }) : t('orders.details')}
             </SheetTitle>
             <SheetDescription>
@@ -568,7 +557,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
             </SheetDescription>
           </SheetHeader>
           {selectedOrder && (
-            <VStack align="stretch" className="gap-6 px-6 pb-6 text-sm">
+            <VStack align="stretch" className="min-w-0 gap-6 px-6 pb-6 text-sm wrap-anywhere">
               <HStack justify="between" wrap className="gap-3">
                 <OrderStatusBadge status={selectedOrder.status} />
                 <span className="text-muted-foreground">
@@ -582,15 +571,15 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                   <h2 className="font-medium">{t('orders.items')}</h2>
                   <ul className="divide-y rounded-lg border px-4">
                     {selectedOrder.items.map((item) => (
-                      <HStack asChild key={item.name} justify="between" className="gap-3 py-4">
+                      <HStack asChild key={item.name} justify="between" wrap className="gap-3 py-4">
                         <li>
-                          <VStack align="stretch" className="min-w-0 gap-1">
+                          <VStack align="stretch" className="min-w-0 flex-1 gap-1">
                             <p className="font-medium">{item.name}</p>
                             <p className="text-xs text-muted-foreground">
                               {formatNumber(item.quantity)} × {formatMoney(item.unitPrice / 100)}
                             </p>
                           </VStack>
-                          <span className="shrink-0 tabular-nums">
+                          <span className="max-w-full tabular-nums">
                             {formatMoney((item.quantity * item.unitPrice) / 100)}
                           </span>
                         </li>
@@ -601,19 +590,19 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                     <dl>
                       <HStack justify="between" className="gap-3 text-muted-foreground">
                         <dt>{t('orders.subtotal')}</dt>
-                        <dd className="tabular-nums">
+                        <dd className="min-w-0 text-right tabular-nums">
                           {formatMoney(orderSubtotal(selectedOrder) / 100)}
                         </dd>
                       </HStack>
                       <HStack justify="between" className="gap-3 text-muted-foreground">
                         <dt>{t('orders.shipping')}</dt>
-                        <dd className="tabular-nums">
+                        <dd className="min-w-0 text-right tabular-nums">
                           {formatMoney(selectedOrder.shipping / 100)}
                         </dd>
                       </HStack>
                       <HStack justify="between" className="gap-3 pt-2 font-semibold">
                         <dt>{t('orders.currencyTotal', { currency })}</dt>
-                        <dd className="tabular-nums">
+                        <dd className="min-w-0 text-right tabular-nums">
                           {formatMoney(orderTotal(selectedOrder) / 100)}
                         </dd>
                       </HStack>
@@ -626,12 +615,12 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
                 <section aria-label={t('orders.orderCustomer')}>
                   <h2 className="font-medium">{t('common.customer')}</h2>
                   <HStack className="gap-3">
-                    <Avatar>
+                    <Avatar className="shrink-0">
                       <AvatarFallback>{selectedOrder.customer.initials}</AvatarFallback>
                     </Avatar>
                     <VStack align="stretch" className="min-w-0">
-                      <p className="font-medium break-words">{selectedOrder.customer.name}</p>
-                      <p className="break-all text-muted-foreground">
+                      <p className="font-medium wrap-anywhere">{selectedOrder.customer.name}</p>
+                      <p className="wrap-anywhere text-muted-foreground">
                         {selectedOrder.customer.email}
                       </p>
                     </VStack>

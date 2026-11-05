@@ -229,13 +229,16 @@ export function AppShell({ children }: AppShellProps) {
         setSidebarOverride({ desktop: isDesktop, open })
       }}
     >
-      <Button asChild className="fixed top-2 left-2 z-50 -translate-y-20 focus:translate-y-0">
+      <Button
+        asChild
+        className="fixed top-2 left-2 z-50 -translate-y-20 focus:translate-y-0 motion-reduce:transition-none"
+      >
         <a href="#main-content">{t('shell.skip')}</a>
       </Button>
       <WorkspaceSidebar />
       <SidebarInset className="min-w-0 overflow-hidden">
         <header className="shrink-0 border-b px-4 md:px-6">
-          <HStack className="min-h-16 gap-2 md:gap-3">
+          <HStack wrap className="min-h-16 gap-2 py-2 md:gap-3">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-1 h-4" />
             <Breadcrumb className="hidden min-w-0 md:block">
@@ -249,7 +252,7 @@ export function AppShell({ children }: AppShellProps) {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <HStack className="ml-auto shrink-0 gap-1 md:gap-2">
+            <HStack wrap className="ml-auto max-w-full shrink-0 gap-1 md:gap-2">
               <Button
                 variant="ghost"
                 size="sm"

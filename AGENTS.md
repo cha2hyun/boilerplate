@@ -6,6 +6,7 @@ React + TypeScript + Vite + pnpm 프런트엔드입니다. 현재 데이터/워�
 
 1. 요청의 완료 조건, `git status --short`, 관련 코드를 확인하고 다른 변경을 보존하세요.
 2. [README](README.md), [아키텍처](docs/architecture.md), [문서 지도](docs/README.md)에서 작업에 필요한 문서만 선택하세요. UI는 [디자인 시스템 인덱스](docs/design-system.md)에서 해당 주제로 이동합니다. 상세 규칙을 이 파일에 모으지 마세요.
+   페이지 목적·행동·상태를 바꿀 때는 [페이지 기획 명세](docs/pages/README.md)의 해당 문서를 함께 갱신하고 소유 코드·수용 기준에 연결하세요.
 3. 여러 레이어/API/저장 계약이 바뀌는 작업만 [계획 템플릿](docs/plans/_template.md)을 사용하세요. 패키지/lockfile이 실행 환경의 기준이며 pnpm만 사용합니다.
 4. 작업 시작과 완료 때 열린 Dependabot PR과 최신 원격 SHA의 Actions를 확인하고 [의존성 유지보수](docs/dependency-maintenance.md)의 처리·보류·최종 main 검증 기준을 따르세요.
 

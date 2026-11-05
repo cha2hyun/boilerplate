@@ -60,4 +60,6 @@ import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
 
 `animate`의 기본값은 `false`이며 `format`에는 콜백 대신 공통 옵션 객체를 전달합니다. 주요 KPI의 모션은 호출부에서 `animate`를 명시합니다. 모션의 완료 시간과 reduced motion은 [로딩과 모션](loading-and-motion.md#숫자-모션은-선택적으로-300ms-동안-실행한다) 한 곳에서 관리합니다.
 
+좁은 KPI·상세 요약에는 `NumberDisplay`/`MoneyDisplay`의 `wrap`을 명시해 긴 전체 문자열을 줄바꿈합니다. 기본값은 `false`이며 숫자 형식과 모션 시간에는 영향을 주지 않습니다. 폭이 부족하다는 이유로 `notation: 'compact'`, 통화 기호 생략, 페이지별 작은 글자를 자동 적용하지 않습니다. 구체적인 표시 경계와 전체 값 접근은 [긴 콘텐츠](design/content-overflow.md)를 따릅니다.
+
 소유 코드: `src/shared/lib/format.ts`, `src/shared/lib/i18n`, `src/features/number-motion`. 화면 표본: Foundations → 피드백(형식/구분/기호/축약/모션), 문구·국제화(로케일).

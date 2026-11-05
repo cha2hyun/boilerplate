@@ -15,6 +15,7 @@ interface NumberDisplayProps {
   value: number | null | undefined
   format?: NumberFormatOptions
   animate?: boolean
+  wrap?: boolean
   className?: string
 }
 
@@ -32,7 +33,7 @@ export function NumberDisplay({ animate = false, format, ...props }: NumberDispl
   )
 }
 
-function NumberTransition({ value, format, animate, className }: NumberDisplayProps) {
+function NumberTransition({ value, format, animate, wrap = false, className }: NumberDisplayProps) {
   const canAnimate = !!animate && value != null && Number.isFinite(value) && value !== 0
   const [startsAnimated] = useState(() => canAnimate && !prefersReducedMotion() && !document.hidden)
   const [step, setStep] = useState(startsAnimated ? 0 : motionSteps)
@@ -100,12 +101,13 @@ function NumberTransition({ value, format, animate, className }: NumberDisplayPr
   }, [startsAnimated])
 
   const complete = step === motionSteps
+  const textLayout = wrap ? 'wrap-anywhere whitespace-normal' : 'whitespace-nowrap'
   return (
     <span
-      className={cn('relative inline-grid tabular-nums', className)}
+      className={cn('relative inline-grid tabular-nums', wrap && 'max-w-full min-w-0', className)}
       data-number-state={complete ? 'idle' : 'running'}
     >
-      <span className="invisible col-start-1 row-start-1 whitespace-nowrap" aria-hidden="true">
+      <span className={cn('invisible col-start-1 row-start-1', textLayout)} aria-hidden="true">
         {finalText}
       </span>
       {/* Reserve every possible intermediate too: 875K can be wider than the final 1M. */}
@@ -114,13 +116,13 @@ function NumberTransition({ value, format, animate, className }: NumberDisplayPr
         .map((text) => (
           <span
             key={text}
-            className="invisible col-start-1 row-start-1 whitespace-nowrap"
+            className={cn('invisible col-start-1 row-start-1', textLayout)}
             aria-hidden="true"
           >
             {text}
           </span>
         ))}
-      <span className="absolute inset-0 overflow-hidden whitespace-nowrap" aria-hidden="true">
+      <span className={cn('absolute inset-0 overflow-hidden', textLayout)} aria-hidden="true">
         {complete ? finalText : displayFrames[step]}
       </span>
       <span className="sr-only">{finalText}</span>

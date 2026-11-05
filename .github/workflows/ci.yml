@@ -42,6 +42,9 @@ jobs:
       - id: scope
         name: Identify required checks
         run: node scripts/ci-scope.mjs
+      - name: Validate page specifications for documentation changes
+        if: steps.scope.outputs.full == 'false'
+        run: node scripts/check-page-specs.mjs
 
   quality:
     name: Quality, unit tests, and build
@@ -72,7 +75,7 @@ jobs:
   browser:
     name: Browser / ${{ matrix.category }}
     needs: quality
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false

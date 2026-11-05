@@ -31,7 +31,7 @@ export function SettingsPage() {
   const dirty =
     workspaceName !== preferences.workspaceName || compactMode !== preferences.compactMode
   return (
-    <VStack align="stretch" className="max-w-4xl gap-7">
+    <VStack data-slot="page-content" align="stretch" className="max-w-4xl min-w-0 gap-6">
       <PageHeader title={t('settings.title')} description={t('settings.description')} />
       <Tabs defaultValue="general">
         <TabsList>

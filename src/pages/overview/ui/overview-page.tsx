@@ -29,7 +29,6 @@ import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
   Card,
-  CardAction,
   CardContent,
   CardDescription,
   CardFooter,
@@ -38,6 +37,7 @@ import {
 } from '@/shared/ui/card'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { PageHeader } from '@/shared/ui/page-header'
+import { MetricCard } from '@/shared/ui/metric-card'
 import { HStack, VStack } from '@/shared/ui/stack'
 
 const countFormat = { maximumFractionDigits: 0 }
@@ -89,7 +89,7 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
   const isLoading = analytics.isPending && !analytics.data
   const [createOpen, setCreateOpen] = useState(false)
   return (
-    <VStack align="stretch" className="gap-7">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('overview.title')}
         description={t('overview.description')}
@@ -120,43 +120,39 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
           const kpi = analytics.data?.kpis.find((item) => item.id === id)
           const Trend = (kpi?.change ?? 0) >= 0 ? ArrowUpRight : ArrowDownRight
           return (
-            <Card key={id} className="gap-4 shadow-xs" aria-label={t(label)} aria-busy={isLoading}>
-              <CardHeader className="gap-2">
-                <CardDescription className="text-xs font-medium">{t(label)}</CardDescription>
-                <CardAction>
-                  <Icon className="size-4 text-muted-foreground" />
-                </CardAction>
-                <HStack asChild className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
-                  <CardTitle>
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-28" />
-                    ) : kpi ? (
-                      kpi.format === 'currency' ? (
-                        <MoneyDisplay
-                          animate
-                          value={kpi.value}
-                          className="text-2xl 2xl:text-3xl"
-                          format={{ maximumFractionDigits: 0 }}
-                        />
-                      ) : (
-                        <NumberDisplay
-                          animate
-                          value={kpi.value}
-                          format={
-                            kpi.format === 'percent'
-                              ? { style: 'percent', maximumFractionDigits: 2 }
-                              : countFormat
-                          }
-                        />
-                      )
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </CardTitle>
-                </HStack>
-              </CardHeader>
-              <HStack asChild className="min-h-8 gap-2">
-                <CardFooter data-testid="kpi-comparison">
+            <MetricCard
+              key={id}
+              label={t(label)}
+              icon={Icon}
+              loading={isLoading}
+              value={
+                kpi ? (
+                  kpi.format === 'currency' ? (
+                    <MoneyDisplay
+                      animate
+                      wrap
+                      value={kpi.value}
+                      format={{ maximumFractionDigits: 0 }}
+                    />
+                  ) : (
+                    <NumberDisplay
+                      animate
+                      wrap
+                      value={kpi.value}
+                      format={
+                        kpi.format === 'percent'
+                          ? { style: 'percent', maximumFractionDigits: 2 }
+                          : countFormat
+                      }
+                    />
+                  )
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )
+              }
+              footerTestId="kpi-comparison"
+              footer={
+                <>
                   <HStack className="w-20 shrink-0">
                     {isLoading ? (
                       <Skeleton className="h-5.5 w-20 rounded-full" />
@@ -174,10 +170,10 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
                       <span className="text-xs text-muted-foreground">{t('overview.noData')}</span>
                     )}
                   </HStack>
-                  <span className="min-w-0 text-xs text-muted-foreground">{t(description)}</span>
-                </CardFooter>
-              </HStack>
-            </Card>
+                  <span className="min-w-0">{t(description)}</span>
+                </>
+              }
+            />
           )
         })}
       </div>

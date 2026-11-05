@@ -1,0 +1,209 @@
+import { expect, test, type Locator, type Page } from './fixtures.js'
+
+async function tabTo(page: Page, target: Locator) {
+  await expect(target).toBeVisible()
+  for (let step = 0; step < 80; step += 1) {
+    if (await target.evaluate((element) => element === document.activeElement)) return
+    await page.keyboard.press('Tab')
+  }
+  throw new Error('The control was not reachable within one page of keyboard navigation.')
+}
+
+test('opens the component dialog by keyboard, contains focus, and returns it on Escape', async ({
+  page,
+}) => {
+  await page.goto('/components')
+  const trigger = page.getByRole('button', { name: 'Open dialog', exact: true })
+  await expect(trigger).toBeVisible()
+  const unfocusedShadow = await trigger.evaluate((element) => getComputedStyle(element).boxShadow)
+  await tabTo(page, trigger)
+  await expect(trigger).toBeFocused()
+  expect(await trigger.evaluate((element) => element.matches(':focus-visible'))).toBe(true)
+  await expect(trigger).not.toHaveCSS('box-shadow', unfocusedShadow)
+  await page.keyboard.press('Enter')
+
+  const dialog = page.getByRole('dialog', { name: 'Room for your next idea', exact: true })
+  await expect(dialog).toHaveAccessibleDescription(
+    'This dialog handles focus, keyboard navigation, and screen readers for you.',
+  )
+  const confirm = dialog.getByRole('button', { name: 'Got it', exact: true })
+  const close = dialog.getByRole('button', { name: 'Close', exact: true })
+  await expect(confirm).toBeFocused()
+  await page.keyboard.press('Shift+Tab')
+  await expect(close).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(confirm).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(close).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(confirm).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(trigger).toBeFocused()
+})
+
+test('associates project validation with its field and supports keyboard selection and dismissal', async ({
+  page,
+}) => {
+  await page.goto('/projects')
+  const trigger = page.getByRole('button', { name: 'New project', exact: true })
+  await tabTo(page, trigger)
+  await page.keyboard.press('Enter')
+  const dialog = page.getByRole('dialog', { name: 'Create a project', exact: true })
+  const name = dialog.getByRole('textbox', { name: 'Project name', exact: true })
+  await expect(name).toBeFocused()
+  await page.keyboard.type('x')
+  await page.keyboard.press('Enter')
+  await expect(name).toHaveAttribute('aria-invalid', 'true')
+  await expect(name).toHaveAccessibleDescription('Use at least 2 characters.')
+  await expect(dialog.getByRole('alert')).toHaveText('Use at least 2 characters.')
+
+  await page.keyboard.type('y')
+  await expect(name).toHaveAttribute('aria-invalid', 'false')
+  await expect(name).not.toHaveAttribute('aria-describedby')
+  await page.keyboard.press('Tab')
+  const description = dialog.getByRole('textbox', { name: 'Description (optional)', exact: true })
+  await expect(description).toBeFocused()
+  await expect(description).toHaveAccessibleDescription(
+    'A short summary to keep everyone on the same page. Up to 240 characters.',
+  )
+  await page.keyboard.press('Tab')
+  const status = dialog.getByRole('combobox', { name: 'Status', exact: true })
+  await expect(status).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('option', { name: 'Active', exact: true })).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(page.getByRole('option', { name: 'Paused', exact: true })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(status).toHaveText('Paused')
+  await expect(status).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(trigger).toBeFocused()
+})
+
+test('honors live reduced motion for overlays, loading feedback, and spatial transitions', async ({
+  page,
+  viewport,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  await page.goto('/components')
+  await page.getByRole('button', { name: 'Open dialog', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Room for your next idea', exact: true })
+  await expect(dialog).toHaveCSS('animation-name', 'enter')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect(dialog).toHaveCSS('animation-name', 'none')
+  await expect(page.locator('[data-slot="dialog-overlay"]')).toHaveCSS('animation-name', 'none')
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+
+  const skeletons = page.locator('[data-slot="skeleton"]')
+  await expect(skeletons).not.toHaveCount(0)
+  for (const skeleton of await skeletons.all()) {
+    await expect(skeleton).toHaveCSS('animation-name', 'none')
+  }
+  await expect(
+    page.getByRole('button', { name: 'Processing', exact: true }).locator('svg'),
+  ).toHaveCSS('animation-name', 'none')
+  const progress = page.getByRole('progressbar', { name: 'Workspace setup', exact: true })
+  await page.getByRole('button', { name: 'Advance progress', exact: true }).click()
+  await expect(progress).toHaveAttribute('aria-valuenow', '76')
+  await expect(progress.locator('[data-slot="progress-indicator"]')).toHaveCSS(
+    'transition-property',
+    'none',
+  )
+  const notifications = page.getByRole('switch', { name: 'Notifications preview', exact: true })
+  await notifications.click()
+  await expect(notifications).not.toBeChecked()
+  await expect(notifications.locator('[data-slot="switch-thumb"]')).toHaveCSS(
+    'transition-property',
+    'none',
+  )
+
+  const currency = page.getByRole('button', { name: 'Display currency', exact: true })
+  await currency.hover()
+  await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCSS('animation-name', 'none')
+  await currency.click()
+  await expect(page.getByRole('menu')).toHaveCSS('animation-name', 'none')
+  await page.keyboard.press('Escape')
+  await expect(currency).toBeFocused()
+
+  await page.goto('/projects')
+  await page.getByRole('combobox', { name: 'Filter by status', exact: true }).click()
+  await expect(page.getByRole('listbox')).toHaveCSS('animation-name', 'none')
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Actions for Website redesign', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Delete project', exact: true }).click()
+  const confirmation = page.getByRole('alertdialog', { name: 'Delete this project?', exact: true })
+  await expect(confirmation).toHaveCSS('animation-name', 'none')
+  await expect(page.locator('[data-slot="alert-dialog-overlay"]')).toHaveCSS(
+    'animation-name',
+    'none',
+  )
+  await page.keyboard.press('Escape')
+  await expect(confirmation).toBeHidden()
+
+  const sidebarTrigger = page.locator('[data-sidebar="trigger"]')
+  await sidebarTrigger.click()
+  if ((viewport?.width ?? 1440) < 768) {
+    const sidebar = page.getByRole('dialog', { name: 'Sidebar', exact: true })
+    await expect(sidebar).toHaveCSS('animation-name', 'none')
+    await expect(sidebar).toHaveCSS('transition-property', 'none')
+    await expect(page.locator('[data-slot="sheet-overlay"]')).toHaveCSS('animation-name', 'none')
+    await page.keyboard.press('Escape')
+    await expect(sidebar).toBeHidden()
+    await expect(sidebarTrigger).toBeFocused()
+  } else {
+    await expect(page.locator('[data-slot="sidebar-container"]')).toHaveCSS(
+      'transition-property',
+      'none',
+    )
+    await expect(page.locator('[data-slot="sidebar-gap"]')).toHaveCSS('transition-property', 'none')
+  }
+})
+
+test('keeps named shell actions and project validation reachable at 200% text on mobile', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'This check uses the 412px mobile viewport.')
+  await page.goto('/projects')
+  await page.addStyleTag({ content: ':root { font-size: 200%; }' })
+  await expect(page.locator('html')).toHaveCSS('font-size', '32px')
+  const shellActions = [
+    page.locator('[data-sidebar="trigger"]'),
+    page.getByRole('button', { name: 'Search workspace', exact: true }),
+    page.getByRole('button', { name: /Switch to (light|dark) theme/ }),
+    page.getByRole('button', { name: 'Language', exact: true }),
+    page.getByRole('button', { name: 'Display currency', exact: true }),
+  ]
+  for (const action of shellActions) {
+    await expect(action).toBeVisible()
+    await expect(action).toBeInViewport({ ratio: 1 })
+  }
+  await expect(page.locator('[data-sidebar="trigger"]')).toHaveAccessibleName('Toggle Sidebar')
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(412)
+
+  const trigger = page.getByRole('button', { name: 'New project', exact: true })
+  await trigger.click()
+  const dialog = page.getByRole('dialog', { name: 'Create a project', exact: true })
+  await expect(dialog).toBeInViewport({ ratio: 1 })
+  const name = dialog.getByRole('textbox', { name: 'Project name', exact: true })
+  await expect(name).toBeFocused()
+  await page.keyboard.type('x')
+  await page.keyboard.press('Enter')
+  const error = dialog.getByRole('alert')
+  await expect(name).toHaveAccessibleDescription('Use at least 2 characters.')
+  await error.scrollIntoViewIfNeeded()
+  await expect(error).toBeInViewport({ ratio: 1 })
+  const save = dialog.getByRole('button', { name: 'Create project', exact: true })
+  await tabTo(page, save)
+  await expect(save).toBeInViewport({ ratio: 1 })
+  const dimensions = await dialog.evaluate((element) => ({
+    content: element.scrollWidth,
+    available: element.clientWidth,
+  }))
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.available + 1)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(trigger).toBeFocused()
+})

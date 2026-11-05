@@ -8,10 +8,9 @@ import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
 import { ProjectEditorDialog } from '@/features/project-editor'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
-import { Skeleton } from '@/shared/ui/skeleton'
 import { PageHeader } from '@/shared/ui/page-header'
-import { HStack, VStack } from '@/shared/ui/stack'
+import { MetricCard } from '@/shared/ui/metric-card'
+import { VStack } from '@/shared/ui/stack'
 import { ProjectTable, type ProjectTableSearch } from '@/widgets/project-table'
 
 const countFormat = { maximumFractionDigits: 0 }
@@ -66,7 +65,7 @@ export function ProjectsPage({ search, onSearchChange }: ProjectsPageProps) {
   ]
 
   return (
-    <VStack align="stretch" className="gap-6">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('common.projects')}
         description={t('projects.description')}
@@ -84,33 +83,20 @@ export function ProjectsPage({ search, onSearchChange }: ProjectsPageProps) {
 
       <div className="grid gap-4 md:grid-cols-3">
         {summaries.map(({ title, value, format, description, Icon }) => (
-          <Card
+          <MetricCard
             key={title}
-            className="gap-3 py-5 shadow-none"
-            aria-label={title}
-            aria-busy={isLoading}
-          >
-            <HStack asChild justify="between" className="px-5">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-                <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-              </CardHeader>
-            </HStack>
-            <VStack asChild align="stretch" className="gap-1 px-5">
-              <CardContent>
-                <HStack className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-16" />
-                  ) : hasData ? (
-                    <NumberDisplay animate value={value} format={format} />
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </HStack>
-                <p className="min-h-8 text-xs leading-4 text-muted-foreground">{description}</p>
-              </CardContent>
-            </VStack>
-          </Card>
+            label={title}
+            icon={Icon}
+            loading={isLoading}
+            value={
+              hasData ? (
+                <NumberDisplay animate wrap value={value} format={format} />
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )
+            }
+            footer={description}
+          />
         ))}
       </div>
 
