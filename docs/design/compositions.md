@@ -6,6 +6,16 @@
 
 페이지 최상위는 `VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6"`를 사용합니다. Settings의 `max-w-4xl`처럼 내용에 맞는 최대 너비는 유지합니다. 제목·설명·칩·주요 동작은 [PageHeader](page-headers.md), KPI 그리드는 `gap-4`, 일반 섹션 사이는 `gap-6`입니다. 페이지마다 `gap-7/8` 또는 별도 Page 래퍼를 추가하지 않습니다.
 
+## 나란한 카드의 경계와 푸터
+
+같은 행의 카드는 **외곽 상·하단, 하단 구분선, 푸터 내용의 세로 중심**을 함께 맞춥니다. 카드 바닥만 같은 검사는 완료 근거가 아닙니다. 이 기준은 최초 로딩·데이터 표시, 한글·영문, 기본·간결한 레이아웃에서 유지합니다.
+
+- Overview의 매출·활동은 PC에서 부모 grid의 헤더/본문/푸터 3개 행을 subgrid로 공유합니다. 두 카드의 행 간격은 24px이며, 한쪽 푸터가 줄바꿈으로 커지면 같은 푸터 행 전체가 함께 커집니다. 각 카드에서 별도의 padding/고정 높이로 구분선을 눈대중 조절하지 않습니다.
+- 기존 [`CardFooter`](../../src/shared/ui/card.tsx)의 `variant="bordered"`가 구분선·최소 높이 72px·상하 16px 여백·세로 중앙 정렬을 소유합니다. 이 조합의 Card는 `pb-0`으로 바깥 하단 여백을 중복하지 않습니다. 기본 variant와 다른 shadcn 카드의 배치는 유지합니다.
+- 높이는 최소값입니다. 긴 문구는 자연스럽게 줄바꿈하고 푸터를 늘립니다. `h-*`, `truncate`, `overflow-hidden`으로 필요한 설명을 자르거나 버튼 높이에 맞춰 글자 크기를 바꾸지 않습니다.
+- 모바일·태블릿의 세로 배치에서는 서로 다른 카드의 절대 Y 좌표를 맞추지 않습니다. 각 푸터의 상하 여백·내용 중심·줄바꿈·키보드 액션 도달을 유지합니다.
+- 변경 시 [workspace E2E](../../e2e/workspace.spec.ts)의 실제 bounding box 검사를 유지합니다. desktop의 외곽/구분선/내용 중심 차이는 1px 이내여야 합니다. CSS 클래스 문자열이나 외곽 높이만 확인하는 테스트로 대체하지 않습니다. 확대된 푸터 문구의 자연 높이 증가도 확인합니다.
+
 ## KPI 카드
 
 소유 코드: [`MetricCard`](../../src/shared/ui/metric-card.tsx). Overview·Analytics·Projects·Orders·Customers의 상단 요약은 이 조합을 공유합니다. Foundations → 피드백의 숫자 예시도 실제 조합을 사용합니다.

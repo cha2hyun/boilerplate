@@ -17,7 +17,7 @@ React + TypeScript + Vite + pnpm 프런트엔드입니다. 현재 데이터/워�
 - UI는 설치된 shadcn, lucide, Tailwind 의미 토큰, Pretendard 400/500/600을 사용합니다. 새 custom primitive나 UI 프레임워크 의존성을 추가하지 마세요. 행·열 배치는 중앙 정렬을 기본으로 하는 HStack/VStack을 사용하며 [레이아웃 규칙](docs/design/layout.md)을 따릅니다. 승인된 TextLink 조합은 [링크 규칙](docs/design/text-links.md)을 따릅니다. CSS는 `src/app/styles/globals.css`만 사용하며 neutral primary와 brand를 구분합니다.
 - 화면의 수량·통화·비율은 [숫자 표시](docs/number-formatting.md), 번역·환경 설정·실제 환율 변환은 [언어와 표시 통화](docs/i18n.md)의 공통 계약을 따릅니다.
 - 모든 페이지의 제목·설명·헤더 칩은 공통 PageHeader와 [페이지 헤더 규칙](docs/design/page-headers.md)을 사용합니다. 페이지마다 제목/칩 스타일을 재정의하지 마세요.
-- 상단 KPI는 MetricCard, 페이지 간격과 목록·폼 배치는 [공통 조합](docs/design/compositions.md)을 따릅니다. 긴 값은 [전체 표시 규칙](docs/design/content-overflow.md)을 확인하세요.
+- 나란한 카드의 외곽·구분선·푸터 내용 중심까지 정렬합니다. 상단 KPI는 MetricCard, 페이지 간격과 목록·폼 배치는 [공통 조합](docs/design/compositions.md)을 따릅니다. 긴 값은 [전체 표시 규칙](docs/design/content-overflow.md)을 확인하세요.
 - 로딩·오류/재시도·빈 결과·키보드·세 화면 구간을 함께 다루세요. [로딩과 모션](docs/loading-and-motion.md)의 단일 계약을 따르고 접근 가능한 이름과 초점 흐름을 보존합니다.
 - 저장하는 폼은 [미저장 입력 보호](docs/unsaved-changes.md), 앱 복구와 보고 연결은 [오류 처리](docs/error-handling.md)를 따릅니다. 오류 보고에 사용자 입력·원문·URL을 임의로 추가하지 마세요.
 
