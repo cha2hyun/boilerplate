@@ -161,6 +161,44 @@ test('loads the overview without browser errors and changes the revenue period',
   expect(unusedBottomSpace).toBeLessThanOrEqual(32)
   const activity = page.getByRole('region', { name: 'Recent activity', exact: true })
   await expect(activity).toBeVisible()
+  // Recharts measures its parent asynchronously; check the rendered plot, not CSS classes.
+  await expect(async () => {
+    const geometry = await chart.evaluate((element) => {
+      const activityCard = element.parentElement
+        ?.querySelector('[role="region"]')
+        ?.closest('[data-slot="card"]')
+      const plot = element.querySelector('[data-slot="chart"]')
+      const svg = plot?.querySelector('svg.recharts-surface')
+      const footer = element.querySelector('[data-slot="card-footer"]')
+      if (!activityCard || !plot?.parentElement || !svg || !footer) {
+        throw new Error('The overview panel layout is incomplete.')
+      }
+      const cardBox = element.getBoundingClientRect()
+      const activityBox = activityCard.getBoundingClientRect()
+      const plotBox = plot.getBoundingClientRect()
+      return {
+        topDelta: Math.abs(cardBox.top - activityBox.top),
+        bottomDelta: Math.abs(cardBox.bottom - activityBox.bottom),
+        stackedGap: activityBox.top - cardBox.bottom,
+        plotHeight: plotBox.height,
+        svgHeight: svg.getBoundingClientRect().height,
+        frameHeight: plot.parentElement.getBoundingClientRect().height,
+        footerGap: footer.getBoundingClientRect().top - plotBox.bottom,
+      }
+    })
+    expect(Math.abs(geometry.svgHeight - geometry.plotHeight)).toBeLessThanOrEqual(1)
+    expect(Math.abs(geometry.frameHeight - geometry.plotHeight)).toBeLessThanOrEqual(1)
+    expect(geometry.footerGap).toBeGreaterThanOrEqual(23)
+    expect(geometry.footerGap).toBeLessThanOrEqual(25)
+    if (testInfo.project.name === 'desktop') {
+      expect(geometry.topDelta).toBeLessThanOrEqual(1)
+      expect(geometry.bottomDelta).toBeLessThanOrEqual(1)
+      expect(geometry.plotHeight).toBeGreaterThan(240)
+    } else {
+      expect(geometry.stackedGap).toBeGreaterThanOrEqual(19)
+      expect(Math.abs(geometry.plotHeight - 240)).toBeLessThanOrEqual(1)
+    }
+  }).toPass({ timeout: 5_000 })
   await activity.focus()
   await page.keyboard.press('End')
   await expect(
