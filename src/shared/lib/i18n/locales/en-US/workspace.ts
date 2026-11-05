@@ -196,9 +196,6 @@ const workspace = {
   shell: {
     blueprintOverview: 'Blueprint overview',
     documentation: 'Documentation',
-    workspaceSettings: 'Workspace settings',
-    yourWorkspace: 'Your workspace',
-    makeItYours: 'Make it your own',
     notFound: 'Page not found',
     skip: 'Skip to content',
     searchWorkspace: 'Search workspace',

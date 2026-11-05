@@ -769,7 +769,7 @@ test('keeps page titles and header badges consistent through responsive sidebar 
     const rail = page.locator('[data-slot="sidebar"][data-state]')
     if ((await rail.getAttribute('data-state')) === 'expanded') await sidebarTrigger.click()
     await expect(rail).toHaveAttribute('data-state', 'collapsed')
-    // Inspect actual visual centers: the avatar must not offset the collapsed menu icons.
+    // The collapsed logo and navigation icons share a center line within their buttons.
     await expect
       .poll(() =>
         rail.evaluate((element) => {
@@ -778,7 +778,6 @@ test('keeps page titles and header badges consistent through responsive sidebar 
             ...element.querySelectorAll(
               '[data-slot="sidebar-content"] [data-slot="sidebar-menu-button"] > svg:first-child',
             ),
-            element.querySelector('[data-slot="sidebar-footer"] [data-slot="avatar"]'),
           ]
           if (targets.some((target) => !target)) return Infinity
           const centers = targets.map((target) => {

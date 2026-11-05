@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Boxes, ChevronDown, ExternalLink, Globe, Moon, Search, Sun } from 'lucide-react'
+import { Boxes, ExternalLink, Globe, Moon, Search, Sun } from 'lucide-react'
 import { useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { usePreferences } from '@/features/workspace-preferences'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
@@ -8,7 +8,6 @@ import { navigation, navigationGroups } from '../model/navigation'
 import { CurrencyMenu } from './currency-menu'
 import { useTheme } from '@/shared/lib/theme'
 import { cn } from '@/shared/lib/utils'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -40,7 +39,6 @@ import { Kbd } from '@/shared/ui/kbd'
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -149,38 +147,6 @@ function WorkspaceSidebar() {
           </SidebarGroup>
         ))}
       </SidebarContent>
-      <SidebarFooter className="p-2">
-        <Separator className="mb-2" />
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              size="lg"
-              tooltip={t('shell.workspaceSettings')}
-              className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
-            >
-              <Link
-                to="/settings"
-                aria-label={t('shell.workspaceSettings')}
-                onClick={() => {
-                  setOpenMobile(false)
-                }}
-              >
-                <Avatar className="size-8">
-                  <AvatarFallback className="bg-primary text-xs text-primary-foreground">
-                    BP
-                  </AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-left text-sm group-data-[collapsible=icon]:hidden">
-                  <span className="font-medium">{t('shell.yourWorkspace')}</span>
-                  <span className="text-xs text-muted-foreground">{t('shell.makeItYours')}</span>
-                </div>
-                <ChevronDown className="size-4 group-data-[collapsible=icon]:hidden" />
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   )
