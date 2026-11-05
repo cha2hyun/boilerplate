@@ -41,6 +41,7 @@ PageHeader의 새 고객 → 전체 고객 요약 → 검색/상태/정렬 → �
 
 ## 수용 기준
 
+- 고객 생성·수정 모달의 가입일 입력은 일반 입력과 같은 높이·너비를 유지합니다. 빈 값/입력된 값 모두 가로 넘침 없이 저장 버튼까지 세로로 접근해야 합니다. 아래 CRUD E2E가 실제 치수와 입력부터 Dialog까지의 스크롤 너비를 검사하고 [폼 조합](../design/compositions.md#폼)이 공통 규칙을 소유합니다.
 - 검색·상태·정렬·페이지·상세: [상거래 E2E](../../e2e/commerce.spec.ts)의 `filters, sorts, paginates and inspects sample customer profiles`.
 - 잘못된 조회/범위 밖 페이지: 같은 파일의 `recovers invalid commerce URL filters and clamps pages after data loads`. 상세 최신성과 긴 문자열: `/customers keeps open details current and contains long customer text`.
 - 최초 로딩·캐시 재방문·재조회 중 카드 공간과 기존 데이터 유지: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Customers keeps card geometry and cached data through real demo requests`. 최초/재조회 실패·전체 빈 응답은 이 테스트가 검증하지 않으므로 해당 상태 변경 시 별도로 확인합니다.
