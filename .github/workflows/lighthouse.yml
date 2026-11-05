@@ -99,20 +99,75 @@ jobs:
             --chrome-flags='--headless' \
             --only-categories=performance,accessibility,best-practices,seo \
             --output=json --output=html --output-path="$report_prefix" \
+            --save-assets \
             --no-enable-error-reporting --quiet
 
-          node --input-type=module - "$report_prefix.report.json" <<'NODE'
-          import { readFileSync } from 'node:fs'
+          node --input-type=module - "$report_prefix.report.json" "$report_prefix.summary.json" <<'NODE'
+          import { execFileSync } from 'node:child_process'
+          import { readFileSync, writeFileSync } from 'node:fs'
+          import { arch, cpus, platform, release, version } from 'node:os'
 
           const report = JSON.parse(readFileSync(process.argv[2], 'utf8'))
           if (report.runtimeError) {
             throw new Error(`Lighthouse runtime error: ${report.runtimeError.message}`)
           }
-          for (const id of ['performance', 'accessibility', 'best-practices', 'seo']) {
+          const categoryIds = ['performance', 'accessibility', 'best-practices', 'seo']
+          for (const id of categoryIds) {
             if (typeof report.categories?.[id]?.score !== 'number') {
               throw new Error(`Lighthouse did not produce a score for ${id}`)
             }
           }
+
+          const settings = report.configSettings
+          const audits = report.audits
+          const observed = audits.metrics.details.items[0]
+          const cpuInfo = cpus()
+          const summary = {
+            sourceSha: process.env.GITHUB_SHA,
+            fetchTime: report.fetchTime,
+            requestedUrl: report.requestedUrl,
+            lighthouseVersion: report.lighthouseVersion,
+            runWarnings: report.runWarnings,
+            runner: {
+              image: process.env.ImageOS ?? null,
+              imageVersion: process.env.ImageVersion ?? null,
+              os: { platform: platform(), release: release(), version: version(), arch: arch() },
+              cpuModels: [...new Set(cpuInfo.map(cpu => cpu.model))],
+              logicalCpuCount: cpuInfo.length,
+              chromeVersion: execFileSync(process.env.CHROME_PATH, ['--version'], { encoding: 'utf8' }).trim(),
+            },
+            benchmarkIndex: report.environment.benchmarkIndex,
+            config: {
+              formFactor: settings.formFactor,
+              screenEmulation: settings.screenEmulation,
+              throttlingMethod: settings.throttlingMethod,
+              throttling: settings.throttling,
+            },
+            categoryScores: Object.fromEntries(categoryIds.map(id => [id, report.categories[id].score])),
+            reportMetrics: {
+              timingMethod: settings.throttlingMethod,
+              firstContentfulPaintMs: audits['first-contentful-paint'].numericValue,
+              largestContentfulPaintMs: audits['largest-contentful-paint'].numericValue,
+              totalBlockingTimeMs: audits['total-blocking-time'].numericValue,
+              speedIndexMs: audits['speed-index'].numericValue,
+              cumulativeLayoutShift: audits['cumulative-layout-shift'].numericValue,
+            },
+            observedMetrics: {
+              firstContentfulPaintMs: observed.observedFirstContentfulPaint,
+              largestContentfulPaintMs: observed.observedLargestContentfulPaint,
+              speedIndexMs: observed.observedSpeedIndex,
+              traceEndMs: observed.observedTraceEnd,
+              cumulativeLayoutShift: observed.observedCumulativeLayoutShift,
+            },
+            rawDiagnostics: audits.diagnostics.details.items[0],
+            mainThreadScaled: {
+              cpuMultiplierApplied: settings.throttlingMethod === 'simulate'
+                ? settings.throttling.cpuSlowdownMultiplier : 1,
+              totalMs: audits['mainthread-work-breakdown'].numericValue,
+              breakdown: audits['mainthread-work-breakdown'].details.items,
+            },
+          }
+          writeFileSync(process.argv[3], `${JSON.stringify(summary, null, 2)}\n`)
           NODE
       - name: Upload Lighthouse reports and preview diagnostics
         if: always()

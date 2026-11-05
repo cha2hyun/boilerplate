@@ -3,6 +3,11 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { staticUiValues } from './static-ui-values.mjs'
+import {
+  checkSearchEntrypoint,
+  checkSearchRuntimeGraph,
+  isSearchEntrypoint,
+} from './search-entrypoints.mjs'
 
 const layers = ['app', 'pages', 'widgets', 'features', 'entities', 'shared']
 const sourceEntrypoints = new Set(['main.tsx', 'test/setup.ts'])
@@ -295,6 +300,8 @@ export function checkFile(filename, contents) {
 
   if (!sourcePattern.test(file)) return issues
 
+  issues.push(...checkSearchEntrypoint(file, contents))
+
   const source = ts.createSourceFile(
     file,
     contents,
@@ -434,7 +441,8 @@ export function checkFile(filename, contents) {
     const isPublicEntry =
       targetSlice &&
       (targetRest.length === 0 ||
-        (targetRest.length === 1 && /^index(?:\.[cm]?[jt]sx?)?$/.test(targetRest[0])))
+        (targetRest.length === 1 && /^index(?:\.[cm]?[jt]sx?)?$/.test(targetRest[0])) ||
+        isSearchEntrypoint(target))
     if (!isPublicEntry) {
       report(
         'public-api',
@@ -725,12 +733,18 @@ export async function checkArchitecture(root = process.cwd()) {
     .filter((entry) => entry.isFile())
     .map((entry) => path.join(entry.parentPath, entry.name))
     .sort()
-  const results = await Promise.all(
-    sourceFiles.map(async (filename) =>
-      checkFile(path.relative(sourceDirectory, filename), await readFile(filename, 'utf8')),
+  const sources = new Map(
+    await Promise.all(
+      sourceFiles.map(async (filename) => [
+        normalize(path.relative(sourceDirectory, filename)),
+        await readFile(filename, 'utf8'),
+      ]),
     ),
   )
-  return results.flat()
+  return [
+    ...[...sources].flatMap(([file, contents]) => checkFile(file, contents)),
+    ...checkSearchRuntimeGraph(sources),
+  ]
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

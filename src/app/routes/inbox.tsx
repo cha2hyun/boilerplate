@@ -1,5 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
-import { InboxPage, inboxSearchDefaults, inboxSearchSchema } from '@/pages/inbox'
+import { InboxPage } from '@/pages/inbox'
+import { inboxSearchDefaults, inboxSearchSchema } from '@/pages/inbox/search'
 
 export const Route = createFileRoute('/inbox')({
   validateSearch: inboxSearchSchema,

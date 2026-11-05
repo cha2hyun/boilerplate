@@ -1,5 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
-import { OverviewPage, overviewSearchDefaults, overviewSearchSchema } from '@/pages/overview'
+import { OverviewPage } from '@/pages/overview'
+import { overviewSearchDefaults, overviewSearchSchema } from '@/pages/overview/search'
 
 export const Route = createFileRoute('/')({
   validateSearch: overviewSearchSchema,

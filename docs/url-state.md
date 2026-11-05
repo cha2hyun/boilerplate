@@ -19,8 +19,9 @@ Orders/Customers의 상세 패널은 URL `detail` ID가 소유합니다. 상세 
 
 ## 검증과 소유 위치
 
-- 화면의 `model/search.ts`에서 Zod 스키마·출력 타입·기본값을 정의하고 슬라이스의 `index.ts`로 공개합니다. 여러 화면이 쓰는 프로젝트 표·매출 기간 계약은 해당 위젯 모델이 소유합니다.
+- 화면의 `model/search.ts`에서 Zod 스키마·출력 타입·기본값을 정의합니다. 여러 화면이 쓰는 프로젝트 표·매출 기간 계약은 해당 위젯 모델이 소유합니다. 기존 `index.ts` 공개 API는 유지하고, 여섯 조회 페이지와 두 위젯은 같은 계약을 루트 `search.ts`에서도 named re-export합니다. 스키마·기본값을 복제하지 않습니다. 허용 목록과 런타임 UI 의존 차단은 [아키텍처](architecture.md)와 [ADR 006](adr/006-search-public-entrypoints.md)을 따릅니다.
 - `app/routes`가 Zod 4 스키마를 `validateSearch`에 직접 전달합니다. 추가 어댑터는 필요하지 않습니다. 검증된 search와 탐색 콜백을 페이지·위젯에 props로 전달합니다.
+- 라우트는 Page 컴포넌트를 `index.ts`에서, 조회 계약을 `search.ts`에서 각각 가져옵니다. Router의 자동 코드 분리와 intent preload는 유지하며 수동 lazy wrapper, 추가 Suspense, 조회 지연을 넣지 않습니다. Overview 모델이 프로젝트 표와 매출 기간을 조합할 때도 위젯의 `search.ts`를 사용하여 UI로 이어지는 정적 연결을 만들지 않습니다.
 - 기본값은 스키마와 탐색에서 공유하고 `stripSearchParams`로 기본값인 필드를 URL에서 생략합니다. 앱의 `search.strict`로 스키마에 없는 필드가 탐색 상태에 전파되지 않게 합니다.
 - 필드마다 `.default`와 `.catch`로 누락·잘못된 값을 복구합니다. 한 필드 오류 때문에 나머지 정상 조건을 지우거나 페이지 오류 화면을 띄우지 않습니다.
 - 상세 ID는 최대 200자의 opaque 문자열이며 숫자로 파싱된 ID는 문자열로 복원합니다. 형식이 잘못되면 상세만 기본값으로 복구하고 정상 조회 조건을 보존합니다. 비밀과 개인정보 원문을 ID로 사용하지 않습니다.
@@ -37,6 +38,7 @@ Orders/Customers의 상세 패널은 URL `detail` ID가 소유합니다. 상세 
 ## 검증
 
 - 스키마 테스트: 기본값, 허용 값, JSON 형태가 다른 입력, 범위 밖 페이지, 잘못된 필드와 정상 필드의 공존을 검사합니다.
+- 조회 공개 진입점 검사는 정확한 공개 경로·named re-export·타입 전용 연결을 확인하고, 간접 barrel/동적 import/확장자를 생략한 TSX를 통한 UI 유입을 거부합니다. 기존 URL 스키마 값과 탐색 props는 변경하지 않습니다.
 - 기존 E2E 범주에서 컨트롤→URL, 새로고침, 뒤로/앞으로, 잘못된 직접 링크, 데이터 조회 뒤 페이지 보정을 검증합니다.
 - 공통 Router 직렬화 테스트는 한국어·예약 문자·숫자 검색어를 확인합니다. 전체 브라우저 검사는 Actions의 기존 production 번들과 2-job/2-worker 구성을 사용합니다.
 

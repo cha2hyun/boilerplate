@@ -6,7 +6,7 @@
 
 | 오류 위치                                                | 사용자 동작                                             | 보고 연결                                   |
 | -------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------- |
-| Router가 처리하는 route 렌더/로딩 실패                   | 기존 route 오류 화면에서 다시 시도                      | root route `onCatch`, React `onCaughtError` |
+| Router가 처리하는 route 렌더/로딩 실패                   | route 오류 화면에서 다시 시도 또는 새로고침             | root route `onCatch`, React `onCaughtError` |
 | Router 밖의 앱/Provider 렌더 실패                        | 앱 전체 복구 화면에서 새로고침                          | `AppErrorBoundary`, React `onCaughtError`   |
 | i18n 초기화 실패                                         | Provider 없는 앱 복구 화면에서 새로고침                 | `startup`                                   |
 | demo mock 시작 실패                                      | 기존 데모 시작 실패 문구와 새로고침                     | `startup`                                   |
@@ -14,6 +14,8 @@
 | 이벤트 핸들러/전역 실행 오류, 처리되지 않은 Promise 거절 | 정상 화면 유지, 브라우저 기본 오류 처리는 취소하지 않음 | `window.error`, `unhandledrejection`        |
 
 `src/main.tsx`가 `AppErrorBoundary`를 `App` 바깥에 배치하므로 Localization, Theme, Query, Currency Provider까지 포함합니다. React root 콜백은 보고 연결이며 boundary를 대신하지 않습니다. route의 재시도 버튼과 각 데이터/폼 오류 처리는 기존 소유자에 남습니다. 이미 TanStack Router가 처리하는 chunk 재로드에 별도 Vite 핸들러를 중복 등록하지 않습니다.
+
+route 오류 화면은 명시적인 새로고침도 제공합니다. Router의 누락된 청크 자동 재로드가 한 번 실패한 뒤에는 lazy component가 import 오류를 기억하므로 boundary의 다시 시도만으로 복구되지 않을 수 있습니다. 네트워크가 복구되면 사용자가 새로고침 버튼으로 새 모듈 요청을 시작할 수 있으며 현재 URL의 조회·상세 상태를 복원합니다. `e2e/app-recovery.spec.ts`가 실제 route 청크 요청을 실패시킨 뒤 이 버튼을 통한 복구를 확인합니다.
 
 초기화는 두 작업이 모두 성공했을 때만 앱을 시작합니다. 하나가 실패하면 다른 작업의 완료를 기다리지 않고 실패한 단계의 복구 화면을 표시하며, 나중에 발생하는 두 번째 거절도 처리합니다. 첫 실패의 화면을 유지하고 반복 재마운트하지 않습니다.
 

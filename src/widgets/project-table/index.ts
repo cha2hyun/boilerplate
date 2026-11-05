@@ -3,4 +3,4 @@ export {
   projectTableSearchSchema,
   projectTableSearchDefaults,
   type ProjectTableSearch,
-} from './model/search'
+} from './search'

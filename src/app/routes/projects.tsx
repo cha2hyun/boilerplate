@@ -1,5 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
-import { ProjectsPage, projectsSearchDefaults, projectsSearchSchema } from '@/pages/projects'
+import { ProjectsPage } from '@/pages/projects'
+import { projectsSearchDefaults, projectsSearchSchema } from '@/pages/projects/search'
 
 export const Route = createFileRoute('/projects')({
   validateSearch: projectsSearchSchema,

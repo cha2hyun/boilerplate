@@ -1,5 +1,6 @@
 import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
-import { AnalyticsPage, analyticsSearchDefaults, analyticsSearchSchema } from '@/pages/analytics'
+import { AnalyticsPage } from '@/pages/analytics'
+import { analyticsSearchDefaults, analyticsSearchSchema } from '@/pages/analytics/search'
 
 export const Route = createFileRoute('/analytics')({
   validateSearch: analyticsSearchSchema,

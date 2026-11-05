@@ -1,6 +1,55 @@
 import { expect, fontCdnBaseUrl, test, type Page } from './fixtures.js'
 import { pageMetadata } from '../src/app/seo/metadata.ts'
 
+test('preloads the Orders route on intent and reuses it while restoring detail history', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Route module loading is viewport independent.')
+  const isOrdersChunk = (url: string) => /^\/assets\/orders-[^/]+\.js$/.test(new URL(url).pathname)
+  const chunkRequests: string[] = []
+  const browserErrors: string[] = []
+  page.on('request', (request) => {
+    if (isOrdersChunk(request.url())) chunkRequests.push(request.url())
+  })
+  page.on('pageerror', (error) => browserErrors.push(error.message))
+
+  await page.goto('/projects')
+  await expect(page.getByRole('heading', { name: 'Projects', level: 1, exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
+  expect(chunkRequests).toEqual([])
+
+  const ordersLink = page.getByRole('link', { name: 'Orders', exact: true })
+  const preload = page.waitForResponse((response) => isOrdersChunk(response.url()))
+  await ordersLink.hover()
+  const response = await preload
+  expect(response.ok()).toBe(true)
+  expect(await response.finished()).toBeNull()
+  await expect(page).toHaveURL((url) => url.pathname === '/projects')
+  expect(chunkRequests).toEqual([response.url()])
+
+  await ordersLink.click()
+  await expect(page.getByRole('heading', { name: 'Orders', level: 1, exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'View order ORD-1042', exact: true }).click()
+  const details = page.getByRole('dialog', { name: 'Order ORD-1042', exact: true })
+  await expect(details.getByText('olivia@example.com', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(
+    (url) => url.pathname === '/orders' && url.searchParams.get('detail') === 'ORD-1042',
+  )
+
+  await page.goBack()
+  await expect(details).toBeHidden()
+  await page.goBack()
+  await expect(page.getByRole('heading', { name: 'Projects', level: 1, exact: true })).toBeVisible()
+  await page.goForward()
+  await expect(page.getByRole('heading', { name: 'Orders', level: 1, exact: true })).toBeVisible()
+  await page.goForward()
+  await expect(page).toHaveURL((url) => url.searchParams.get('detail') === 'ORD-1042')
+  await expect(details.getByText('olivia@example.com', { exact: true })).toBeVisible()
+  // Dynamic import must reuse the loaded module even when the route remounts.
+  expect(chunkRequests).toEqual([response.url()])
+  expect(browserErrors).toEqual([])
+})
+
 test('serves page metadata without JavaScript and updates it during client navigation', async ({
   page,
   request,

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-quer
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
 import { NumberDisplay } from './number-display'
+import { useLocalePreferences } from '@/shared/lib/i18n/preferences'
 
 function createMotionPreference() {
   return Object.assign(new EventTarget(), {
@@ -20,6 +21,7 @@ let frames: Map<number, FrameRequestCallback>
 let nextFrame: number
 
 beforeEach(() => {
+  useLocalePreferences.setState({ locale: 'en-US', currency: 'USD' })
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
   vi.spyOn(document, 'hidden', 'get').mockReturnValue(false)
   motion = createMotionPreference()
@@ -39,6 +41,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  useLocalePreferences.setState({ locale: 'en-US', currency: 'USD' })
   vi.useRealTimers()
   vi.unstubAllGlobals()
 })
@@ -299,6 +302,59 @@ describe('NumberDisplay', () => {
     expect(accessibleNumber(container)).toHaveTextContent('$1,200')
     advanceTime(150)
     expect(visualNumber(container)).toHaveTextContent('$1,200')
+  })
+
+  it('reuses prepared text during motion, wrapping and equivalent option rerenders', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Intl.NumberFormat.prototype, 'format')
+    if (!descriptor?.get) throw new Error('Intl.NumberFormat.format must expose its native getter.')
+    // TypeScript declares a method; the native accessor returns the instance-bound format function.
+    const formatCalls = vi.fn(function (this: Intl.NumberFormat) {
+      return descriptor.get?.call(this) as Intl.NumberFormat['format']
+    })
+    Object.defineProperty(Intl.NumberFormat.prototype, 'format', {
+      ...descriptor,
+      get: formatCalls,
+    })
+    try {
+      const { container, rerender } = render(
+        <NumberDisplay animate value={1000000} format={{ notation: 'compact' }} />,
+      )
+      const preparedCalls = formatCalls.mock.calls.length
+      expect(preparedCalls).toBeGreaterThan(0)
+      const reservationTexts = [...container.querySelectorAll('.invisible')].map(
+        (element) => element.textContent,
+      )
+      advanceTime(150, true)
+      expect(visualNumber(container)).toHaveTextContent('875K')
+      rerender(<NumberDisplay animate wrap value={1000000} format={{ notation: 'compact' }} />)
+      advanceTime(150)
+      expect(formatCalls).toHaveBeenCalledTimes(preparedCalls)
+      expect(visualNumber(container)).toHaveTextContent('1M')
+      expect(
+        [...container.querySelectorAll('.invisible')].map((element) => element.textContent),
+      ).toEqual(reservationTexts)
+    } finally {
+      Object.defineProperty(Intl.NumberFormat.prototype, 'format', descriptor)
+    }
+  })
+
+  it('updates locale during motion without restarting its 300 ms deadline', () => {
+    const { container } = render(
+      <NumberDisplay animate value={100400} format={{ notation: 'compact' }} />,
+    )
+    advanceTime(150, true)
+    act(() => {
+      useLocalePreferences.getState().setLocale('ko-KR')
+    })
+    expect(visualNumber(container)).toHaveTextContent('8.8만')
+    expect(accessibleNumber(container)).toHaveTextContent('10만')
+    advanceTime(150)
+    expect(visualNumber(container)).toHaveTextContent('10만')
+    expect(container.querySelector('[data-number-state]')).toHaveAttribute(
+      'data-number-state',
+      'idle',
+    )
+    expect(frames.size).toBe(0)
   })
 
   it('starts a new bounded transition when the target changes', () => {

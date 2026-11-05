@@ -64,6 +64,35 @@ describe('reactive display formatting and USD conversion', () => {
     expect(result.current.formatMoney(orderAmountInCents / 100)).toBe('$2.50')
   })
 
+  it('keeps locale-only formatters stable across currency and rate updates', () => {
+    let rate = 1200
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <ExchangeRateContext value={rate}>{children}</ExchangeRateContext>
+    )
+    const { result, rerender } = renderHook(useFormatters, { wrapper })
+    const english = result.current
+    rate = 1300
+    rerender()
+    expect(result.current).toBe(english)
+    act(() => {
+      useLocalePreferences.getState().setCurrency('KRW')
+    })
+    expect(result.current.formatNumber).toBe(english.formatNumber)
+    expect(result.current.formatDate).toBe(english.formatDate)
+    expect(result.current.formatRelativeTime).toBe(english.formatRelativeTime)
+    expect(result.current.formatMoney(2)).toBe('₩2,600')
+    rate = 1400
+    rerender()
+    expect(result.current.formatDate).toBe(english.formatDate)
+    expect(result.current.formatMoney(2)).toBe('₩2,800')
+    act(() => {
+      useLocalePreferences.getState().setLocale('ko-KR')
+    })
+    expect(result.current.formatDate).not.toBe(english.formatDate)
+    expect(result.current.formatDate('2026-11-04', { locale: undefined })).toBe('11월 4일')
+    expect(result.current.formatRelativeTime('2026-11-04', new Date('2026-11-04'))).toBe('방금 전')
+  })
+
   it('keeps pure numeric currency formatting separate from converted amounts', () => {
     useLocalePreferences.getState().setCurrency('KRW')
     const wrapper = ({ children }: { children: ReactNode }) => (

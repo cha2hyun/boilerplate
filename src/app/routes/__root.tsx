@@ -6,6 +6,7 @@ import { useTranslation } from '@/shared/lib/i18n'
 import { reportError } from '@/shared/lib/error-reporting'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import { HStack } from '@/shared/ui/stack'
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   component: RootLayout,
   onCatch: (error) => {
@@ -37,7 +38,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           <CardDescription>{t('route.errorDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={reset}>{t('route.retry')}</Button>
+          <HStack wrap className="gap-2">
+            <Button onClick={reset}>{t('route.retry')}</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                window.location.reload()
+              }}
+            >
+              {t('appError.reload')}
+            </Button>
+          </HStack>
         </CardContent>
       </Card>
     )

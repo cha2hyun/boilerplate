@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatNumber, type NumberFormatOptions } from '@/shared/lib/format'
+import {
+  createNumberFormatter,
+  type NumberFormatOptions,
+  type NumberFormatter,
+} from '@/shared/lib/format'
 import { useLocalePreferences } from '@/shared/lib/i18n/preferences'
 import { cn } from '@/shared/lib/utils'
 
@@ -22,31 +26,67 @@ interface NumberDisplayProps {
 /** New values or an explicit motion toggle restart; formatting never restarts the timeline. */
 export function NumberDisplay({ animate = false, format, ...props }: NumberDisplayProps) {
   const locale = useLocalePreferences((state) => state.locale)
-  const localizedFormat = useMemo(() => ({ locale, ...format }), [locale, format])
+  const { value } = props
+  const formatValue = useMemo(
+    () =>
+      value == null || !Number.isFinite(value)
+        ? undefined
+        : createNumberFormatter({ locale, ...format }),
+    [locale, format, value],
+  )
   return (
     <NumberTransition
       key={`${String(props.value)}:${String(animate)}`}
       animate={animate}
-      format={localizedFormat}
+      formatValue={formatValue}
       {...props}
     />
   )
 }
 
-function NumberTransition({ value, format, animate, wrap = false, className }: NumberDisplayProps) {
+function NumberTransition({
+  value,
+  formatValue,
+  animate,
+  wrap = false,
+  className,
+}: Omit<NumberDisplayProps, 'format'> & { formatValue: NumberFormatter | undefined }) {
   const canAnimate = !!animate && value != null && Number.isFinite(value) && value !== 0
   const [startsAnimated] = useState(() => canAnimate && !prefersReducedMotion() && !document.hidden)
   const [step, setStep] = useState(startsAnimated ? 0 : motionSteps)
-  const finalText = formatNumber(value, format)
-  const displayFrames = useMemo(() => {
-    if (!startsAnimated || value == null) return []
-    return Array.from({ length: motionSteps + 1 }, (_, index) => {
-      if (index === motionSteps) return formatNumber(value, format)
-      const progress = 1 - (1 - index / motionSteps) ** 3
-      const current = Number.isInteger(value) ? Math.round(value * progress) : value * progress
-      return formatNumber(current, format)
-    })
-  }, [startsAnimated, value, format])
+  const { finalText, displayFrames, reservedTexts } = useMemo(() => {
+    const finalText = formatValue?.(value) ?? '—'
+    const displayFrames =
+      startsAnimated && value != null && formatValue
+        ? Array.from({ length: motionSteps + 1 }, (_, index) => {
+            if (index === motionSteps) return finalText
+            const progress = 1 - (1 - index / motionSteps) ** 3
+            const current = Number.isInteger(value)
+              ? Math.round(value * progress)
+              : value * progress
+            return formatValue(current)
+          })
+        : []
+    return {
+      finalText,
+      displayFrames,
+      reservedTexts: [finalText, ...new Set(displayFrames.filter((text) => text !== finalText))],
+    }
+  }, [startsAnimated, value, formatValue])
+  const textLayout = wrap ? 'wrap-anywhere whitespace-normal' : 'whitespace-nowrap'
+  const reservations = useMemo(
+    () =>
+      reservedTexts.map((text) => (
+        <span
+          key={text}
+          className={cn('invisible col-start-1 row-start-1', textLayout)}
+          aria-hidden="true"
+        >
+          {text}
+        </span>
+      )),
+    [reservedTexts, textLayout],
+  )
 
   useEffect(() => {
     if (!startsAnimated) return
@@ -101,27 +141,13 @@ function NumberTransition({ value, format, animate, wrap = false, className }: N
   }, [startsAnimated])
 
   const complete = step === motionSteps
-  const textLayout = wrap ? 'wrap-anywhere whitespace-normal' : 'whitespace-nowrap'
   return (
     <span
       className={cn('relative inline-grid tabular-nums', wrap && 'max-w-full min-w-0', className)}
       data-number-state={complete ? 'idle' : 'running'}
     >
-      <span className={cn('invisible col-start-1 row-start-1', textLayout)} aria-hidden="true">
-        {finalText}
-      </span>
-      {/* Reserve every possible intermediate too: 875K can be wider than the final 1M. */}
-      {[...new Set(displayFrames)]
-        .filter((text) => text !== finalText)
-        .map((text) => (
-          <span
-            key={text}
-            className={cn('invisible col-start-1 row-start-1', textLayout)}
-            aria-hidden="true"
-          >
-            {text}
-          </span>
-        ))}
+      {/* Keep every possible width/height reservation, but reuse the tree between motion steps. */}
+      {reservations}
       <span className={cn('absolute inset-0 overflow-hidden', textLayout)} aria-hidden="true">
         {complete ? finalText : displayFrames[step]}
       </span>

@@ -1,5 +1,54 @@
 import { expect, test } from './fixtures.js'
 
+test('recovers an unavailable route chunk through the reload action and restores its detail URL', async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Route chunk recovery is viewport independent.')
+  const isOrdersChunk = (url: URL) => /^\/assets\/orders-[^/]+\.js$/.test(url.pathname)
+  const failedChunks = new Set<string>()
+  let unavailable = true
+  await context.route(isOrdersChunk, async (route) => {
+    if (unavailable) {
+      failedChunks.add(route.request().url())
+      await route.abort('failed')
+      return
+    }
+    await route.continue()
+  })
+
+  // Keep the real chunk unavailable through the router's own one-time reload.
+  await page.goto('/orders?detail=ORD-1042')
+  const error = page.getByText('Something went wrong', { exact: true })
+  await expect(error).toBeVisible()
+  expect(failedChunks.size).toBe(1)
+  await expect(page.locator('body')).not.toContainText(
+    'Failed to fetch dynamically imported module',
+  )
+  const reload = page.getByRole('button', { name: 'Reload page', exact: true })
+  await expect(reload).toBeVisible()
+
+  unavailable = false
+  const recoveredChunk = page.waitForResponse(
+    (response) => isOrdersChunk(new URL(response.url())) && response.ok(),
+  )
+  // Exercise the offered recovery action: a test-side reload would hide a broken retry button.
+  await reload.click()
+  expect(await (await recoveredChunk).finished()).toBeNull()
+  await expect(page).toHaveTitle('Orders · Blueprint')
+  await expect(page).toHaveURL(
+    (url) => url.pathname === '/orders' && url.searchParams.get('detail') === 'ORD-1042',
+  )
+  await expect(
+    page
+      .getByRole('dialog', { name: 'Order ORD-1042', exact: true })
+      .getByText('olivia@example.com', {
+        exact: true,
+      }),
+  ).toBeVisible()
+  await expect(error).toBeHidden()
+})
+
 test('recovers a provider render failure without exposing error details', async ({
   page,
 }, testInfo) => {
