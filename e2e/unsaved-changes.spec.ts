@@ -137,3 +137,61 @@ test('protects project drafts for Escape, cancel, outside click and close while 
   await expect(editor).toBeHidden()
   await expect(prompt).toHaveCount(0)
 })
+
+test('handles Escape as soon as the discard prompt receives focus', async ({ page }) => {
+  await page.goto('/projects')
+  await page.getByRole('button', { name: 'New project', exact: true }).click()
+  const editor = page.getByRole('dialog', { name: 'Create a project', exact: true })
+  const name = editor.getByRole('textbox', { name: 'Project name', exact: true })
+  await name.fill('Immediate Escape draft')
+
+  const probe = await page.evaluateHandle(() => {
+    let dispatched = false
+    let timer: ReturnType<typeof setTimeout> | undefined
+    function onFocus(event: FocusEvent) {
+      const target = event.target
+      if (
+        !(target instanceof HTMLElement) ||
+        target.textContent !== 'Keep editing' ||
+        !target.closest('[role="alertdialog"]')
+      )
+        return
+      document.removeEventListener('focusin', onFocus)
+      // Dispatch in a fresh event task, not inside Radix's focus effect. A focused
+      // prompt must accept Escape even before the document-layer effect settles.
+      timer = setTimeout(() => {
+        target.dispatchEvent(
+          new KeyboardEvent('keydown', {
+            key: 'Escape',
+            code: 'Escape',
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+        dispatched = true
+      }, 0)
+    }
+    document.addEventListener('focusin', onFocus)
+    return {
+      sent: () => dispatched,
+      cleanup: () => {
+        document.removeEventListener('focusin', onFocus)
+        clearTimeout(timer)
+      },
+    }
+  })
+
+  try {
+    await page.keyboard.press('Escape')
+    await expect.poll(() => probe.evaluate((state) => state.sent())).toBe(true)
+    await expect(discardPrompt(page)).toBeHidden()
+    await expect(editor).toBeVisible()
+    await expect(name).toHaveValue('Immediate Escape draft')
+    await expect(name).toBeFocused()
+  } finally {
+    await probe.evaluate((state) => {
+      state.cleanup()
+    })
+    await probe.dispose()
+  }
+})

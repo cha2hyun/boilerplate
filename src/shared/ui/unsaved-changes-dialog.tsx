@@ -26,7 +26,18 @@ export function UnsavedChangesDialog({
   const { t } = useTranslation('common')
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent onCloseAutoFocus={onCloseAutoFocus}>
+      <AlertDialogContent
+        onCloseAutoFocus={onCloseAutoFocus}
+        onKeyDown={(event) => {
+          // Focus can arrive before Radix installs its new top-layer Escape listener.
+          // Handle the focused prompt immediately; settling a request is idempotent.
+          if (open && event.key === 'Escape') {
+            event.preventDefault()
+            event.stopPropagation()
+            onOpenChange(false)
+          }
+        }}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle>{t('unsaved.title')}</AlertDialogTitle>
           <AlertDialogDescription>{t('unsaved.description')}</AlertDialogDescription>
