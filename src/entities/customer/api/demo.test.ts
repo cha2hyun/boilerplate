@@ -87,6 +87,7 @@ describe('persistent demo adapter', () => {
     '{not json',
     JSON.stringify({ version: 99, customers: [] }),
     JSON.stringify({ version: 1, customers: [{ id: 'broken' }] }),
+    JSON.stringify({ version: 1, customers: [sampleCustomers[0], sampleCustomers[0]] }),
   ])('recovers corrupt storage without passing malformed data to the UI', async (raw) => {
     const storage = memoryStorage(raw)
     const adapter = createDemoCustomerAdapter({ storage, delayMs: 0 })
@@ -100,6 +101,18 @@ describe('persistent demo adapter', () => {
   it('preserves an intentionally empty customer list', async () => {
     const storage = memoryStorage(JSON.stringify({ version: 1, customers: [] }))
     expect(await createDemoCustomerAdapter({ storage, delayMs: 0 }).list()).toEqual([])
+  })
+
+  it('rejects a generated ID collision without replacing existing customers', async () => {
+    const storage = memoryStorage()
+    const adapter = createDemoCustomerAdapter({ storage, delayMs: 0, createId: () => 'collision' })
+    await adapter.create(input)
+    const before = storage.getItem(CUSTOMER_STORAGE_KEY)
+    await expect(adapter.create({ ...input, name: 'Second customer' })).rejects.toMatchObject({
+      status: 409,
+    })
+    expect(storage.getItem(CUSTOMER_STORAGE_KEY)).toBe(before)
+    expect((await adapter.list()).filter((customer) => customer.id === 'collision')).toHaveLength(1)
   })
 
   it('keeps mutations working when storage is unavailable', async () => {

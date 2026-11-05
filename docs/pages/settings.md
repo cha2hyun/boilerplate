@@ -41,9 +41,11 @@ PageHeader → 일반/외관 탭입니다. 일반에는 이름 입력·compact �
 - 임시 상태: [화면](../../src/pages/settings/ui/settings-page.tsx)의 이름·밀도 초안과 오류, Tabs의 선택. 이름과 밀도의 기본값은 store만 소유합니다.
 - 탐색 보호: [공통 hook](../../src/shared/hooks/use-unsaved-changes.ts)과 [AlertDialog 조합](../../src/shared/ui/unsaved-changes-dialog.tsx). Router가 앱 이동과 브라우저 종료 경고 등록을 소유합니다.
 
+저장한 워크스페이스 이름은 [앱 셸](../../src/widgets/app-shell/ui/app-shell.tsx)의 첫 탐색 그룹 제목에 즉시 반영됩니다. 접힌 탐색 레일에서는 그룹 제목을 숨기며, 펼치거나 모바일 탐색을 열면 같은 이름을 확인합니다. 하단 프로필·전환 블록은 추가하지 않습니다.
+
 ## 수용 기준
 
-- 검증·저장·새로고침·초기화: [workspace E2E](../../e2e/workspace.spec.ts)의 `validates, saves and resets workspace preferences across reloads`.
+- 검증·저장·새로고침·초기화와 실제 사이드바 이름 반영: [workspace E2E](../../e2e/workspace.spec.ts)의 `validates, saves and resets workspace preferences across reloads`.
 - 초기화 후 폼과 저장 값 일치, 미저장 변경 없음: [설정 테스트](../../src/pages/settings/ui/settings-page.test.tsx)의 `resets the form and persisted store to configured defaults without leaving unsaved changes`.
 - 초안 유지·폐기·원복·저장 이후 해제와 일반 탭 초점 복구: 같은 설정 테스트의 `settings unsaved input`. 실제 앱 탐색과 브라우저 기록·새로고침: [입력 보호 E2E](../../e2e/unsaved-changes.spec.ts)의 `keeps settings drafts when navigation is cancelled and discards only on confirmation`, `protects settings against browser history and reload without trapping a saved form`.
 - 테마 지속과 shell 유지: [workspace E2E](../../e2e/workspace.spec.ts)의 `persists the theme and keeps the shell stable through command palette navigation`. 저장 경계의 복구는 [store 테스트](../../src/features/workspace-preferences/model/store.test.ts)를 확인합니다.

@@ -42,17 +42,19 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 ## 브라우저 범주와 페이지 선택
 
-| CI 범주   | 파일/선택 명령                                         | 확인할 사용자 흐름                                         |
-| --------- | ------------------------------------------------------ | ---------------------------------------------------------- |
-| `core`    | `test:e2e:workspace` → `workspace.spec.ts`             | 탐색, 검색, 테마/설정, 컴포넌트, 반응형 셸                 |
-| `core`    | `test:e2e:cache` → `query-cache.spec.ts`               | 실제 요청 횟수, cold/warm 캐시, background 갱신, 카드 치수 |
-| `core`    | `test:e2e:projects` → `projects.spec.ts`               | 프로젝트 생성/수정/삭제, 필터, 오류/빈 상태                |
-| `samples` | `test:e2e:commerce` → `commerce.spec.ts`               | 주문/고객 목록, 필터, 상세 및 선택 흐름                    |
-| `samples` | `test:e2e:analytics-inbox` → `analytics-inbox.spec.ts` | 분석 기간/비교와 메시지 탐색/읽음 처리                     |
+| CI 범주   | 파일/선택 명령                                         | 확인할 사용자 흐름                                                       |
+| --------- | ------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `core`    | `test:e2e:workspace` → `workspace.spec.ts`             | 탐색, 검색, 테마/설정, 컴포넌트, 반응형 셸                               |
+| `core`    | `test:e2e:cache` → `query-cache.spec.ts`               | 실제 요청 횟수, cold/warm 캐시, background 갱신, 오류·빈 응답, 카드 치수 |
+| `core`    | `test:e2e:projects` → `projects.spec.ts`               | 프로젝트 생성/수정/삭제, 필터, 오류/빈 상태                              |
+| `samples` | `test:e2e:commerce` → `commerce.spec.ts`               | 주문/고객 목록, 필터, 상세 및 선택 흐름                                  |
+| `samples` | `test:e2e:analytics-inbox` → `analytics-inbox.spec.ts` | 분석 기간/비교와 메시지 탐색/읽음 처리                                   |
 
 두 범주는 겹치지 않습니다. `package.json`의 `test:e2e:core`와 `test:e2e:samples`는 기존 스펙의 경로를 명시적으로 열거합니다. 새 파일을 추가하거나 삭제하면 이 목록도 갱신하세요. `pnpm check:e2e-categories`가 `e2e` 아래 스펙을 재귀적으로 찾아 누락·중복·없는 경로를 거부하며, 로컬 `pnpm check`와 CI의 정적 검사에 포함됩니다. 검사기 회귀 테스트는 기존 `test:guardrails`에서 실행합니다. 개별 파일용 편의 명령은 CI 범주에 포함하지 않습니다.
 
-같은 시나리오를 dev와 production 두 환경에서 반복하지 않습니다. E2E는 `pnpm build` 결과 `dist/`를 `pnpm preview`로 제공하며 기본적으로 Chromium만 사용합니다.
+같은 시나리오를 dev와 production 두 환경에서 반복하지 않습니다. E2E는 `pnpm build` 결과 `dist/`를 `pnpm preview`로 제공합니다. 전체 기능 행렬은 Chromium의 세 화면 구간이며 `browser-compatibility.spec.ts` 두 시나리오만 별도 `webkit-mobile` project에서 실행합니다. 기존 Chromium project는 이 파일을 제외하고 WebKit은 이 파일만 선택하여 전체 엔진 행렬을 복제하지 않습니다.
+
+`query-cache.spec.ts`는 Overview/Analytics의 최초 조회 실패→수동 재시도, stale 재조회 실패 중 기존 숫자·내용 보존→재시도 복구, 정상 빈 응답과 오류·로딩의 구분을 세 Chromium 화면 구간에서 확인합니다. 실패/빈 응답만 fetch 경계에 주입하고 성공 복구는 실제 데모 HTTP 경로를 사용합니다. Overview 프로젝트의 빈 상태는 HTTP가 아닌 데모 저장소를 비워 검증합니다. Orders/Customers 모바일 카드 치수 검사는 기본 접힌 요약을 펼쳐 기존 cold/warm 비교를 유지합니다.
 
 `core`에는 `e2e/localization.spec.ts`도 포함됩니다. 언어·통화의 독립 전환과 저장 복원, 환산 값, 환율 캐시 재사용, 오류/재시도, 세 화면 구간의 컨트롤 정렬을 확인합니다. 필요한 로컬 재현에서는 이 파일과 `--project`로 범위를 좁힙니다.
 
@@ -60,11 +62,14 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 외부 요청 fixture는 같은 테스트 context를 공유합니다. 종료 시 `context.unrouteAll({ behavior: 'wait' })`로 진행 중인 응답이 끝난 뒤 interception을 해제합니다. 폰트 파일을 읽는 중에 기본 `unroute`로 마지막 handler를 제거하면 요청이 먼저 계속 처리되어 뒤늦은 `fulfill`과 충돌할 수 있습니다.
 
-| Playwright project | viewport    | 입력/환경            |
-| ------------------ | ----------- | -------------------- |
-| `desktop`          | 1440 × 1000 | Chromium 데스크톱    |
-| `tablet`           | 834 × 1112  | Chromium 터치 태블릿 |
-| `mobile`           | 412 × 915   | Chromium 모바일      |
+| Playwright project | viewport    | 입력/환경                                  |
+| ------------------ | ----------- | ------------------------------------------ |
+| `desktop`          | 1440 × 1000 | Chromium 데스크톱                          |
+| `tablet`           | 834 × 1112  | Chromium 터치 태블릿                       |
+| `mobile`           | 412 × 915   | Chromium 모바일                            |
+| `webkit-mobile`    | 390 × 844   | WebKit 모바일 에뮬레이션, 전용 smoke 2개만 |
+
+WebKit smoke는 주문 날짜 입력·짧은 모바일 Dialog의 행동 도달, 미저장 확인과 초점 복귀, 표 내부 가로 스크롤·모바일 탐색을 확인합니다. 실제 Safari 앱·iPhone 하드웨어·OS 날짜 선택기의 검증을 뜻하지 않습니다. 브라우저 job은 계속 core/samples 2개이며 core만 Chromium과 WebKit을 설치하고 samples는 Chromium만 설치합니다. 두 엔진도 같은 job의 worker 2개 한도를 공유합니다.
 
 한 파일/화면 크기를 선택해야 하는 경우:
 
@@ -74,7 +79,7 @@ pnpm test:e2e:commerce --project mobile
 pnpm test:e2e e2e/analytics-inbox.spec.ts --project tablet -g '필요한 테스트 이름'
 ```
 
-Playwright는 worker 2개, CI에서만 실패당 재시도 1회를 사용합니다. retry는 불안정한 테스트를 방치하는 수단이 아닙니다. 실패 trace/screenshot을 확인하고 실제 결함이나 재현 가능한 대기 조건을 수정합니다. Vite StrictMode/HMR 자체에 관련된 문제일 때만 별도 개발 서버 검증을 추가합니다.
+Playwright는 worker 2개, CI에서만 실패당 재시도 1회를 사용합니다. CI의 `failOnFlakyTests: true`로 재시도에서만 성공한 경우도 job/gate가 실패하며, 실패 artifact에 첫 실패의 trace/screenshot과 보고서를 보존합니다. retry는 진단을 위한 한 번의 추가 실행이며 통과로 바꾸는 수단이 아닙니다. 실제 결함이나 재현 가능한 대기 조건을 수정합니다. Vite StrictMode/HMR 자체에 관련된 문제일 때만 별도 개발 서버 검증을 추가합니다.
 
 ## 입력 보호와 앱 오류 복구 회귀
 

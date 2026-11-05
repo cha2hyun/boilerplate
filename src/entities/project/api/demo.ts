@@ -1,11 +1,12 @@
 import { z } from 'zod'
 import { ApiError, delay } from '@/shared/api'
+import { storageKeys } from '@/shared/config/product'
 import { projectInputSchema, projectSchema, projectsSchema } from '../model/schema'
 import type { Project } from '../model/schema'
 import { seedProjects } from './seed'
 import type { ProjectAdapter } from './types'
 
-export const PROJECT_STORAGE_KEY = 'orbit.demo.projects.v1'
+export const PROJECT_STORAGE_KEY = storageKeys.demoProjects
 const persistedSchema = z.object({ version: z.literal(1), projects: projectsSchema })
 type StorageAdapter = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -84,6 +85,7 @@ export function createDemoProjectAdapter(options: DemoOptions = {}): ProjectAdap
     async create(input, signal) {
       const validated = projectInputSchema.parse(input)
       await delay(latency, signal)
+      const projects = read()
       const project = projectSchema.parse({
         ...validated,
         id: createId(),
@@ -91,7 +93,9 @@ export function createDemoProjectAdapter(options: DemoOptions = {}): ProjectAdap
         progress: 0,
         updatedAt: now().toISOString(),
       })
-      persist([project, ...read()])
+      if (projects.some((item) => item.id === project.id))
+        throw new ApiError('This project ID already exists.', 'HTTP_ERROR', 409)
+      persist([project, ...projects])
       return project
     },
     async update(id, input, signal) {

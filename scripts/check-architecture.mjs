@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
+import { staticUiValues } from './static-ui-values.mjs'
 
 const layers = ['app', 'pages', 'widgets', 'features', 'entities', 'shared']
 const sourceEntrypoints = new Set(['main.tsx', 'test/setup.ts'])
@@ -69,8 +70,11 @@ const otherElementVariants = new Set([
 const pageHeaderProps = new Set(['title', 'description', 'badgeLabel', 'actions', 'key'])
 
 // Follow values that can reach className, rather than arbitrary strings in conditions or callbacks.
-function classStrings(node) {
-  if (!node) return [unknownClassFragment]
+function classStrings(node, values, seen = new Set()) {
+  node = values.resolve(node)
+  if (!node || seen.has(node)) return [unknownClassFragment]
+  const next = new Set(seen).add(node)
+  const read = (value) => classStrings(value, values, next)
   if (ts.isStringLiteralLike(node)) return [node.text]
   if (
     ts.isParenthesizedExpression(node) ||
@@ -78,53 +82,47 @@ function classStrings(node) {
     ts.isSatisfiesExpression(node) ||
     ts.isNonNullExpression(node)
   ) {
-    return classStrings(node.expression)
+    return read(node.expression)
   }
   if (ts.isConditionalExpression(node)) {
-    return [...classStrings(node.whenTrue), ...classStrings(node.whenFalse)]
+    return [...read(node.whenTrue), ...read(node.whenFalse)]
   }
   if (ts.isBinaryExpression(node)) {
     if (node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
-      return classStrings(node.right)
+      return read(node.right)
     }
     if (
       [ts.SyntaxKind.BarBarToken, ts.SyntaxKind.QuestionQuestionToken].includes(
         node.operatorToken.kind,
       )
     ) {
-      return [...classStrings(node.left), ...classStrings(node.right)]
+      return [...read(node.left), ...read(node.right)]
     }
     if (node.operatorToken.kind === ts.SyntaxKind.PlusToken) {
-      return classStrings(node.left).flatMap((left) =>
-        classStrings(node.right).map((right) => left + right),
-      )
+      return read(node.left).flatMap((left) => read(node.right).map((right) => left + right))
     }
   }
   if (ts.isTemplateExpression(node)) {
     let values = [node.head.text]
     for (const span of node.templateSpans) {
       values = values.flatMap((value) =>
-        classStrings(span.expression).map((expression) => value + expression + span.literal.text),
+        read(span.expression).map((expression) => value + expression + span.literal.text),
       )
     }
     return values
   }
-  if (ts.isArrayLiteralExpression(node)) return node.elements.flatMap(classStrings)
+  if (ts.isArrayLiteralExpression(node)) return node.elements.flatMap(read)
   if (ts.isObjectLiteralExpression(node)) {
     return node.properties.flatMap((property) => {
       if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property)) {
         return []
       }
-      if (ts.isComputedPropertyName(property.name)) return classStrings(property.name.expression)
+      if (ts.isComputedPropertyName(property.name)) return read(property.name.expression)
       return [property.name.text]
     })
   }
-  if (
-    ts.isCallExpression(node) &&
-    ts.isIdentifier(node.expression) &&
-    classHelpers.has(node.expression.text)
-  ) {
-    return node.arguments.flatMap(classStrings)
+  if (ts.isCallExpression(node) && classHelpers.has(classHelperName(node.expression, values))) {
+    return node.arguments.flatMap(read)
   }
   return [unknownClassFragment]
 }
@@ -154,8 +152,15 @@ function variantTargetsElement(variant) {
   return targetsElement
 }
 
-function classUtilities(node) {
-  return classStrings(node).flatMap((value) =>
+function classHelperName(node, values) {
+  return (
+    values.imported(node)?.name ??
+    (ts.isIdentifier(node) && !values.binding(node) ? node.text : undefined)
+  )
+}
+
+function classUtilities(node, values) {
+  return classStrings(node, values).flatMap((value) =>
     value.split(/\s+/).map((token) => {
       let depth = 0
       let utilityStart = 0
@@ -203,55 +208,6 @@ function unwrapExpression(node) {
     node = node.expression
   }
   return node
-}
-
-function jsxAttributeValue(node, name) {
-  const attribute = node.attributes.properties.find(
-    (property) => ts.isJsxAttribute(property) && property.name.text === name,
-  )
-  const initializer = attribute?.initializer
-  return unwrapExpression(
-    initializer && ts.isJsxExpression(initializer) ? initializer.expression : initializer,
-  )
-}
-
-// Match the owning module and its value export, including local aliases and namespace imports.
-function componentImports(source, file, module, exportedName) {
-  const names = new Set()
-  for (const statement of source.statements) {
-    if (
-      !ts.isImportDeclaration(statement) ||
-      !ts.isStringLiteralLike(statement.moduleSpecifier) ||
-      statement.importClause?.isTypeOnly ||
-      internalPath(statement.moduleSpecifier.text, file)?.replace(/\.[cm]?[jt]sx?$/, '') !== module
-    ) {
-      continue
-    }
-    const bindings = statement.importClause?.namedBindings
-    if (bindings && ts.isNamespaceImport(bindings)) {
-      names.add(`${bindings.name.text}.${exportedName}`)
-    } else if (bindings && ts.isNamedImports(bindings)) {
-      for (const binding of bindings.elements) {
-        if (!binding.isTypeOnly && (binding.propertyName ?? binding.name).text === exportedName) {
-          names.add(binding.name.text)
-        }
-      }
-    }
-  }
-  return names
-}
-
-// Only inspect visible object-literal spread keys; this does not prove unknown spreads are safe.
-function literalPropertyNames(node) {
-  node = unwrapExpression(node)
-  if (!node || !ts.isObjectLiteralExpression(node)) return []
-  return node.properties.flatMap((property) => {
-    if (ts.isSpreadAssignment(property)) return literalPropertyNames(property.expression)
-    const name = ts.isComputedPropertyName(property.name)
-      ? unwrapExpression(property.name.expression)
-      : property.name
-    return ts.isIdentifier(name) || ts.isStringLiteralLike(name) ? [name.text] : []
-  })
 }
 
 function isSampleLabel(node) {
@@ -351,8 +307,66 @@ export function checkFile(filename, contents) {
   const isUi = file.startsWith('shared/ui/')
   const isTest = testFilePattern.test(file)
   const isPage = sourceLayer === 'pages' && !isTest
-  const pageHeaders = componentImports(source, file, 'shared/ui/page-header', 'PageHeader')
-  const badges = componentImports(source, file, 'shared/ui/badge', 'Badge')
+  const values = staticUiValues(source)
+  const importedComponent = (node, module, name) => {
+    const imported = values.imported(node)
+    return (
+      imported?.name === name &&
+      internalPath(imported.module, file)?.replace(/\.[cm]?[jt]sx?$/, '') === module
+    )
+  }
+  const jsxAttributeValue = (node, name) =>
+    values.resolve(values.attributes(node).find((attribute) => attribute.name === name)?.value)
+  const checkedClasses = new Set()
+  function inspectClasses(node, reportNode = node) {
+    node = values.resolve(node)
+    if (!node || checkedClasses.has(node)) return
+    checkedClasses.add(node)
+    const strings = classStrings(node, values)
+    if (
+      strings.some(
+        (value) =>
+          paletteUtility.test(value) ||
+          literalColorUtility.test(value) ||
+          (!isUi && fixedNeutralUtility.test(value)),
+      )
+    ) {
+      report(
+        'design-token',
+        '고정 색상 대신 bg-background, text-muted-foreground 등 shadcn 의미 토큰을 사용하세요.',
+        location(source, reportNode),
+      )
+    }
+    if (strings.some((value) => unsupportedWeightUtility.test(value))) {
+      report(
+        'font-weight',
+        '폰트 두께는 font-normal(400), font-medium(500), font-semibold(600)만 사용하세요.',
+        location(source, reportNode),
+      )
+    }
+  }
+  const checkedColors = new Set()
+  function inspectColor(node, reportNode = node) {
+    node = values.resolve(node)
+    if (!node || checkedColors.has(node)) return
+    checkedColors.add(node)
+    if (classStrings(node, values).some((value) => fixedColorValue.test(value))) {
+      report(
+        'design-token',
+        '차트와 SVG 색상에도 의미 토큰을 사용하세요.',
+        location(source, reportNode),
+      )
+    }
+  }
+  function inspectColorObject(node, seen = new Set()) {
+    node = values.resolve(node)
+    if (!node || seen.has(node)) return
+    const next = new Set(seen).add(node)
+    for (const field of values.properties(node).values()) {
+      if (colorProperties.has(field.name)) inspectColor(field.value, field.node)
+      else inspectColorObject(field.value, next)
+    }
+  }
   let usesPageHeader = false
   const checkedHeaderAncestors = new Set()
   if (sourceLevel < 0 && !sourceEntrypoints.has(file)) {
@@ -432,6 +446,14 @@ export function checkFile(filename, contents) {
 
   function visit(node) {
     if (
+      (ts.isSatisfiesExpression(node) || ts.isVariableDeclaration(node)) &&
+      node.type &&
+      ts.isTypeReferenceNode(node.type) &&
+      node.type.typeName.getText(source) === 'ChartConfig'
+    ) {
+      inspectColorObject(ts.isSatisfiesExpression(node) ? node.expression : node.initializer)
+    }
+    if (
       file !== 'shared/lib/format.ts' &&
       !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(file) &&
       (ts.isNewExpression(node) || ts.isCallExpression(node)) &&
@@ -473,6 +495,26 @@ export function checkFile(filename, contents) {
       inspectImport(node.argument.literal.text, node)
     }
     if (ts.isCallExpression(node)) {
+      const helper = classHelperName(node.expression, values)
+      if (classHelpers.has(helper)) inspectClasses(node)
+      if (helper === 'cva') {
+        inspectClasses(node.arguments[0])
+        const options = values.properties(node.arguments[1])
+        for (const variant of values.properties(options.get('variants')?.value).values()) {
+          for (const choice of values.properties(variant.value).values()) {
+            inspectClasses(choice.value, choice.node)
+          }
+        }
+        const compounds = values.resolve(options.get('compoundVariants')?.value)
+        if (compounds && ts.isArrayLiteralExpression(compounds)) {
+          for (const compound of compounds.elements) {
+            for (const field of values.properties(compound).values()) {
+              if (['class', 'className'].includes(field.name))
+                inspectClasses(field.value, field.node)
+            }
+          }
+        }
+      }
       const isModuleCall =
         node.expression.kind === ts.SyntaxKind.ImportKeyword ||
         (ts.isIdentifier(node.expression) && node.expression.text === 'require')
@@ -500,11 +542,13 @@ export function checkFile(filename, contents) {
     }
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = node.tagName.getText(source)
+      const tags = /^[a-z][\w-]*$/.test(tag) ? [tag] : classStrings(node.tagName, values)
+      const pageHeader = importedComponent(node.tagName, 'shared/ui/page-header', 'PageHeader')
       if (isPage) {
         const role = jsxAttributeValue(node, 'role')
         const level = jsxAttributeValue(node, 'aria-level')
         if (
-          tag === 'h1' ||
+          tags.includes('h1') ||
           (role &&
             ts.isStringLiteralLike(role) &&
             role.text === 'heading' &&
@@ -519,7 +563,7 @@ export function checkFile(filename, contents) {
           )
         }
         if (
-          badges.has(tag) &&
+          importedComponent(node.tagName, 'shared/ui/badge', 'Badge') &&
           (isSampleLabel(jsxAttributeValue(node, 'children')) ||
             (ts.isJsxOpeningElement(node) && node.parent.children.some(isSampleLabel)))
         ) {
@@ -530,7 +574,7 @@ export function checkFile(filename, contents) {
           )
         }
       }
-      if (!isTest && pageHeaders.has(tag)) {
+      if (!isTest && pageHeader) {
         usesPageHeader = true
         if (
           ts.isJsxOpeningElement(node) &&
@@ -546,15 +590,12 @@ export function checkFile(filename, contents) {
             location(source, node),
           )
         }
-        for (const attribute of node.attributes.properties) {
-          const names = ts.isJsxAttribute(attribute)
-            ? [attribute.name.getText(source)]
-            : literalPropertyNames(attribute.expression)
-          if (names.some((name) => !pageHeaderProps.has(name))) {
+        for (const attribute of values.attributes(node)) {
+          if (!pageHeaderProps.has(attribute.name)) {
             report(
               'page-header-props',
               'PageHeader는 title·description·badgeLabel·actions만 받습니다. 제목 스타일·children·variant를 페이지에서 덮어쓰지 마세요.',
-              location(source, attribute),
+              location(source, attribute.node),
             )
           }
         }
@@ -570,7 +611,7 @@ export function checkFile(filename, contents) {
           const className = jsxAttributeValue(ancestor.openingElement, 'className')
           if (
             className &&
-            classUtilities(className).some(
+            classUtilities(className, values).some(
               ({ name, variants }) =>
                 /^(?:text-|font-|leading-|tracking-|\[(?:font|line-height|letter-spacing))/.test(
                   name,
@@ -593,25 +634,23 @@ export function checkFile(filename, contents) {
           }
         }
       }
-      if (!isUi && nativeControls.has(tag)) {
+      if (!isUi && tags.some((name) => nativeControls.has(name))) {
         report(
           'shadcn-control',
           `<${tag}> 대신 shared/ui의 shadcn 컴포넌트를 사용하세요.`,
           location(source, node),
         )
       }
-      if (!isUi && tag === 'style')
+      if (!isUi && tags.includes('style'))
         report('custom-css', '<style> 대신 Tailwind 유틸리티를 사용하세요.', location(source, node))
-      for (const attribute of node.attributes.properties) {
-        if (!ts.isJsxAttribute(attribute)) continue
-        const value =
-          attribute.initializer && ts.isJsxExpression(attribute.initializer)
-            ? attribute.initializer.expression
-            : attribute.initializer
-        if (!isUi && !isTest && attribute.name.getText(source) === 'className') {
-          const utilities = classUtilities(value)
+      for (const attribute of values.attributes(node)) {
+        const value = values.resolve(attribute.value)
+        if (attribute.name === 'className') inspectClasses(attribute.value, attribute.node)
+        if (['config', 'style'].includes(attribute.name)) inspectColorObject(attribute.value)
+        if (!isUi && !isTest && attribute.name === 'className') {
+          const utilities = classUtilities(value, values)
           if (
-            tag === 'div' &&
+            tags.includes('div') &&
             utilities.some(
               ({ name, targetsElement }) =>
                 targetsElement &&
@@ -624,7 +663,7 @@ export function checkFile(filename, contents) {
             report(
               'stack-layout',
               '행·열 레이아웃의 div에는 shared/ui/stack의 HStack 또는 VStack과 gap을 사용하세요. grid는 그대로 사용할 수 있습니다.',
-              location(source, attribute),
+              location(source, attribute.node),
             )
           }
           if (
@@ -638,30 +677,22 @@ export function checkFile(filename, contents) {
             report(
               'stack-props',
               'Stack의 기본 정렬은 align·justify prop으로, 방향은 HStack·VStack으로 지정하세요. 반응형 클래스는 허용합니다.',
-              location(source, attribute),
+              location(source, attribute.node),
             )
           }
         }
-        if (colorProperties.has(attribute.name.getText(source)) && attribute.initializer) {
-          if (value && ts.isStringLiteralLike(value) && fixedColorValue.test(value.text)) {
-            report(
-              'design-token',
-              '색상 속성에도 var(--brand), var(--foreground) 등 의미 토큰을 사용하세요.',
-              location(source, attribute),
-            )
-          }
-        }
-        if (!isUi && attribute.name.getText(source) === 'style') {
+        if (colorProperties.has(attribute.name)) inspectColor(attribute.value, attribute.node)
+        if (!isUi && attribute.name === 'style') {
           report(
             'inline-style',
             'inline style 대신 Tailwind 유틸리티를 사용하세요.',
-            location(source, attribute),
+            location(source, attribute.node),
           )
         }
         if (
           !isUi &&
-          /^[a-z]/.test(tag) &&
-          attribute.name.getText(source) === 'role' &&
+          tags.some((name) => /^[a-z]/.test(name)) &&
+          attribute.name === 'role' &&
           value &&
           ts.isStringLiteralLike(value) &&
           controlRoles.has(value.text)
@@ -669,43 +700,10 @@ export function checkFile(filename, contents) {
           report(
             'shadcn-control',
             '직접 만든 ARIA 컨트롤 대신 shadcn 컴포넌트를 사용하세요.',
-            location(source, attribute),
+            location(source, attribute.node),
           )
         }
       }
-    }
-    if (
-      ts.isStringLiteralLike(node) ||
-      ts.isTemplateHead(node) ||
-      ts.isTemplateMiddle(node) ||
-      ts.isTemplateTail(node)
-    ) {
-      if (
-        paletteUtility.test(node.text) ||
-        literalColorUtility.test(node.text) ||
-        (!isUi && fixedNeutralUtility.test(node.text))
-      ) {
-        report(
-          'design-token',
-          '고정 색상 대신 bg-background, text-muted-foreground 등 shadcn 의미 토큰을 사용하세요.',
-          location(source, node),
-        )
-      }
-      if (unsupportedWeightUtility.test(node.text)) {
-        report(
-          'font-weight',
-          '폰트 두께는 font-normal(400), font-medium(500), font-semibold(600)만 사용하세요.',
-          location(source, node),
-        )
-      }
-    }
-    if (
-      ts.isPropertyAssignment(node) &&
-      colorProperties.has(node.name.getText(source)) &&
-      ts.isStringLiteralLike(node.initializer) &&
-      fixedColorValue.test(node.initializer.text)
-    ) {
-      report('design-token', '차트 설정의 색상에도 의미 토큰을 사용하세요.', location(source, node))
     }
     ts.forEachChild(node, visit)
   }

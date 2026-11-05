@@ -10,7 +10,7 @@ import { CurrencyProvider } from './providers/currency-provider'
 export function App() {
   return (
     <LocalizationProvider>
-      <ThemeProvider defaultTheme="system" storageKey="blueprint-theme">
+      <ThemeProvider defaultTheme="system">
         <QueryClientProvider client={queryClient}>
           <CurrencyProvider>
             <TooltipProvider>

@@ -1,11 +1,12 @@
 import { z } from 'zod'
 import { ApiError, delay } from '@/shared/api'
+import { storageKeys } from '@/shared/config/product'
 import { customerInputSchema, customerSchema, customersSchema } from '../model/schema'
 import type { SampleCustomer } from '../model/schema'
 import { sampleCustomers } from './seed'
 import type { CustomerAdapter } from './types'
 
-export const CUSTOMER_STORAGE_KEY = 'orbit.demo.customers.v1'
+export const CUSTOMER_STORAGE_KEY = storageKeys.demoCustomers
 const persistedSchema = z.object({ version: z.literal(1), customers: customersSchema })
 type StorageAdapter = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -95,6 +96,7 @@ export function createDemoCustomerAdapter(options: DemoOptions = {}): CustomerAd
     async create(input, signal) {
       const validated = customerInputSchema.parse(input)
       await delay(latency, signal)
+      const customers = read()
       const customer = customerSchema.parse({
         ...validated,
         id: createId(),
@@ -103,7 +105,9 @@ export function createDemoCustomerAdapter(options: DemoOptions = {}): CustomerAd
         spent: 0,
         lastOrder: null,
       })
-      persist([customer, ...read()])
+      if (customers.some((item) => item.id === customer.id))
+        throw new ApiError('This customer ID already exists.', 'HTTP_ERROR', 409)
+      persist([customer, ...customers])
       return customer
     },
     async update(id, input, signal) {

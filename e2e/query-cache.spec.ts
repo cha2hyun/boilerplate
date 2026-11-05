@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from './fixtures.js'
+import { storageKeys } from '../src/shared/config/product.js'
 
 const cardSelector = '#main-content [data-slot="card"][aria-busy]'
 const initialTime = new Date('2026-11-04T00:00:00Z').getTime()
@@ -21,6 +22,210 @@ async function navigate(page: Page, name: string, route: string) {
   }
   await page.getByRole('link', { name, exact: true }).click()
   await expect(page).toHaveURL(route)
+  if ((page.viewportSize()?.width ?? 1440) < 768 && ['Orders', 'Customers'].includes(name)) {
+    await page.getByRole('button', { name: 'Show summary', exact: true }).click()
+  }
+}
+
+const analyticsPages = [
+  {
+    name: 'Overview',
+    route: '/',
+    endpoint: '/api/analytics',
+    cards: 7,
+    error: "Analytics couldn't load",
+    refreshError: "Analytics couldn't load",
+    retry: 'Try again',
+    empty: { kpis: [], revenue: [], activity: [] },
+    emptyLabels: ['No revenue data for this period.', 'No recent activity'],
+    unavailable: 'Activity unavailable',
+  },
+  {
+    name: 'Analytics',
+    route: '/analytics',
+    endpoint: '/api/traffic',
+    cards: 8,
+    error: "Analytics couldn't load",
+    refreshError: "Analytics couldn't refresh",
+    retry: 'Try again',
+    empty: {
+      days: [],
+      visitors: 0,
+      sessions: 0,
+      pageViews: 0,
+      bounceRate: 0,
+      sources: [],
+      pages: [],
+      devices: [],
+    },
+    emptyLabels: [
+      'No audience data',
+      'No device data',
+      'No traffic sources yet',
+      'No top pages yet',
+    ],
+    unavailable: 'Audience data unavailable',
+  },
+] as const
+
+type ReadMode = 'normal' | 'failure' | 'empty'
+
+async function controlAnalyticsReads(
+  page: Page,
+  sample: (typeof analyticsPages)[number],
+  mode: ReadMode,
+) {
+  // The service worker and real adapters stay active. Intercept only the browser's fetch boundary
+  // for the failure/empty response, then restore the actual HTTP path for recovery.
+  if (sample.name === 'Overview' && mode === 'empty') {
+    // Projects uses a browser-local adapter in demo mode, independently of the analytics HTTP API.
+    await page.addInitScript((key) => {
+      localStorage.setItem(key, JSON.stringify({ version: 1, projects: [] }))
+    }, storageKeys.demoProjects)
+  }
+  await page.goto('/settings')
+  await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+  return page.evaluateHandle(
+    ({ endpoint, empty, mode }) => {
+      const originalFetch = window.fetch.bind(window)
+      const state = { mode, failures: 0, emptyResponses: 0 }
+      window.fetch = (input, init) => {
+        const url = input instanceof Request ? input.url : String(input)
+        const pathname = new URL(url, location.origin).pathname
+        if (pathname === endpoint && state.mode !== 'normal') {
+          if (state.mode === 'failure') {
+            state.failures += 1
+            // A 400 is deliberately not automatically retried by the real Query policy.
+            return Promise.resolve(Response.json({ message: 'Read unavailable' }, { status: 400 }))
+          }
+          state.emptyResponses += 1
+          return Promise.resolve(Response.json(empty))
+        }
+        return originalFetch(input, init)
+      }
+      return {
+        setMode: (next: ReadMode) => {
+          state.mode = next
+        },
+        counts: () => ({ failures: state.failures, emptyResponses: state.emptyResponses }),
+        restore: () => {
+          window.fetch = originalFetch
+        },
+      }
+    },
+    { endpoint: sample.endpoint, empty: sample.empty, mode },
+  )
+}
+
+for (const sample of analyticsPages) {
+  test(`${sample.name} recovers a cold read error and preserves cached content after a refresh failure`, async ({
+    page,
+  }) => {
+    await page.clock.setFixedTime(initialTime)
+    const control = await controlAnalyticsReads(page, sample, 'failure')
+    try {
+      await navigate(page, sample.name, sample.route)
+      const loadError = page.getByRole('alert').filter({ hasText: sample.error })
+      await expect(loadError).toBeVisible()
+      await expect(page.getByText(sample.unavailable, { exact: true })).toBeVisible()
+      const metrics = page.locator('[data-metric-card] [data-slot="metric-value"]')
+      await expect(metrics).toHaveText(['—', '—', '—', '—'])
+      await expectReadyCards(page.locator(cardSelector), sample.cards)
+      expect(await control.evaluate((state) => state.counts())).toEqual({
+        failures: 1,
+        emptyResponses: 0,
+      })
+
+      await control.evaluate((state) => {
+        state.setMode('normal')
+      })
+      await loadError.getByRole('button', { name: sample.retry, exact: true }).click()
+      await expect(loadError).toBeHidden()
+      const cards = page.locator(cardSelector)
+      await expectReadyCards(cards, sample.cards)
+      const savedNumbers = await cards.locator('[data-number-state] > .sr-only').allTextContents()
+      expect(savedNumbers.length).toBeGreaterThanOrEqual(4)
+      await expect(page.getByText(sample.unavailable, { exact: true })).toHaveCount(0)
+
+      await navigate(page, 'Settings', '/settings')
+      await page.clock.setFixedTime(initialTime + 61_000)
+      await control.evaluate((state) => {
+        state.setMode('failure')
+      })
+      const loading = await watchForLoadingFallback(page)
+      await navigate(page, sample.name, sample.route)
+      const refreshError = page.getByRole('alert').filter({ hasText: sample.refreshError })
+      await expect(refreshError).toBeVisible()
+      await expectReadyCards(cards, sample.cards)
+      expect(await cards.locator('[data-number-state] > .sr-only').allTextContents()).toEqual(
+        savedNumbers,
+      )
+      await expect(page.getByText(sample.unavailable, { exact: true })).toHaveCount(0)
+      for (const label of sample.emptyLabels)
+        await expect(page.getByText(label, { exact: true })).toHaveCount(0)
+      expect(await loading.evaluate((observer) => observer.finish())).toBe(false)
+      await loading.dispose()
+      expect(await control.evaluate((state) => state.counts())).toEqual({
+        failures: 2,
+        emptyResponses: 0,
+      })
+
+      await control.evaluate((state) => {
+        state.setMode('normal')
+      })
+      await refreshError.getByRole('button', { name: sample.retry, exact: true }).click()
+      await expect(refreshError).toBeHidden()
+      await expectReadyCards(cards, sample.cards)
+      expect(await cards.locator('[data-number-state] > .sr-only').allTextContents()).toEqual(
+        savedNumbers,
+      )
+    } finally {
+      await control.evaluate((state) => {
+        state.restore()
+      })
+      await control.dispose()
+    }
+  })
+
+  test(`${sample.name} distinguishes a successful empty response from loading and errors`, async ({
+    page,
+  }) => {
+    const control = await controlAnalyticsReads(page, sample, 'empty')
+    try {
+      await navigate(page, sample.name, sample.route)
+      await expectReadyCards(page.locator(cardSelector), sample.cards)
+      await expect(page.getByRole('alert')).toHaveCount(0)
+      await expect(page.getByText(sample.unavailable, { exact: true })).toHaveCount(0)
+      for (const label of sample.emptyLabels)
+        await expect(page.getByText(label, { exact: true })).toBeVisible()
+      if (sample.name === 'Overview') {
+        await expect(page.locator('[data-metric-card] [data-slot="metric-value"]')).toHaveText([
+          '—',
+          '—',
+          '—',
+          '—',
+        ])
+        await expect(
+          page.getByText('A fresh start for your next idea', { exact: true }),
+        ).toBeVisible()
+      } else {
+        const numbers = await page
+          .locator('[data-metric-card] [data-number-state] > .sr-only')
+          .allTextContents()
+        expect(numbers).toHaveLength(4)
+        for (const number of numbers) expect(number).toMatch(/^0(?:\.0)?%?$/)
+      }
+      expect(await control.evaluate((state) => state.counts())).toEqual({
+        failures: 0,
+        emptyResponses: 1,
+      })
+    } finally {
+      await control.evaluate((state) => {
+        state.restore()
+      })
+      await control.dispose()
+    }
+  })
 }
 
 async function captureColdCards(page: Page, expectedCount: number) {

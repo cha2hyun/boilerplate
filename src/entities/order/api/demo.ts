@@ -1,10 +1,18 @@
 import { z } from 'zod'
 import { ApiError, delay } from '@/shared/api'
-import { orderInputSchema, orderSchema, ordersSchema, type SampleOrder } from '../model/schema'
+import { storageKeys } from '@/shared/config/product'
+import {
+  orderInputSchema,
+  orderSchema,
+  ordersSchema,
+  orderLimits,
+  type SampleOrder,
+  type OrderHistoryEntry,
+} from '../model/schema'
 import { sampleOrders } from './seed'
 import type { OrderAdapter } from './types'
 
-export const ORDER_STORAGE_KEY = 'orbit.demo.orders.v1'
+export const ORDER_STORAGE_KEY = storageKeys.demoOrders
 const persistedSchema = z.object({ version: z.literal(1), orders: ordersSchema })
 type StorageAdapter = Pick<Storage, 'getItem' | 'setItem'>
 
@@ -12,6 +20,7 @@ interface DemoOptions {
   storage?: StorageAdapter | null
   delayMs?: number
   createId?: () => string
+  now?: () => Date
 }
 
 function browserStorage(): StorageAdapter | null {
@@ -37,6 +46,7 @@ export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter 
   let storage = options.storage === undefined ? browserStorage() : options.storage
   let memory = ordersSchema.parse(sampleOrders)
   const createId = options.createId ?? (() => `ORD-${crypto.randomUUID()}`)
+  const now = options.now ?? (() => new Date())
   const latency = options.delayMs ?? 280
 
   function persist(orders: SampleOrder[]) {
@@ -87,13 +97,19 @@ export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter 
       const validated = orderInputSchema.parse(input)
       await delay(latency, signal)
       const orders = read()
+      const id = createId()
+      if (orders.some((item) => item.id === id))
+        throw new ApiError('This order ID already exists.', 'HTTP_ERROR', 409)
+      const occurredAt = now().toISOString()
       const order = orderSchema.parse({
         ...validated,
-        id: createId(),
+        id,
+        history: [
+          { field: 'status', occurredAt, from: null, to: validated.status },
+          { field: 'payment', occurredAt, from: null, to: validated.payment },
+        ],
         customer: { ...validated.customer, initials: initials(validated.customer.name) },
       })
-      if (orders.some((item) => item.id === order.id))
-        throw new ApiError('This order ID already exists.', 'HTTP_ERROR', 409)
       persist([order, ...orders])
       return order
     },
@@ -101,10 +117,25 @@ export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter 
       const validated = orderInputSchema.parse(input)
       await delay(latency, signal)
       const orders = read()
-      if (!orders.some((order) => order.id === id)) notFound()
+      const existing = orders.find((order) => order.id === id)
+      if (!existing) notFound()
+      const changes: OrderHistoryEntry[] = []
+      if (existing.status !== validated.status || existing.payment !== validated.payment) {
+        const occurredAt = now().toISOString()
+        if (existing.status !== validated.status)
+          changes.push({ field: 'status', occurredAt, from: existing.status, to: validated.status })
+        if (existing.payment !== validated.payment)
+          changes.push({
+            field: 'payment',
+            occurredAt,
+            from: existing.payment,
+            to: validated.payment,
+          })
+      }
       const updated = orderSchema.parse({
         ...validated,
         id,
+        history: [...existing.history, ...changes].slice(-orderLimits.history),
         customer: { ...validated.customer, initials: initials(validated.customer.name) },
       })
       persist(orders.map((order) => (order.id === id ? updated : order)))

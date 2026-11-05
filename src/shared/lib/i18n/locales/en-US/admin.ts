@@ -1,5 +1,15 @@
 export default {
   common: {
+    showSummary: 'Show summary',
+    hideSummary: 'Hide summary',
+    rowsPerPage: 'Rows per page',
+    rowsCount_one: '{{formattedCount}} row',
+    rowsCount_other: '{{formattedCount}} rows',
+    detailUnavailable:
+      'This record is unavailable. It may have been deleted or the link may be incorrect.',
+    backToList: 'Back to list',
+    openDetailLink: 'Open detail in a new tab',
+
     sample: 'Sample',
     tryAgain: 'Try again',
     reset: 'Reset',
@@ -10,6 +20,17 @@ export default {
     pageCount: 'Page {{current}} of {{total}}',
   },
   orders: {
+    history: {
+      title: 'Change history',
+      description:
+        'Recorded changes to order and payment status. This demo history does not verify who made a change and is not an operational audit log.',
+      empty: 'No changes have been recorded for this order.',
+      status: 'Order status',
+      payment: 'Payment status',
+      initial: 'Initial value: {{value}}',
+      changed: '{{from}} → {{to}}',
+    },
+
     title: 'Orders',
     intro: 'Manage order records and review their fulfillment details.',
     refreshError: "Orders couldn't refresh",

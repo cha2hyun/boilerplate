@@ -6,6 +6,8 @@
 
 워크스페이스의 매출·고객·주문·전환 요약을 보고 프로젝트 작업으로 진입합니다. 지표와 활동은 샘플이며 실시간 운영 지표가 아닙니다. 프로젝트 생성·편집·삭제는 실제로 동작하는 데모 저장 흐름이고 운영 인증·권한을 제공하지 않습니다.
 
+데모 모드의 PageHeader는 샘플 배지와 명시적인 데모 설명을 제공합니다. API 모드에서는 해당 데모 배지·설명을 사용하지 않습니다.
+
 ## 정보 구조와 주요 행동
 
 PageHeader와 새 프로젝트 → KPI → 매출 차트와 최근 활동 → 프로젝트 요약 표 순서입니다. 새 프로젝트는 편집 대화상자를 열고, 활동 하단과 전체 보기 링크는 Projects로 이동합니다. 요약 표의 이름/행 메뉴로 편집·삭제를 이어갑니다. [화면 조합](../design/compositions.md)의 대시보드 구조를 사용합니다.
@@ -46,5 +48,5 @@ PC에서 나란히 놓인 매출·활동 카드는 상단·하단·푸터 구분
 - 기간 변경 → 매출 구간 변경, URL·새로고침·뒤로/앞으로 복원: [workspace E2E](../../e2e/workspace.spec.ts)의 `loads the overview without browser errors and changes the revenue period`.
 - 같은 workspace E2E에서 PC의 두 카드 상·하단 정렬과 실제 그래프의 높이 확장, 모바일·태블릿의 세로 배치와 240px 그래프 높이를 확인합니다. 푸터 정렬 matrix는 en-US/ko-KR와 기본/간결한 레이아웃의 loading→loaded에서 구분선·내용 중심·여백·잘림을 확인하며, desktop의 확대된 푸터 문구에서도 공유 행이 함께 늘어나는지 검증합니다.
 - 기간과 요약 정렬은 독립적으로 유효성 검사: [스키마 테스트](../../src/pages/overview/model/search.test.ts)의 `composes revenue period and recent project sorting independently`.
-- 최초 로딩·캐시 재방문·재조회 중 카드 공간과 기존 데이터를 유지: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Overview keeps card geometry and cached data through real demo requests`. 오류·빈 응답 상태는 이 테스트가 검증하지 않으므로 해당 상태 변경 시 별도로 확인합니다.
+- 최초 로딩·캐시 재방문·재조회 중 카드 공간과 기존 데이터를 유지: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Overview keeps card geometry and cached data through real demo requests`. 같은 파일의 `Overview recovers a cold read error and preserves cached content after a refresh failure`는 최초 오류→재시도와 재조회 실패 시 기존 숫자·내용 보존→복구를 확인합니다. `Overview distinguishes a successful empty response from loading and errors`는 빈 분석 응답과 빈 프로젝트 저장소에서 결측 KPI·빈 차트·활동·프로젝트를 확인합니다.
 - 기간 변경이 KPI·활동에 전파되지 않는 범위와 생성 뒤 두 페이지의 반영은 관련 소유 코드와 함께 검토합니다. 위 테스트 이름만으로 이 모든 의미가 자동 검증됐다고 보고하지 않습니다.

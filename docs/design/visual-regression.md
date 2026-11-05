@@ -25,3 +25,5 @@
 - macOS 기준을 Linux 경로로 복사하지 않습니다. 로컬 전체 브라우저 실행은 기본 절차가 아닙니다.
 
 참고: [Playwright 시각 비교](https://playwright.dev/docs/test-snapshots)는 동일 환경에서 기준 생성과 비교를 권장합니다. 현재 작은 픽셀 허용치는 렌더링 잡음용이며 배치·크기 변경의 허용 기준이 아닙니다.
+
+차트 축의 대비는 픽셀 기준과 별도로 실제 SVG computed fill을 검사합니다. `renders readable chart axis text in both themes`가 Overview·Analytics의 축 글자가 현재 의미 토큰을 사용하는지와 카드 배경 대비를 확인합니다. 라이브러리 내부 DOM 변경으로 공통 선택자가 적용되지 않는 회귀를 포함합니다.

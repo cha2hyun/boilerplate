@@ -358,15 +358,24 @@ test('requires semantic colors while allowing Tailwind arbitrary layout values',
   assert.deepEqual(
     rules(
       'pages/home/index.tsx',
-      `const classes = 'grid-cols-[1fr_2fr] bg-background text-muted-foreground ring-ring/50'`,
+      `const classes = 'grid-cols-[1fr_2fr] bg-background text-muted-foreground ring-ring/50'; const view = <span className={classes} />`,
     ),
     [],
   )
   assert.deepEqual(
-    rules('pages/home/index.tsx', `const classes = 'bg-blue-500 hover:text-red-600'`),
+    rules(
+      'pages/home/index.tsx',
+      `const classes = 'bg-blue-500 hover:text-red-600'; const view = <span className={classes} />`,
+    ),
     ['design-token'],
   )
-  assert.deepEqual(rules('pages/home/index.tsx', `const classes = 'bg-[#fff]'`), ['design-token'])
+  assert.deepEqual(
+    rules(
+      'pages/home/index.tsx',
+      `const classes = 'bg-[#fff]'; const view = <span className={classes} />`,
+    ),
+    ['design-token'],
+  )
 })
 
 test('reports actionable line numbers', () => {
@@ -377,7 +386,10 @@ test('reports actionable line numbers', () => {
 
 test('font weight policy allows only the three named weights, including variants and generated UI', () => {
   assert.deepEqual(
-    rules('pages/home/index.tsx', `const classes = 'font-normal md:font-medium xl:font-semibold'`),
+    rules(
+      'pages/home/index.tsx',
+      `const classes = 'font-normal md:font-medium xl:font-semibold'; const view = <span className={classes} />`,
+    ),
     [],
   )
   for (const value of [
@@ -387,7 +399,13 @@ test('font weight policy allows only the three named weights, including variants
     '[font-weight:700]',
     'font-(--custom-weight)',
   ]) {
-    assert.deepEqual(rules('shared/ui/card.tsx', `const classes = '${value}'`), ['font-weight'])
+    assert.deepEqual(
+      rules(
+        'shared/ui/card.tsx',
+        `const classes = '${value}'; const view = <span className={classes} />`,
+      ),
+      ['font-weight'],
+    )
   }
 })
 
@@ -408,12 +426,25 @@ test('font weight theme and emphasis cannot introduce a fourth weight', () => {
 })
 
 test('semantic color policy rejects fixed neutral utilities in application code but retains official overlays', () => {
-  assert.deepEqual(rules('pages/home/index.tsx', `const classes = 'dark:text-white bg-black/50'`), [
-    'design-token',
-  ])
-  assert.deepEqual(rules('shared/ui/dialog.tsx', `const classes = 'bg-black/50'`), [])
   assert.deepEqual(
-    rules('pages/home/index.tsx', `const classes = 'bg-brand text-brand-foreground border-border'`),
+    rules(
+      'pages/home/index.tsx',
+      `const classes = 'dark:text-white bg-black/50'; const view = <span className={classes} />`,
+    ),
+    ['design-token'],
+  )
+  assert.deepEqual(
+    rules(
+      'shared/ui/dialog.tsx',
+      `const classes = 'bg-black/50'; const view = <span className={classes} />`,
+    ),
+    [],
+  )
+  assert.deepEqual(
+    rules(
+      'pages/home/index.tsx',
+      `const classes = 'bg-brand text-brand-foreground border-border'; const view = <span className={classes} />`,
+    ),
     [],
   )
 })
@@ -422,14 +453,14 @@ test('semantic color policy also covers chart and SVG colors', () => {
   assert.deepEqual(
     rules(
       'pages/analytics/index.tsx',
-      `const config = { color: '#123456' }; const chart = <Area stroke="blue" />`,
+      `const config = { revenue: { color: '#123456' } } satisfies ChartConfig; const chart = <Area stroke="blue" />`,
     ),
     ['design-token', 'design-token'],
   )
   assert.deepEqual(
     rules(
       'pages/analytics/index.tsx',
-      `const config = { color: 'var(--chart-2)' }; const chart = <Area stroke="var(--chart-2)" fill="url(#revenue)" />`,
+      `const config = { revenue: { color: 'var(--chart-2)' } } satisfies ChartConfig; const chart = <Area stroke="var(--chart-2)" fill="url(#revenue)" />`,
     ),
     [],
   )
@@ -645,5 +676,207 @@ test('retains surrounding page layout, section typography, and unrelated selecto
        </VStack>`,
     ),
     [],
+  )
+})
+
+test('follows file-local const control aliases, properties, and alias chains', () => {
+  for (const source of [
+    `const Control = 'button'; const view = <Control />`,
+    `const Native = 'input' as const; const Control = Native; const view = <Control />`,
+    `const controls = { Action: 'button' }; const view = <controls.Action />`,
+    `const key = 'Action'; const controls = { [key]: 'button' }; const Control = controls[key]; const view = <Control />`,
+  ]) {
+    assert.deepEqual(rules('features/editor/ui/editor.tsx', source), ['shadcn-control'], source)
+  }
+})
+
+test('follows const classes and effective JSX spread properties without losing override order', () => {
+  assert.deepEqual(
+    rules(
+      'widgets/header/ui/header.tsx',
+      `
+      const classes = 'flex gap-2'; const alias = classes
+      const view = <div className={alias} />
+    `,
+    ),
+    ['stack-layout'],
+  )
+  assert.deepEqual(
+    rules(
+      'widgets/header/ui/header.tsx',
+      `
+      const className = 'flex gap-2'; const key = 'style'
+      const props = { className, [key]: { marginTop: 3 } }
+      const inherited = { ...props }; const view = <div {...inherited} />
+    `,
+    ),
+    ['stack-layout', 'inline-style'],
+  )
+  assert.deepEqual(
+    rules(
+      'widgets/header/ui/header.tsx',
+      `
+      const props = { className: 'flex' }
+      const safe = { ...props, className: 'grid' }
+      const view = <><div {...props} className="grid" /><div {...safe} /></>
+    `,
+    ),
+    [],
+  )
+  assert.deepEqual(
+    rules(
+      'widgets/header/ui/header.tsx',
+      `
+      const props = { className: 'flex' }
+      const view = <div className="grid" {...props} />
+    `,
+    ),
+    ['stack-layout'],
+  )
+})
+
+test('respects lexical shadowing by parameters, blocks, loops, catch bindings and hoisted var', () => {
+  assert.deepEqual(
+    rules(
+      'features/editor/ui/editor.tsx',
+      `
+      const Control = 'button'; const classes = 'flex'
+      function Parameter(Control, classes) { return <Control className={classes} /> }
+      function Block() { const Control = () => <span />; const classes = 'grid'; return <Control className={classes} /> }
+      const NamedClass = class Control { render() { return <Control /> } }
+      function Hoisted() { if (condition) { var classes = getClasses() }; return <div className={classes} /> }
+      for (const classes of collection) { const row = <div className={classes} /> }
+      try {} catch (classes) { const row = <div className={classes} /> }
+      const row = <div className={classes} />
+    `,
+    ),
+    ['stack-layout'],
+  )
+})
+
+test('resolves aliases in their declaration scope rather than the consuming scope', () => {
+  assert.deepEqual(
+    rules(
+      'widgets/header/ui/header.tsx',
+      `
+      const classes = 'flex'; const alias = classes
+      function Header() { const classes = 'grid'; return <div className={alias} /> }
+    `,
+    ),
+    ['stack-layout'],
+  )
+})
+
+test('terminates cyclic aliases and leaves mutable, imported and computed values unresolved', () => {
+  assert.deepEqual(
+    rules(
+      'widgets/header/ui/header.tsx',
+      `
+      import { remoteClasses, remoteProps } from '@/shared/lib/options'
+      const a = b; const b = a; const recursive = { ...recursive }
+      let mutable = 'flex'; mutable = 'grid'
+      const changed = { className: 'flex' }; changed.className = runtimeValue
+      const throughAlias = { className: 'flex' }; const alias = throughAlias; alias.className = runtimeValue
+      const view = <>
+        <div className={a} /><div {...recursive} /><div className={mutable} />
+        <div className={remoteClasses} {...remoteProps} /><div {...getProps()} />
+        <div {...changed} /><div {...throughAlias} />
+      </>
+    `,
+    ),
+    [],
+  )
+})
+
+test('checks class values at UI sinks while keeping prose, translations and unrelated objects free', () => {
+  assert.deepEqual(
+    rules(
+      'shared/lib/messages.ts',
+      `
+      export const explanation = 'Replace text-red-500 and font-bold with semantic tokens'
+      export const dictionary = { color: 'red', example: 'bg-[#fff] font-[650]' }
+      export const view = <p title="text-red-500">{'font-bold'}</p>
+      function cn(message) { return message }; const message = cn('font-bold')
+    `,
+    ),
+    [],
+  )
+  assert.deepEqual(
+    rules(
+      'widgets/header/ui/header.tsx',
+      `
+      const names = { row: 'bg-red-500 font-bold' }
+      const view = <span {...{ className: names.row }} />
+    `,
+    ),
+    ['design-token', 'font-weight'],
+  )
+})
+
+test('checks aliased class helpers and all cva class inputs but not variant labels', () => {
+  assert.deepEqual(
+    rules(
+      'shared/ui/example.tsx',
+      `
+      import { cva as variants } from 'class-variance-authority'
+      import { cn as combine } from '@/shared/lib/utils'
+      const base = 'font-bold'
+      const variant = variants(base, {
+        variants: { mode: { normal: 'bg-red-500', 'font-bold': 'text-foreground' } },
+        compoundVariants: [{ mode: 'font-bold', className: 'font-[650]' }],
+        defaultVariants: { mode: 'font-bold' },
+      })
+      const view = <span className={combine('font-light', 'text-foreground')} />
+    `,
+    ),
+    ['font-weight', 'design-token', 'font-weight', 'font-weight'],
+  )
+})
+
+test('checks chart color bindings and JSX colors without interpreting chart labels as classes', () => {
+  assert.deepEqual(
+    rules(
+      'widgets/chart/ui/chart.tsx',
+      `
+      const color = '#123456'; const config = { revenue: { label: 'font-bold', color } }
+      const view = <ChartContainer config={config}><Area stroke={color} /></ChartContainer>
+    `,
+    ),
+    ['design-token'],
+  )
+})
+
+test('checks const PageHeader aliases and spread props while respecting local component shadowing', () => {
+  assert.deepEqual(
+    rules(
+      'pages/inbox/ui/inbox-page.tsx',
+      `
+      import { PageHeader } from '@/shared/ui/page-header'
+      const Header = PageHeader; const props = { title: 'Inbox', className: 'text-3xl' }
+      export const InboxPage = () => <Header {...props} />
+    `,
+    ),
+    ['page-header-props'],
+  )
+  assert.deepEqual(
+    rules(
+      'pages/inbox/ui/inbox-page.tsx',
+      `
+      import { PageHeader } from '@/shared/ui/page-header'
+      export const InboxPage = ({ PageHeader }) => <PageHeader title="Inbox" />
+    `,
+    ),
+    ['page-header-required'],
+  )
+  assert.deepEqual(
+    rules(
+      'pages/inbox/ui/inbox-page.tsx',
+      `
+      import { PageHeader } from '@/shared/ui/page-header'
+      const className = '[&_h1]:text-3xl'; const props = { className }
+      export const InboxPage = () => <section {...props}><PageHeader title="Inbox" /></section>
+    `,
+    ),
+    ['page-header-style'],
   )
 })

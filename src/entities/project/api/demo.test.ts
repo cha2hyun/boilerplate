@@ -51,6 +51,7 @@ describe('persistent demo adapter', () => {
     '{not json',
     JSON.stringify({ version: 99, projects: [] }),
     JSON.stringify({ version: 1, projects: [{ id: 'broken' }] }),
+    JSON.stringify({ version: 1, projects: [seedProjects[0], seedProjects[0]] }),
   ])('recovers corrupt storage without passing malformed data to the UI', async (raw) => {
     const storage = memoryStorage(raw)
     const adapter = createDemoProjectAdapter({ storage, delayMs: 0 })
@@ -64,6 +65,18 @@ describe('persistent demo adapter', () => {
   it('preserves an intentionally empty project list', async () => {
     const storage = memoryStorage(JSON.stringify({ version: 1, projects: [] }))
     expect(await createDemoProjectAdapter({ storage, delayMs: 0 }).list()).toEqual([])
+  })
+
+  it('rejects a generated ID collision without replacing existing projects', async () => {
+    const storage = memoryStorage()
+    const adapter = createDemoProjectAdapter({ storage, delayMs: 0, createId: () => 'collision' })
+    await adapter.create(input)
+    const before = storage.getItem(PROJECT_STORAGE_KEY)
+    await expect(adapter.create({ ...input, name: 'Second project' })).rejects.toMatchObject({
+      status: 409,
+    })
+    expect(storage.getItem(PROJECT_STORAGE_KEY)).toBe(before)
+    expect((await adapter.list()).filter((project) => project.id === 'collision')).toHaveLength(1)
   })
 
   it('keeps mutations working when storage is unavailable', async () => {

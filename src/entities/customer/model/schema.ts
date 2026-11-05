@@ -26,7 +26,14 @@ export const customerSchema = z.object({
   spent: z.number().int().nonnegative(),
 })
 
-export const customersSchema = z.array(customerSchema)
+export const customersSchema = z
+  .array(customerSchema)
+  .refine(
+    (customers) => new Set(customers.map((customer) => customer.id)).size === customers.length,
+    {
+      message: 'Customer IDs must be unique within a list.',
+    },
+  )
 export type SampleCustomer = z.infer<typeof customerSchema>
 export type CustomerInput = z.infer<typeof customerInputSchema>
 export type CustomerStatus = SampleCustomer['status']

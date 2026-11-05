@@ -1,3 +1,4 @@
+import { product } from '@/shared/config/product'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { Boxes, ExternalLink, Globe, Moon, Search, Sun } from 'lucide-react'
@@ -60,6 +61,7 @@ function WorkspaceSidebar() {
   const { t } = useTranslation('workspace')
   const pathname = useRouterState({ select: (state) => state.location.pathname })
   const { setOpenMobile } = useSidebar()
+  const workspaceName = usePreferences((state) => state.workspaceName)
   return (
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader className="px-2 pt-5 pb-3">
@@ -72,7 +74,7 @@ function WorkspaceSidebar() {
             >
               <Link
                 to="/"
-                aria-label={t('shell.blueprintOverview')}
+                aria-label={t('shell.blueprintOverview', { product: product.name })}
                 onClick={() => {
                   setOpenMobile(false)
                 }}
@@ -84,7 +86,8 @@ function WorkspaceSidebar() {
                   <Boxes className="size-5" />
                 </HStack>
                 <span className="text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
-                  blueprint<span className="text-muted-foreground">.</span>
+                  {product.wordmark}
+                  <span className="text-muted-foreground">.</span>
                 </span>
               </Link>
             </SidebarMenuButton>
@@ -94,7 +97,9 @@ function WorkspaceSidebar() {
       <SidebarContent>
         {navigationGroups.map((group) => (
           <SidebarGroup key={group} className={group === 'resources' ? 'mt-auto' : undefined}>
-            <SidebarGroupLabel>{t(`navigationGroups.${group}`)}</SidebarGroupLabel>
+            <SidebarGroupLabel className="h-auto min-h-8 wrap-anywhere whitespace-normal">
+              {group === 'workspace' ? workspaceName : t(`navigationGroups.${group}`)}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigation
@@ -128,11 +133,7 @@ function WorkspaceSidebar() {
                       tooltip={t('shell.documentation')}
                       className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
                     >
-                      <a
-                        href="https://github.com/cha2hyun/boilerplate#readme"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
+                      <a href={product.documentationUrl} target="_blank" rel="noreferrer">
                         <ExternalLink />
                         <span className="group-data-[collapsible=icon]:sr-only">
                           {t('shell.documentation')}
@@ -312,8 +313,8 @@ export function AppShell({ children }: AppShellProps) {
           className="gap-4 border-t px-4 py-4 text-xs text-muted-foreground md:px-6"
         >
           <footer>
-            <span className="min-w-0">{t('shell.footerAuthor', { author: 'cha2hyun' })}</span>
-            <TextLink href="https://github.com/cha2hyun/boilerplate" className="shrink-0">
+            <span className="min-w-0">{t('shell.footerAuthor', { author: product.author })}</span>
+            <TextLink href={product.repositoryUrl} className="shrink-0">
               GitHub
             </TextLink>
           </footer>

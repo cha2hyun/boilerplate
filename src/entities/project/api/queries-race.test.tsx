@@ -68,7 +68,7 @@ describe('project mutation and list concurrency', () => {
         }),
       )
       const queryClient = new QueryClient({
-        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+        defaultOptions: { queries: { retry: false }, mutations: { retry: 3, retryDelay: 0 } },
       })
       const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
         if (event.type === 'updated' && event.query.state.isInvalidated)
@@ -105,6 +105,7 @@ describe('project mutation and list concurrency', () => {
         })
         expect(firstSignal?.aborted).toBe(true)
         expect(reads).toBe(2)
+        expect(fetch).toHaveBeenCalledTimes(3)
         await waitFor(() => {
           expect(result.current.projects.data).toEqual(savedProjects)
           expect(result.current[operation].isError).toBe(true)

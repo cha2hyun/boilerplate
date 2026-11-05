@@ -262,70 +262,78 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
     }))
     expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport)
     expect(layout.overflowX).toBe('auto')
-    if (route === 'orders' || layout.viewport < 768) {
+    if (layout.viewport < 1280) {
       expect(layout.contentWidth).toBeGreaterThan(layout.containerWidth)
     }
     if (route === 'orders') {
-      await expect(table.getByRole('columnheader')).toHaveCount(13)
-      for (const name of ['Products', 'Quantity', 'City', 'Country', 'Subtotal', 'Shipping']) {
+      await expect(table.getByRole('columnheader')).toHaveCount(7)
+      for (const name of ['Order', 'Customer', 'Status', 'Payment', 'Date', 'Total']) {
         await expect(table.getByRole('columnheader', { name, exact: true })).toBeVisible()
       }
       await expect(table).toHaveAccessibleDescription(
         'Swipe or scroll horizontally to see all fields.',
       )
-      await table.focus()
-      await page.keyboard.press('ArrowRight')
-      await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0)
+      // Wide workspaces fit the essential columns; smaller screens preserve real scrolling.
+      if (layout.contentWidth > layout.containerWidth) {
+        await table.focus()
+        await page.keyboard.press('ArrowRight')
+        await expect.poll(() => table.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0)
 
-      if (testInfo.project.use.hasTouch) {
-        await table.scrollIntoViewIfNeeded()
-        const box = await table.boundingBox()
-        if (!box) throw new Error('The order scroll region is missing.')
-        const before = await table.evaluate((element) => element.scrollLeft)
-        const session = await page.context().newCDPSession(page)
-        try {
-          // Send native touch input explicitly: the aggregate synthetic gesture can be a no-op
-          // in Linux headless Chromium. Ease out the finger movement to avoid release momentum.
-          const swipe = async (startX: number, distance: number) => {
-            const touchPoints = (progress: number) => [
-              {
-                x: startX + distance * (1 - (1 - progress) ** 3),
-                y: box.y + 100,
-                id: 1,
-              },
-            ]
-            await session.send('Input.dispatchTouchEvent', {
-              type: 'touchStart',
-              touchPoints: touchPoints(0),
-            })
-            try {
-              for (let step = 1; step <= 12; step += 1) {
+        if (testInfo.project.use.hasTouch) {
+          await table.scrollIntoViewIfNeeded()
+          const box = await table.boundingBox()
+          if (!box) throw new Error('The order scroll region is missing.')
+          const before = await table.evaluate((element) => element.scrollLeft)
+          const session = await page.context().newCDPSession(page)
+          try {
+            // Send native touch input explicitly: the aggregate synthetic gesture can be a no-op
+            // in Linux headless Chromium. Ease out the finger movement to avoid release momentum.
+            const swipe = async (startX: number, distance: number) => {
+              const touchPoints = (progress: number) => [
+                {
+                  x: startX + distance * (1 - (1 - progress) ** 3),
+                  y: box.y + 100,
+                  id: 1,
+                },
+              ]
+              await session.send('Input.dispatchTouchEvent', {
+                type: 'touchStart',
+                touchPoints: touchPoints(0),
+              })
+              try {
+                for (let step = 1; step <= 12; step += 1) {
+                  await session.send('Input.dispatchTouchEvent', {
+                    type: 'touchMove',
+                    touchPoints: touchPoints(step / 12),
+                  })
+                  await page.evaluate(
+                    () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
+                  )
+                }
+              } finally {
                 await session.send('Input.dispatchTouchEvent', {
-                  type: 'touchMove',
-                  touchPoints: touchPoints(step / 12),
+                  type: 'touchEnd',
+                  touchPoints: [],
                 })
-                await page.evaluate(
-                  () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())),
-                )
               }
-            } finally {
-              await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
             }
+            await swipe(box.x + box.width * 0.8, -Math.min(220, box.width * 0.6))
+            await expect
+              .poll(() => table.evaluate((element) => element.scrollLeft))
+              .toBeGreaterThan(before + 30)
+            const afterSwipe = await table.evaluate((element) => element.scrollLeft)
+            await swipe(box.x + box.width * 0.45, Math.min(180, box.width * 0.4))
+            await expect
+              .poll(() => table.evaluate((element) => element.scrollLeft))
+              .toBeLessThan(afterSwipe - 30)
+            await expect(page.getByRole('dialog')).toHaveCount(0)
+          } finally {
+            await session.detach()
           }
-          await swipe(box.x + box.width * 0.8, -Math.min(220, box.width * 0.6))
-          await expect
-            .poll(() => table.evaluate((element) => element.scrollLeft))
-            .toBeGreaterThan(before + 30)
-          const afterSwipe = await table.evaluate((element) => element.scrollLeft)
-          await swipe(box.x + box.width * 0.45, Math.min(180, box.width * 0.4))
-          await expect
-            .poll(() => table.evaluate((element) => element.scrollLeft))
-            .toBeLessThan(afterSwipe - 30)
-          await expect(page.getByRole('dialog')).toHaveCount(0)
-        } finally {
-          await session.detach()
         }
       }
+      const actions = table.getByRole('button', { name: 'Actions for ORD-1042', exact: true })
+      await expect(actions).toBeInViewport({ ratio: 1 })
       const total = table.getByRole('columnheader', { name: 'Total', exact: true })
       await total.scrollIntoViewIfNeeded()
       const rightEdge = await total.evaluate((element) => {
@@ -601,6 +609,18 @@ test('creates, edits and deletes an order with protected drafts and persisted to
   const details = page.getByRole('dialog', { name: `Order ${created.id}`, exact: true })
   await expect(details.getByText('Precision notebook', { exact: true })).toBeVisible()
   await expect(details.getByText('$31.24', { exact: true })).toBeVisible()
+  const history = details.getByRole('region', { name: 'Change history', exact: true })
+  await expect(history.getByText('Initial value: Processing', { exact: true })).toBeVisible()
+  await expect(history.getByText('Initial value: Pending', { exact: true })).toBeVisible()
+  await details.getByRole('button', { name: 'Edit order', exact: true }).click()
+  const directEdit = page.getByRole('dialog', { name: 'Edit order', exact: true })
+  await directEdit.getByLabel('Payment status', { exact: true }).click()
+  await page.getByRole('option', { name: 'Paid', exact: true }).click()
+  await directEdit.getByRole('button', { name: 'Save changes', exact: true }).click()
+  await expect(directEdit).toBeHidden()
+  await expect(history.getByText('Pending → Paid', { exact: true })).toBeVisible()
+  await expect(history.getByRole('listitem')).toHaveCount(3)
+
   await details.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(trigger).toBeFocused()
   await expect(page).toHaveURL(
@@ -638,6 +658,9 @@ test('creates, edits and deletes an order with protected drafts and persisted to
   await page.reload()
   await page.getByRole('button', { name: `View order ${created.id}`, exact: true }).click()
   await expect(details.getByText('$41.49', { exact: true })).toBeVisible()
+  await expect(history.getByText('Processing → Shipped', { exact: true })).toBeVisible()
+  await expect(history.getByText('Pending → Paid', { exact: true })).toBeVisible()
+  await expect(history.getByRole('listitem')).toHaveCount(4)
   await details.getByRole('button', { name: 'Close', exact: true }).click()
   await actions.focus()
   await page.keyboard.press('ArrowDown')
@@ -936,12 +959,108 @@ for (const route of ['orders', 'customers'] as const) {
       records.filter((record) => record.id !== first.id),
       start + 122_000,
     )
+    await expect(
+      details.getByText(
+        'This record is unavailable. It may have been deleted or the link may be incorrect.',
+        { exact: true },
+      ),
+    ).toBeVisible()
+    await expect(page).toHaveURL((url) => url.searchParams.get('detail') === first.id)
+    await details.getByRole('button', { name: 'Back to list', exact: true }).click()
     await expect(details).toBeHidden()
     await expect(page.getByRole('textbox', { name: `Search ${route}`, exact: true })).toBeFocused()
+    await expect(page).toHaveURL((url) => !url.searchParams.has('detail'))
 
     // A later response containing the same ID must not reopen a dismissed selection.
     await refreshCommerceResponse(page, endpoint, revisedRecords, start + 183_000)
     await expect(page.getByRole('button', { name: revisedTrigger, exact: true })).toBeVisible()
     await expect(details).toBeHidden()
+  })
+}
+
+for (const route of ['orders', 'customers'] as const) {
+  test(`${route} restores shared details and page size through reload and history`, async ({
+    page,
+  }, testInfo) => {
+    await page.goto(`/${route}`)
+    const title = route === 'orders' ? 'Orders' : 'Customers'
+    const search = page.getByRole('textbox', { name: `Search ${route}`, exact: true })
+    if (testInfo.project.name === 'mobile') {
+      const summary = page.getByRole('button', { name: 'Show summary', exact: true })
+      await expect(summary).toHaveAttribute('aria-expanded', 'false')
+      await expect(page.locator('[data-metric-card]').first()).toBeHidden()
+      await expect(search).toBeInViewport({ ratio: 1 })
+      await summary.click()
+      await expect(page.locator('[data-metric-card]').first()).toBeVisible()
+      await page.getByRole('button', { name: 'Hide summary', exact: true }).click()
+      await expect(search).toBeInViewport({ ratio: 1 })
+    }
+    await page.getByRole('combobox', { name: 'Rows per page', exact: true }).click()
+    await page.getByRole('option', { name: '12 rows', exact: true }).click()
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get('pageSize') === '12' && !url.searchParams.has('page'),
+    )
+    await expect(page.getByText(`Showing 1–12 of 12 ${route}`, { exact: true })).toBeVisible()
+    const id = route === 'orders' ? 'ORD-1042' : 'CUS-1012'
+    const trigger = page.getByRole('button', {
+      name: route === 'orders' ? 'View order ORD-1042' : 'View customer Olivia Rhye',
+      exact: true,
+    })
+    await trigger.click()
+    const details = page.getByRole('dialog', {
+      name: route === 'orders' ? 'Order ORD-1042' : 'Olivia Rhye',
+      exact: true,
+    })
+    await expect(details).toBeVisible()
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get('detail') === id && url.searchParams.get('pageSize') === '12',
+    )
+    const link = details.getByRole('link', { name: 'Open detail in a new tab', exact: true })
+    await expect(link).toHaveAttribute('target', '_blank')
+    const href = await link.getAttribute('href')
+    expect(new URL(href ?? '', page.url()).searchParams.get('detail')).toBe(id)
+    await page.reload()
+    await expect(details.getByText('olivia@example.com', { exact: true })).toBeVisible()
+    await details
+      .getByRole('button', {
+        name: `Edit ${route === 'orders' ? 'order' : 'customer'}`,
+        exact: true,
+      })
+      .click()
+    const editor = page.getByRole('dialog', {
+      name: `Edit ${route === 'orders' ? 'order' : 'customer'}`,
+      exact: true,
+    })
+    await expect(editor).toBeVisible()
+    await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(editor).toBeHidden()
+    await expect(
+      details.getByRole('button', {
+        name: `Edit ${route === 'orders' ? 'order' : 'customer'}`,
+        exact: true,
+      }),
+    ).toBeFocused()
+    await details.getByRole('button', { name: 'Close', exact: true }).click()
+    await expect(page).toHaveURL(
+      (url) => !url.searchParams.has('detail') && url.searchParams.get('pageSize') === '12',
+    )
+    await page.goBack()
+    await expect(details).toBeVisible()
+    await page.goForward()
+    await expect(details).toBeHidden()
+    await page.goto(`/${route}?pageSize=24&detail=missing-record`)
+    const missing = page.getByRole('dialog')
+    await expect(
+      missing.getByText(
+        'This record is unavailable. It may have been deleted or the link may be incorrect.',
+        { exact: true },
+      ),
+    ).toBeVisible()
+    await missing.getByRole('button', { name: 'Back to list', exact: true }).click()
+    await expect(search).toBeFocused()
+    await expect(page).toHaveURL(
+      (url) => url.searchParams.get('pageSize') === '24' && !url.searchParams.has('detail'),
+    )
+    await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   })
 }

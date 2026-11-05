@@ -1,6 +1,6 @@
 import type { SampleOrder } from '../model/schema'
 
-export const sampleOrders: SampleOrder[] = [
+const seedOrders: Omit<SampleOrder, 'history'>[] = [
   {
     id: 'ORD-1042',
     customer: { name: 'Olivia Rhye', email: 'olivia@example.com', initials: 'OR' },
@@ -140,3 +140,6 @@ export const sampleOrders: SampleOrder[] = [
     items: [{ name: 'Weekly planner', quantity: 1, unitPrice: 2400 }],
   },
 ]
+
+// These fixtures provide current values only; no past activity is known.
+export const sampleOrders: SampleOrder[] = seedOrders.map((order) => ({ ...order, history: [] }))

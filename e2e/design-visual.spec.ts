@@ -163,6 +163,65 @@ test.describe('approved design compositions', () => {
     }
   })
 
+  test('renders readable chart axis text in both themes', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'Shared chart styles are checked once.')
+    await preparePage(page, { theme: 'light', locale: 'en-US', currency: 'USD' })
+    for (const route of ['/', '/analytics']) {
+      await page.goto(route)
+      await ready(page)
+      const ticks = page.locator('[data-slot="chart"] .recharts-cartesian-axis-tick-value')
+      await expect(ticks.first()).toBeVisible()
+      for (const theme of ['light', 'dark']) {
+        await page.evaluate((theme) => {
+          document.documentElement.classList.toggle('dark', theme === 'dark')
+          document.documentElement.classList.toggle('light', theme === 'light')
+        }, theme)
+        const contrasts = await ticks.evaluateAll((elements) => {
+          const canvas = document.createElement('canvas')
+          canvas.width = canvas.height = 1
+          const context = canvas.getContext('2d', { willReadFrequently: true })
+          if (!context) throw new Error('Canvas color conversion is unavailable')
+          const rgb = (color: string) => {
+            context.clearRect(0, 0, 1, 1)
+            context.fillStyle = color
+            context.fillRect(0, 0, 1, 1)
+            const [red, green, blue, alpha] = Array.from(context.getImageData(0, 0, 1, 1).data)
+            if (alpha !== 255) throw new Error('Chart contrast requires opaque text and surface')
+            return [red!, green!, blue!]
+          }
+          const luminance = (channels: number[]) => {
+            const linear = channels.map((channel) => {
+              const value = channel / 255
+              return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+            })
+            return 0.2126 * linear[0]! + 0.7152 * linear[1]! + 0.0722 * linear[2]!
+          }
+          const intended = rgb(
+            getComputedStyle(document.documentElement).getPropertyValue('--muted-foreground'),
+          )
+          return elements.map((element) => {
+            const surface = element.closest('[data-slot="card"]')
+            if (!surface) throw new Error('Chart surface is missing')
+            const foreground = rgb(getComputedStyle(element).fill)
+            const first = luminance(foreground)
+            const second = luminance(rgb(getComputedStyle(surface).backgroundColor))
+            return {
+              text: element.textContent,
+              foreground,
+              intended,
+              ratio: (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05),
+            }
+          })
+        })
+        expect(contrasts.length).toBeGreaterThan(0)
+        for (const result of contrasts) {
+          expect(result.foreground, `${route} ${theme} ${result.text}`).toEqual(result.intended)
+          expect(result.ratio, `${route} ${theme} axis contrast`).toBeGreaterThanOrEqual(4.5)
+        }
+      }
+    }
+  })
+
   test('keeps large converted KPI amounts readable within responsive cards', async ({ page }) => {
     await preparePage(page, { theme: 'light', locale: 'ko-KR', currency: 'KRW' })
     await page.addInitScript(() => {

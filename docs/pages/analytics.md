@@ -40,5 +40,5 @@ PageHeader의 기간 선택 → 조회 날짜 안내 → KPI → 방문 추이�
 
 - 같은 분석 E2E의 `keeps device labels, values, and tooltips readable at 200% text on narrow mobile screens`에서 412px 영어·320px 한국어의 Y축 경계, 기기 요약의 줄바꿈·행 비겹침과 키보드로 연 툴팁의 전체 수치를 확인합니다.
 - 기간 변경 → 모든 지표/차트/표 갱신과 URL 복원: [분석 E2E](../../e2e/analytics-inbox.spec.ts)의 `analytics period updates the metrics, charts, and traffic tables together`.
-- 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Analytics keeps card geometry and cached data through real demo requests`. 최초/재조회 실패·빈 응답은 이 테스트가 검증하지 않으므로 해당 상태 변경 시 별도로 확인합니다.
+- 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Analytics keeps card geometry and cached data through real demo requests`. 같은 파일의 `Analytics recovers a cold read error and preserves cached content after a refresh failure`는 최초 오류→재시도와 재조회 실패 시 기존 숫자·내용 보존→복구를 확인합니다. `Analytics distinguishes a successful empty response from loading and errors`는 0 집계·빈 audience/device/source/page를 오류·로딩과 구분합니다.
 - 무관한 URL 필드가 페이지 상태에 남지 않음: [조회 테스트](../../src/pages/analytics/model/search.test.ts)의 `defaults omitted parameters and excludes unrelated URL state`.

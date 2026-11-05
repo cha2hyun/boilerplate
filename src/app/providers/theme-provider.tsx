@@ -1,3 +1,4 @@
+import { storageKeys } from '@/shared/config/product'
 import {
   useCallback,
   useEffect,
@@ -45,7 +46,7 @@ interface ThemeProviderProps {
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
-  storageKey = 'blueprint-theme',
+  storageKey = storageKeys.theme,
 }: ThemeProviderProps) {
   const [theme, setThemeState] = useState(() => readStoredTheme(storageKey, defaultTheme))
   const systemTheme = useSyncExternalStore(subscribeSystemTheme, readSystemTheme, serverTheme)

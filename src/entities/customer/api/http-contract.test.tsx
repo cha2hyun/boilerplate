@@ -1,4 +1,6 @@
 import type { PropsWithChildren } from 'react'
+import { httpCustomerAdapter } from './http'
+import { sampleCustomers } from './seed'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -19,6 +21,18 @@ vi.mock('@/shared/config', () => ({
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+})
+
+it('rejects duplicate identities at the HTTP list boundary', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(Response.json([sampleCustomers[0], sampleCustomers[0]])),
+  )
+  await expect(httpCustomerAdapter.list()).rejects.toMatchObject({
+    code: 'INVALID_RESPONSE',
+    status: 200,
+    mayHaveSucceeded: false,
+  })
 })
 
 it('sends the HTTP customer CRUD contract and synchronizes the active list from server responses', async () => {

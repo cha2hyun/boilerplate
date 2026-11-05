@@ -8,12 +8,33 @@ describe('orders URL search', () => {
       status: 'all',
       sort: 'newest',
       page: 1,
+      pageSize: 6,
+      detail: '',
     })
   })
 
   it('restores a valid filter, sort and one-based page', () => {
     const search = { q: 'Canada', status: 'Processing', sort: 'oldest', page: 2 }
-    expect(ordersSearchSchema.parse(search)).toEqual(search)
+    expect(ordersSearchSchema.parse(search)).toEqual({ ...ordersSearchDefaults, ...search })
+  })
+
+  it('restores page size and an opaque record detail without losing filters', () => {
+    const input = { q: 'Olivia', page: 2, pageSize: '12', detail: 'record:42' }
+    expect(ordersSearchSchema.parse(input)).toEqual({
+      ...ordersSearchDefaults,
+      ...input,
+      pageSize: 12,
+    })
+    expect(ordersSearchSchema.parse({ ...input, pageSize: 999, detail: ['record:42'] })).toEqual({
+      ...ordersSearchDefaults,
+      q: 'Olivia',
+      page: 2,
+    })
+    expect(ordersSearchSchema.parse({ detail: 'x'.repeat(201) }).detail).toBe('')
+    expect(ordersSearchSchema.parse({ detail: 123 }).detail).toBe('123')
+    expect(ordersSearchSchema.parse({ detail: '주문/42?revision=2&x=%' }).detail).toBe(
+      '주문/42?revision=2&x=%',
+    )
   })
 
   it('recovers invalid fields independently without discarding valid filters', () => {

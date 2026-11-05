@@ -31,3 +31,5 @@ Dialog/Sheet는 제목·설명·초점 진입과 모달 안의 순환을 유지�
 - 높이 390px의 접힌 탐색 레일: 세로 스크롤로 하단 설정 항목에 도달하고 선택할 수 있는지 확인.
 
 대표 대비와 시각 회귀는 `e2e/design-visual.spec.ts`, 기존 생성/수정/삭제 이후 초점 복귀는 `e2e/projects.spec.ts`도 함께 확인합니다. 실행 범위는 [테스트 정책](../testing.md)을 따릅니다. 자동 검사를 전체 WCAG 준수나 화면낭독기 검증으로 표현하지 않습니다. 화면낭독기·브라우저 확대·실제 모바일 보조기술 검증은 수행한 환경과 결과를 별도로 기록합니다.
+
+차트 축 글자는 실제 SVG `.recharts-cartesian-axis-tick-value`의 computed `fill`과 카드 배경으로 대비를 확인합니다. 공통 Chart가 `muted-foreground`를 적용하며 Recharts 내부 그룹 구조가 달라져도 텍스트 자체를 대상으로 합니다. `e2e/design-visual.spec.ts`의 `renders readable chart axis text in both themes`는 Overview·Analytics의 두 테마에서 토큰 적용과 4.5:1을 함께 확인합니다. 토큰 쌍만 통과한 결과로 실제 차트의 가독성을 대신 판단하지 않습니다.

@@ -1,3 +1,4 @@
+import { env } from '@/shared/config'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Circle, FolderKanban, Gauge, Plus } from 'lucide-react'
@@ -68,8 +69,10 @@ export function ProjectsPage({ search, onSearchChange }: ProjectsPageProps) {
     <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('common.projects')}
-        description={t('projects.description')}
-        badgeLabel={t('common.workspace')}
+        description={t(
+          env.dataSource === 'demo' ? 'projects.demoDescription' : 'projects.description',
+        )}
+        badgeLabel={env.dataSource === 'demo' ? t('common.sample') : undefined}
         actions={
           <Button
             onClick={() => {

@@ -69,7 +69,17 @@ Project의 `updatedAt`은 UTC와 offset이 있는 ISO datetime을 모두 허용�
 
 Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`, `entities/customer`의 `model/schema.ts`가 소유합니다. Traffic은 선택 기간의 일별 방문·세션·페이지뷰와 유입/페이지/기기별 요약을 반환합니다. 주문/고객은 상세 Sheet에 필요한 필드를 포함한 전체 목록이며 생성·편집·삭제를 지원합니다. 목록의 검색·정렬·페이지 나누기는 클라이언트에서 수행하며 서버 필터를 구현한 것으로 설명하지 않습니다.
 
+Traffic의 `days`는 날짜당 최대 한 항목만 허용하고 중복 날짜는 응답 검증 실패로 처리합니다. API 배열 순서는 자유이며 검증 경계에서 날짜 오름차순으로 정규화합니다. 일별 값과 기간 요약은 `visitors ≤ sessions ≤ pageViews`, 일별 이탈은 `bounces ≤ sessions`를 만족해야 합니다. 누락일을 채우거나 합계를 다시 만들지 않으며, 기간별 고유 방문자는 일별 고유 방문자의 합과 같다고 가정하지 않습니다. 0인 값과 빈 일별 배열은 허용합니다.
+
+프로젝트·주문·고객 목록의 ID는 목록 안에서 유일해야 합니다. 중복 ID를 합치거나 마지막 값으로 덮지 않고 전체 응답을 `INVALID_RESPONSE`로 거부합니다. 갱신 응답이 잘못됐을 때 이미 검증된 Query 데이터는 유지합니다.
+
 주문 입력은 `customer: { name, email }`, `date`, `status`, `payment`, `city`, `country`, `shipping`, `items: [{ name, quantity, unitPrice }]`입니다. `shipping`/`unitPrice`는 USD 정수 cents이며 상품은 최소 한 개가 필요합니다. 화면의 USD 소수 입력은 저장 전에 cents로 변환하며 빈 값·음수·지원 범위를 넘는 값은 거부합니다. 허용 상태, 길이·금액·수량·상품 개수 상한은 `orderInputSchema`가 소유합니다.
+
+주문 응답에는 선택적인 `history`가 있습니다. 예전 API 응답이나 version 1 브라우저 저장 데이터에 필드가 없으면 `[]`로 복원하며 seed에는 과거 이력을 만들어 넣지 않습니다. 검증된 `SampleOrder`의 `history`는 항상 배열입니다. 각 항목은 `OrderHistoryEntry`이며 `field: 'status' | 'payment'`, `occurredAt`(offset이 있는 ISO datetime), 해당 필드의 `from`/`to` 값을 포함합니다. `from: null`은 신규 주문 생성 시 초기값 설정이며 같은 값으로의 변경이나 다른 필드의 상태값은 허용하지 않습니다. 사용자 입력의 `history`는 제거하므로 HTTP 요청에 포함하거나 데모 저장에 주입할 수 없습니다.
+
+데모 생성은 현재 시각의 상태·결제 초기값 두 항목을 기록합니다. 수정은 실제로 달라진 상태·결제 필드만 작업 적용 순서로 추가하며, 같은 값 저장이나 주소·상품 편집은 상태 이력을 늘리지 않습니다. 유효성 실패·없는 대상·취소된 요청은 이력을 남기지 않습니다. 저장소 쓰기가 거부되면 기존 정책대로 변경과 이력이 현재 세션 메모리에만 유지됩니다. 주문 하나당 최근 **100개 필드 변경**(`orderLimits.history`)만 유지하고 이전 항목은 버립니다. API가 이력을 제공할 때도 이 응답 한도를 지켜야 합니다. 삭제한 주문의 이력은 함께 제거됩니다. 상태 전이는 기존 CRUD가 허용하는 열거형 사이의 변경을 유지하며 배송·환불에 새로운 상업 규칙을 가정하지 않습니다.
+
+이 이력은 브라우저 시계와 수정 가능한 데모 저장소에 기반한 사용자 흐름 예시입니다. 주문·결제의 실제 실행, 사용자 식별, 서버 감사 로그, 변조 방지, 법적 보존, 변경 충돌 방지를 구현한 것이 아닙니다. 운영 API는 인증된 작성자, 서버 시각, 보존·페이지네이션·경합 정책을 별도로 설계하며 현재 API에서는 이력 필드를 생략할 수 있습니다.
 
 고객 입력은 `name`, `email`, `status`, `city`, `country`, `joined`입니다. 서버/데모 어댑터가 ID와 이니셜을 생성하며 구매 이력(`orders`, `spent`, `lastOrder`)은 사용자 입력으로 받지 않습니다. 새 고객 이력은 0/0/null이고 프로필 편집은 기존 이력을 유지합니다. 주문 고객 정보는 시점별 스냅샷이며 고객 프로필 삭제·수정에 연쇄 변경하지 않습니다. 기존 고객 이력은 주문 목록과 독립된 샘플이므로 주문 쓰기로 구매 합계를 만들어내지 않습니다. 실제 연결 관계·집계가 필요하면 백엔드 계약부터 바꿉니다.
 
@@ -91,7 +101,7 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 공통 transport는 `Accept: application/json`을 설정하고 body가 있으면 JSON으로 직렬화합니다. 응답 body는 Zod 스키마로 검증합니다. `204`는 `null`로 처리합니다. 네트워크 실패는 `ApiError`의 `NETWORK_ERROR`, 비정상 HTTP 상태는 `HTTP_ERROR`, 읽을 수 없거나 스키마에 맞지 않는 응답은 `INVALID_RESPONSE`가 됩니다. HTTP 응답이 있으면 `status`도 전달합니다. 서버의 임의 오류 body를 사용자에게 그대로 출력하지 않습니다.
 
-HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. `ApiError.mayHaveSucceeded`는 기본 `false`이며 읽기 전용(GET/HEAD)이 아닌 요청의 timeout·네트워크 실패·2xx 응답의 JSON/스키마 검증 실패에서는 `true`입니다. 응답을 받거나 해석하지 못했어도 서버 변경은 적용됐을 수 있기 때문입니다. 명시적인 HTTP 실패 응답과 읽기 요청은 기존 오류 구분을 유지합니다. `useErrorMessage`는 이 구조화된 값으로 언어를 바꿔도 저장 성공 가능성과 결과 재확인 안내를 유지하며 영어 오류 문자열을 해석하지 않습니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. 불확실한 mutation 결과는 목록을 다시 조회해 확인하고 재시도하도록 안내하며 mutation 자체를 자동 재시도하지 않습니다.
+HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. `ApiError.mayHaveSucceeded`는 기본 `false`이며 읽기 전용(GET/HEAD)이 아닌 요청의 timeout·네트워크 실패·5xx·2xx 응답의 JSON/스키마 검증 실패에서는 `true`입니다. 응답을 받거나 해석하지 못했어도 서버 변경은 적용됐을 수 있기 때문입니다. 특히 502/504는 gateway가 upstream 응답을 정상적으로 받지 못했음을 나타내며 저장 실패나 rollback의 증거가 아닙니다. 공통 HTTP 경계에는 서버의 commit/rollback 보장 계약이 없으므로 모든 쓰기 5xx를 보수적으로 불확실하게 처리합니다. 4xx 쓰기 거부와 읽기 요청은 `mayHaveSucceeded: false`를 유지하며 HTTP 오류의 `code: HTTP_ERROR`와 원래 `status`도 보존합니다. `useErrorMessage`는 이 구조화된 값으로 언어를 바꿔도 저장 성공 가능성과 결과 재확인 안내를 유지하며 영어 오류 문자열을 해석하지 않습니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. 불확실한 mutation 결과는 목록을 다시 조회해 확인하고 재시도하도록 안내하며 mutation 자체를 자동 재시도하지 않습니다. 서버 idempotency나 작업 결과 조회 계약을 구현한 것으로 간주하지 않습니다.
 
 GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취소한 요청은 timeout 오류나 별도 `ApiError`로 감싸지 않습니다. 프로젝트·주문·고객 mutation이 성공하면 진행 중인 목록 요청을 먼저 취소하고 Query 캐시를 갱신한 뒤 목록을 무효화합니다. 따라서 초기 조회가 늦게 도착해 이미 성공한 변경을 가리지 않습니다. 서버가 거부한 mutation을 성공으로 표시하지 않습니다.
 
@@ -104,6 +114,8 @@ GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취�
 데모 프로젝트는 `orbit.demo.projects.v1` localStorage 키에 `{ version: 1, projects }` 형태로 저장됩니다. 잘못된 JSON/스키마는 샘플 데이터로 복구합니다. 저장소 접근이 거부되면 메모리로 동작하며 새로고침 이후 보존을 보장하지 않습니다.
 
 주문은 `orbit.demo.orders.v1`에 `{ version: 1, orders }`, 고객은 `orbit.demo.customers.v1`에 `{ version: 1, customers }`를 저장합니다. 각 어댑터가 복원 데이터를 검증하고 저장소 실패 시 현재 세션의 메모리를 유지합니다. 이 저장소는 Query의 메모리 캐시와 별개입니다. 새로고침 후 HTTP GET이 저장 데이터를 다시 읽습니다. API 모드에서는 이 어댑터를 쓰지 않으며 실제 서버가 영속성을 소유합니다.
+
+세 도메인 모두 저장된 목록의 중복 ID를 손상 데이터로 취급하고 기존 복구 정책에 따라 검증된 seed로 초기화합니다. 생성 ID가 기존 데이터와 충돌하면 `409`를 반환하고 기존 목록을 보존합니다. ID만 보고 서로 다른 레코드를 임의로 합치지 않습니다. 저장 키는 `shared/config/product.ts`의 `storageKeys`가 소유하며 이번 중앙화로 키 값이나 저장 버전은 바뀌지 않습니다.
 
 데모 프로젝트 생성 항목에는 샘플 소유자 Alex Morgan과 0% 진행률을 부여합니다. 이것은 현재 로그인 사용자로부터 얻은 값이 아닙니다. 분석 데이터와 활동은 2026-10-05~2026-11-03 기준의 고정 샘플이며 프로젝트 편집과 결제/수익 데이터가 연동되어 있지 않습니다.
 

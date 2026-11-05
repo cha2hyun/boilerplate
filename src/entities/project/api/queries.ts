@@ -29,6 +29,7 @@ async function reconcileUncertainMutation(error: Error, queryClient: QueryClient
 export function useCreateProject() {
   const queryClient = useQueryClient()
   return useMutation({
+    retry: false,
     mutationFn: (input: ProjectInput) => adapter.create(input),
     onError: (error) => reconcileUncertainMutation(error, queryClient),
     onSuccess: async (project) => {
@@ -44,6 +45,7 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const queryClient = useQueryClient()
   return useMutation({
+    retry: false,
     mutationFn: ({ id, input }: { id: string; input: ProjectInput }) => adapter.update(id, input),
     onError: (error) => reconcileUncertainMutation(error, queryClient),
     onSuccess: async (updated) => {
@@ -59,6 +61,7 @@ export function useUpdateProject() {
 export function useDeleteProject() {
   const queryClient = useQueryClient()
   return useMutation({
+    retry: false,
     mutationFn: (id: string) => adapter.delete(id),
     onError: (error) => reconcileUncertainMutation(error, queryClient),
     onSuccess: async (_result, id) => {

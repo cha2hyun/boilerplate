@@ -1,70 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import {
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Pencil,
-  Plus,
-  Trash2,
-  Repeat2,
-  Search,
-  UserCheck,
-  UserRoundPlus,
-  Users,
-  X,
-} from 'lucide-react'
-import {
-  customersQueryOptions,
-  customerStatuses,
-  type CustomerStatus,
-  type SampleCustomer,
-} from '@/entities/customer'
-import { CustomerEditorDialog, CustomerDeleteDialog } from '@/features/customer-editor'
-import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
-import {
-  useErrorMessage,
-  useFormatters,
-  useLocalePreferences,
-  useTranslation,
-} from '@/shared/lib/i18n'
+import { customersQueryOptions, type SampleCustomer } from '@/entities/customer'
+import { CustomerDeleteDialog, CustomerEditorDialog } from '@/features/customer-editor'
+import { useErrorMessage, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
-import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
-import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/shared/ui/empty'
-import { Input } from '@/shared/ui/input'
-import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/ui/page-header'
-import { MetricCard } from '@/shared/ui/metric-card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
-import { Separator } from '@/shared/ui/separator'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
-import { Skeleton } from '@/shared/ui/skeleton'
-import { HStack, VStack } from '@/shared/ui/stack'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
-import { compareCustomers, customerSortOptions } from '../model/sample-customers'
-import { customersSearchDefaults, type CustomersSearch } from '../model/search'
-
-const pageSize = 6
-const countFormat = { maximumFractionDigits: 0 }
-
-function CustomerStatusBadge({ status }: { status: CustomerStatus }) {
-  const { t } = useTranslation('admin')
-  return (
-    <Badge variant={status === 'Active' ? 'secondary' : 'outline'} className="font-normal">
-      {t(`customers.status.${status}`)}
-    </Badge>
-  )
-}
+import { VStack } from '@/shared/ui/stack'
+import { useQuery } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { CustomersSearch } from '../model/search'
+import { selectCustomers } from '../model/selectors'
+import { CustomerDetailsSheet } from './customer-details-sheet'
+import { CustomersList } from './customers-list'
+import { CustomersSummary } from './customers-summary'
 
 interface CustomersPageProps {
   search: CustomersSearch
@@ -73,110 +22,61 @@ interface CustomersPageProps {
 
 export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
   const { t } = useTranslation('admin')
-  const { t: editorT } = useTranslation('customerEditor')
+  const { t: editor } = useTranslation('customerEditor')
   const errorMessage = useErrorMessage()
-  const { formatNumber, formatMoney, formatDate } = useFormatters()
-  const currency = useLocalePreferences((state) => state.currency)
-  const customersQuery = useQuery(customersQueryOptions())
-  const customers = customersQuery.data ?? []
-  const isLoading = customersQuery.isPending && !customersQuery.data
-  const hasLoadError = customersQuery.isError && !customersQuery.data
-  const { q, status, sort, page } = search
+  const query = useQuery(customersQueryOptions())
+  const { q, status, sort, page, pageSize } = search
+  const selection = useMemo(
+    () => selectCustomers(query.data ?? [], { q, status, sort, page, pageSize }),
+    [query.data, q, status, sort, page, pageSize],
+  )
+  const isLoading = query.isPending && !query.data
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [editingCustomer, setEditingCustomer] = useState<SampleCustomer | null>(null)
   const [deletingCustomer, setDeletingCustomer] = useState<SampleCustomer | null>(null)
-  const actionTrigger = useRef<HTMLButtonElement | null>(null)
-  const openingCreatedDetails = useRef(false)
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
-  const selectedCustomer = customers.find((item) => item.id === selectedCustomerId)
+  const selected = query.data?.find((item) => item.id === search.detail)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
+  const actionTrigger = useRef<HTMLButtonElement | null>(null)
+  const savedId = useRef<string | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
-  const query = q.trim().toLowerCase()
-  const filteredCustomers = customers
-    .filter(
-      (customer) =>
-        (status === 'all' || customer.status === status) &&
-        `${customer.name} ${customer.email} ${customer.country} ${customer.city}`
-          .toLowerCase()
-          .includes(query),
-    )
-    .sort((left, right) => compareCustomers(left, right, sort))
-  const pageCount = Math.max(1, Math.ceil(filteredCustomers.length / pageSize))
-  const currentPage = Math.min(page, pageCount) - 1
-  const visibleCustomers = filteredCustomers.slice(
-    currentPage * pageSize,
-    (currentPage + 1) * pageSize,
-  )
-  const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
 
   useEffect(() => {
     if (
+      query.isSuccess &&
+      !query.isFetching &&
       !isCreateOpen &&
       !editingCustomer &&
       !deletingCustomer &&
-      customersQuery.isSuccess &&
-      !customersQuery.isFetching &&
-      page > pageCount
+      search.page > selection.pageCount
     ) {
-      onSearchChange({ page: pageCount }, { replace: true })
+      onSearchChange({ page: selection.pageCount }, { replace: true })
     }
   }, [
-    customersQuery.isSuccess,
-    customersQuery.isFetching,
+    query.isSuccess,
+    query.isFetching,
     isCreateOpen,
     editingCustomer,
     deletingCustomer,
-    page,
-    pageCount,
+    search.page,
+    selection.pageCount,
     onSearchChange,
   ])
 
-  // A refreshed response may remove the selected record; keep only valid UI selection.
-  if (selectedCustomerId !== null && customersQuery.data && !selectedCustomer) {
-    setSelectedCustomerId(null)
+  function openDetails(id: string, trigger: HTMLButtonElement | null) {
+    detailTrigger.current = trigger
+    onSearchChange({ detail: id })
   }
 
   function restoreActionFocus(event: Event) {
     event.preventDefault()
-    if (openingCreatedDetails.current) {
-      openingCreatedDetails.current = false
+    if (savedId.current) {
+      openDetails(savedId.current, actionTrigger.current)
+      savedId.current = null
       return
     }
     const target = actionTrigger.current?.isConnected ? actionTrigger.current : searchRef.current
     target?.focus()
   }
-
-  function resetFilters() {
-    onSearchChange(customersSearchDefaults)
-    requestAnimationFrame(() => searchRef.current?.focus())
-  }
-
-  const summaries = [
-    {
-      title: t('customers.summary.total'),
-      value: customers.length,
-      description: t('customers.summary.totalHint'),
-      Icon: Users,
-    },
-    {
-      title: t('customers.summary.active'),
-      value: customers.filter((customer) => customer.status === 'Active').length,
-      description: t('customers.summary.activeHint'),
-      Icon: UserCheck,
-    },
-    {
-      title: t('customers.summary.returning'),
-      value: customers.filter((customer) => customer.orders > 1).length,
-      description: t('customers.summary.returningHint'),
-      Icon: Repeat2,
-    },
-    {
-      title: t('customers.summary.firstTime'),
-      value: customers.filter((customer) => customer.orders === 1).length,
-      description: t('customers.summary.firstTimeHint'),
-      Icon: UserRoundPlus,
-    },
-  ]
 
   return (
     <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
@@ -191,371 +91,73 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
               setIsCreateOpen(true)
             }}
           >
-            <Plus aria-hidden="true" /> {editorT('newCustomer')}
+            <Plus aria-hidden="true" />
+            {editor('newCustomer')}
           </Button>
         }
       />
-
-      {customersQuery.isError && customersQuery.data && (
+      {query.isError && query.data && (
         <Alert variant="destructive">
           <AlertTitle>{t('customers.refreshError')}</AlertTitle>
           <AlertDescription>
-            <p>{errorMessage(customersQuery.error)}</p>
-            <Button variant="outline" size="sm" onClick={() => void customersQuery.refetch()}>
+            <p>{errorMessage(query.error)}</p>
+            <Button variant="outline" size="sm" onClick={() => void query.refetch()}>
               {t('common.tryAgain')}
             </Button>
           </AlertDescription>
         </Alert>
       )}
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {summaries.map(({ title, value, description, Icon }) => (
-          <MetricCard
-            key={title}
-            label={title}
-            icon={Icon}
-            loading={isLoading}
-            value={
-              customersQuery.data ? (
-                <NumberDisplay animate wrap value={value} format={countFormat} />
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )
-            }
-            footer={description}
-          />
-        ))}
-      </div>
-
-      <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
-        <CardHeader className="px-5">
-          <CardTitle className="text-base">{t('customers.directory')}</CardTitle>
-          <CardDescription>{t('customers.directoryHint')}</CardDescription>
-        </CardHeader>
-        <VStack asChild align="stretch" className="min-w-0 gap-4 px-0">
-          <CardContent>
-            <HStack wrap className="gap-2 px-5">
-              <div className="relative w-full md:max-w-xs">
-                <Search
-                  className="pointer-events-none absolute top-2.5 left-3 size-4 text-muted-foreground"
-                  aria-hidden="true"
-                />
-                <Label htmlFor="customers-search" className="sr-only">
-                  {t('customers.search')}
-                </Label>
-                <Input
-                  id="customers-search"
-                  ref={searchRef}
-                  placeholder={t('customers.searchPlaceholder')}
-                  value={q}
-                  maxLength={200}
-                  className="pl-9"
-                  onChange={(event) => {
-                    onSearchChange({ q: event.target.value, page: 1 }, { replace: true })
-                  }}
-                />
-              </div>
-              <Select
-                value={status}
-                onValueChange={(value) => {
-                  onSearchChange({
-                    status: customerStatuses.find((item) => item === value) ?? 'all',
-                    page: 1,
-                  })
-                }}
-              >
-                <SelectTrigger aria-label={t('customers.filterStatus')} className="w-full md:w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t('customers.allStatuses')}</SelectItem>
-                  {customerStatuses.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {t(`customers.status.${item}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={sort}
-                onValueChange={(value) => {
-                  onSearchChange({
-                    sort:
-                      customerSortOptions.find((item) => item.value === value)?.value ?? 'newest',
-                    page: 1,
-                  })
-                }}
-              >
-                <SelectTrigger aria-label={t('customers.sortLabel')} className="w-full md:w-48">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {customerSortOptions.map((item) => (
-                    <SelectItem key={item.value} value={item.value}>
-                      {t(`customers.sort.${item.value}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {hasFilters && (
-                <Button variant="ghost" size="sm" onClick={resetFilters}>
-                  <X aria-hidden="true" />
-                  {t('common.reset')}
-                </Button>
-              )}
-            </HStack>
-            {isLoading || visibleCustomers.length ? (
-              <div className="h-120 min-w-0 border-y">
-                <Table
-                  className="min-w-200 table-fixed"
-                  containerProps={{
-                    role: 'region',
-                    'aria-label': t('customers.table'),
-                    'aria-busy': isLoading,
-                    tabIndex: 0,
-                    className:
-                      'h-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
-                  }}
-                >
-                  <colgroup>
-                    <col className="w-[26%]" />
-                    <col className="w-[12%]" />
-                    <col className="w-[18%]" />
-                    <col className="w-[10%]" />
-                    <col className="w-[14%]" />
-                    <col className="w-[14%]" />
-                    <col className="w-[6%]" />
-                  </colgroup>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30 hover:bg-muted/30">
-                      <TableHead className="pl-5">{t('common.customer')}</TableHead>
-                      <TableHead>{t('common.status')}</TableHead>
-                      <TableHead>{t('customers.location')}</TableHead>
-                      <TableHead className="text-right">{t('customers.orders')}</TableHead>
-                      <TableHead className="text-right">{t('customers.spent')}</TableHead>
-                      <TableHead>{t('customers.joined')}</TableHead>
-                      <TableHead>
-                        <span className="sr-only">{editorT('actions')}</span>
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading
-                      ? Array.from({ length: pageSize }, (_, index) => (
-                          <TableRow key={index} className="h-18" aria-hidden="true">
-                            {Array.from({ length: 7 }, (_, cell) => (
-                              <TableCell key={cell} className="px-5">
-                                <Skeleton className="h-4 w-full max-w-28" />
-                              </TableCell>
-                            ))}
-                          </TableRow>
-                        ))
-                      : visibleCustomers.map((customer) => (
-                          <TableRow key={customer.id} className="h-18">
-                            <TableCell className="py-2 pl-5">
-                              <HStack className="min-w-0 gap-3">
-                                <Avatar className="size-8 shrink-0">
-                                  <AvatarFallback className="text-xs font-medium">
-                                    {customer.initials}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <VStack align="stretch" className="min-w-0 flex-1">
-                                  <Button
-                                    variant="link"
-                                    className="block h-auto max-w-full truncate p-0 text-left font-medium text-foreground"
-                                    title={customer.name}
-                                    aria-label={t('customers.viewCustomer', {
-                                      name: customer.name,
-                                    })}
-                                    onClick={(event) => {
-                                      detailTrigger.current = event.currentTarget
-                                      setSelectedCustomerId(customer.id)
-                                    }}
-                                  >
-                                    {customer.name}
-                                  </Button>
-                                  <p
-                                    className="truncate text-xs text-muted-foreground"
-                                    title={customer.email}
-                                  >
-                                    {customer.email}
-                                  </p>
-                                </VStack>
-                              </HStack>
-                            </TableCell>
-                            <TableCell>
-                              <CustomerStatusBadge status={customer.status} />
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {customer.country}
-                            </TableCell>
-                            <TableCell className="text-right wrap-anywhere whitespace-normal tabular-nums">
-                              {formatNumber(customer.orders)}
-                            </TableCell>
-                            <TableCell className="text-right font-medium wrap-anywhere whitespace-normal tabular-nums">
-                              {formatMoney(customer.spent / 100)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {formatDate(customer.joined, { year: 'numeric' })}
-                            </TableCell>
-                            <TableCell className="pr-5">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-8"
-                                    aria-label={editorT('actionsLabel', { name: customer.name })}
-                                    onFocus={(event) => {
-                                      actionTrigger.current = event.currentTarget
-                                    }}
-                                    onPointerDown={(event) => {
-                                      actionTrigger.current = event.currentTarget
-                                    }}
-                                  >
-                                    <MoreHorizontal aria-hidden="true" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onSelect={() => {
-                                      setEditingCustomer(customer)
-                                    }}
-                                  >
-                                    <Pencil aria-hidden="true" /> {editorT('edit')}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    variant="destructive"
-                                    onSelect={() => {
-                                      setDeletingCustomer(customer)
-                                    }}
-                                  >
-                                    <Trash2 aria-hidden="true" /> {editorT('remove')}
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                    {!isLoading &&
-                      Array.from(
-                        { length: Math.max(0, pageSize - visibleCustomers.length) },
-                        (_, index) => (
-                          <TableRow
-                            key={`empty-${String(index)}`}
-                            className="h-18 hover:bg-transparent"
-                            aria-hidden="true"
-                          >
-                            <TableCell colSpan={7} />
-                          </TableRow>
-                        ),
-                      )}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <Empty
-                className="h-120 rounded-none border-y py-12"
-                role={hasLoadError ? 'alert' : undefined}
-              >
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <Search aria-hidden="true" />
-                  </EmptyMedia>
-                  <EmptyTitle>
-                    {hasLoadError
-                      ? t('customers.loadError')
-                      : customers.length
-                        ? t('customers.noMatch')
-                        : t('customers.empty')}
-                  </EmptyTitle>
-                  <EmptyDescription>
-                    {hasLoadError
-                      ? errorMessage(customersQuery.error)
-                      : customers.length
-                        ? t('common.searchHint')
-                        : t('customers.emptyHint')}
-                  </EmptyDescription>
-                </EmptyHeader>
-                {hasLoadError ? (
-                  <Button variant="outline" onClick={() => void customersQuery.refetch()}>
-                    {t('common.tryAgain')}
-                  </Button>
-                ) : (
-                  customers.length > 0 && (
-                    <Button variant="outline" onClick={resetFilters}>
-                      {t('common.clearFilters')}
-                    </Button>
-                  )
-                )}
-              </Empty>
-            )}
-            <div className="grid gap-3 px-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-              <p
-                className="text-xs text-muted-foreground"
-                aria-live={hasLoadError ? 'off' : 'polite'}
-              >
-                {isLoading
-                  ? t('customers.loading')
-                  : hasLoadError
-                    ? t('customers.loadError')
-                    : filteredCustomers.length
-                      ? t('customers.showing', {
-                          start: formatNumber(currentPage * pageSize + 1),
-                          end: formatNumber(
-                            Math.min((currentPage + 1) * pageSize, filteredCustomers.length),
-                          ),
-                          total: formatNumber(filteredCustomers.length),
-                        })
-                      : t('customers.count', { total: formatNumber(0) })}
-              </p>
-              <HStack className="gap-3">
-                <p className="text-xs font-medium tabular-nums">
-                  {t('common.pageCount', {
-                    current: formatNumber(currentPage + 1),
-                    total: formatNumber(pageCount),
-                  })}
-                </p>
-                <HStack className="gap-1">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-8"
-                    aria-label={t('customers.previousPage')}
-                    disabled={isLoading || currentPage === 0}
-                    onClick={() => {
-                      onSearchChange({ page: currentPage })
-                    }}
-                  >
-                    <ChevronLeft aria-hidden="true" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="size-8"
-                    aria-label={t('customers.nextPage')}
-                    disabled={isLoading || currentPage + 1 >= pageCount}
-                    onClick={() => {
-                      onSearchChange({ page: currentPage + 2 })
-                    }}
-                  >
-                    <ChevronRight aria-hidden="true" />
-                  </Button>
-                </HStack>
-              </HStack>
-            </div>
-          </CardContent>
-        </VStack>
-      </Card>
-
+      <CustomersSummary
+        customers={query.data ?? []}
+        isLoading={isLoading}
+        hasData={query.data !== undefined}
+      />
+      <CustomersList
+        search={search}
+        onSearchChange={onSearchChange}
+        customers={query.data ?? []}
+        selection={selection}
+        isLoading={isLoading}
+        hasLoadError={query.isError && !query.data}
+        error={query.error}
+        onRetry={() => void query.refetch()}
+        searchRef={searchRef}
+        actionTrigger={actionTrigger}
+        hasOpenDialog={
+          Boolean(search.detail) || editingCustomer !== null || deletingCustomer !== null
+        }
+        onView={openDetails}
+        onEdit={setEditingCustomer}
+        onDelete={setDeletingCustomer}
+      />
+      <CustomerDetailsSheet
+        open={Boolean(search.detail)}
+        customer={selected}
+        search={search}
+        isLoading={isLoading}
+        error={query.data ? null : query.error}
+        onRetry={() => void query.refetch()}
+        onOpenChange={(open) => {
+          if (!open) onSearchChange({ detail: '' })
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          const target = detailTrigger.current?.isConnected
+            ? detailTrigger.current
+            : searchRef.current
+          target?.focus()
+        }}
+        onEdit={(record, trigger) => {
+          actionTrigger.current = trigger
+          setEditingCustomer(record)
+        }}
+      />
       <CustomerEditorDialog
         open={isCreateOpen}
         onOpenChange={setIsCreateOpen}
         onCloseAutoFocus={restoreActionFocus}
         onCreated={(customer) => {
-          openingCreatedDetails.current = true
-          detailTrigger.current = actionTrigger.current
-          setSelectedCustomerId(customer.id)
+          savedId.current = customer.id
         }}
       />
       <CustomerEditorDialog
@@ -567,129 +169,13 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
         onCloseAutoFocus={restoreActionFocus}
       />
       <CustomerDeleteDialog
-        open={deletingCustomer !== null}
+        open={Boolean(deletingCustomer)}
         customer={deletingCustomer}
+        onCloseAutoFocus={restoreActionFocus}
         onOpenChange={(open) => {
           if (!open) setDeletingCustomer(null)
         }}
-        onCloseAutoFocus={restoreActionFocus}
       />
-      <Sheet
-        open={selectedCustomer !== undefined}
-        onOpenChange={(open) => {
-          if (!open) setSelectedCustomerId(null)
-        }}
-      >
-        <SheetContent
-          className="w-full overflow-y-auto md:max-w-lg"
-          onCloseAutoFocus={(event) => {
-            event.preventDefault()
-            const target = detailTrigger.current?.isConnected
-              ? detailTrigger.current
-              : searchRef.current
-            target?.focus()
-          }}
-        >
-          <SheetHeader className="border-b p-6 pr-12">
-            <SheetTitle className="wrap-anywhere">
-              {selectedCustomer?.name ?? t('customers.details')}
-            </SheetTitle>
-            <SheetDescription>
-              {selectedCustomer
-                ? t('customers.sampleProfile', { id: selectedCustomer.id })
-                : t('customers.detailsHint')}
-            </SheetDescription>
-          </SheetHeader>
-          {selectedCustomer && (
-            <VStack
-              align="stretch"
-              className="@container/customer-details min-w-0 gap-6 px-6 pb-6 text-sm wrap-anywhere"
-            >
-              <HStack className="gap-3">
-                <Avatar className="size-12 shrink-0">
-                  <AvatarFallback className="font-medium">
-                    {selectedCustomer.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <VStack align="start" className="min-w-0 gap-1.5">
-                  <p className="wrap-anywhere text-muted-foreground">{selectedCustomer.email}</p>
-                  <CustomerStatusBadge status={selectedCustomer.status} />
-                </VStack>
-              </HStack>
-              <div className="grid grid-cols-1 gap-3 @xs/customer-details:grid-cols-2">
-                <Card className="min-w-0 gap-2 py-4 shadow-none">
-                  <CardHeader className="px-4">
-                    <CardTitle className="text-xs font-normal text-muted-foreground">
-                      {t('customers.lifetimeOrders')}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 text-2xl font-semibold tabular-nums">
-                    <NumberDisplay
-                      animate
-                      wrap
-                      value={selectedCustomer.orders}
-                      format={countFormat}
-                    />
-                  </CardContent>
-                </Card>
-                <Card className="min-w-0 gap-2 py-4 shadow-none">
-                  <CardHeader className="px-4">
-                    <CardTitle className="text-xs font-normal text-muted-foreground">
-                      {t('customers.currencySpent', { currency })}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 text-xl font-semibold tabular-nums">
-                    <MoneyDisplay animate wrap value={selectedCustomer.spent / 100} />
-                  </CardContent>
-                </Card>
-              </div>
-              <VStack asChild align="stretch" className="gap-4">
-                <section aria-label={t('customers.information')}>
-                  <h2 className="font-medium">{t('customers.information')}</h2>
-                  <VStack asChild align="stretch" className="gap-4">
-                    <dl>
-                      <VStack align="stretch" className="gap-1">
-                        <dt className="text-xs text-muted-foreground">{t('customers.location')}</dt>
-                        <dd>
-                          {selectedCustomer.city}, {selectedCustomer.country}
-                        </dd>
-                      </VStack>
-                      <VStack align="stretch" className="gap-1">
-                        <dt className="text-xs text-muted-foreground">{t('customers.since')}</dt>
-                        <dd>{formatDate(selectedCustomer.joined, { year: 'numeric' })}</dd>
-                      </VStack>
-                      <VStack align="stretch" className="gap-1">
-                        <dt className="text-xs text-muted-foreground">
-                          {t('customers.lastOrder')}
-                        </dt>
-                        <dd>
-                          {selectedCustomer.lastOrder
-                            ? formatDate(selectedCustomer.lastOrder, { year: 'numeric' })
-                            : t('customers.noOrders')}
-                        </dd>
-                      </VStack>
-                      <VStack align="stretch" className="gap-1">
-                        <dt className="text-xs text-muted-foreground">{t('customers.type')}</dt>
-                        <dd>
-                          {selectedCustomer.orders === 0
-                            ? editorT('noPurchaseHistory')
-                            : selectedCustomer.orders === 1
-                              ? t('customers.firstTimeCustomer')
-                              : t('customers.returningCustomer')}
-                        </dd>
-                      </VStack>
-                    </dl>
-                  </VStack>
-                </section>
-              </VStack>
-              <Separator />
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {t('customers.disclaimer')}
-              </p>
-            </VStack>
-          )}
-        </SheetContent>
-      </Sheet>
     </VStack>
   )
 }

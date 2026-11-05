@@ -92,7 +92,10 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
     <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('overview.title')}
-        description={t('overview.description')}
+        badgeLabel={env.dataSource === 'demo' ? t('common.sample') : undefined}
+        description={t(
+          env.dataSource === 'demo' ? 'overview.demoDescription' : 'overview.description',
+        )}
         actions={
           <Button
             onClick={() => {

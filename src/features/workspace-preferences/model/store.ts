@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { StateStorage } from 'zustand/middleware'
 import { z } from 'zod'
+import { product, storageKeys } from '@/shared/config/product'
 import { createPreferenceStorage } from './storage'
 
 export const preferencesSchema = z.object({
@@ -17,7 +18,7 @@ type PreferencesState = Preferences & {
   save: (value: Preferences) => void
   reset: () => Preferences
 }
-const defaults: Preferences = { workspaceName: 'Acme Studio', compactMode: false }
+const defaults: Preferences = { workspaceName: product.defaultWorkspaceName, compactMode: false }
 
 export function createPreferencesStore(
   storage: StateStorage = createPreferenceStorage(),
@@ -37,7 +38,7 @@ export function createPreferencesStore(
         },
       }),
       {
-        name: 'blueprint-preferences',
+        name: storageKeys.workspacePreferences,
         version: 1,
         storage: createJSONStorage<Preferences>(() => storage),
         partialize: ({ workspaceName, compactMode }) => ({ workspaceName, compactMode }),
