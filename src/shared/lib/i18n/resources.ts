@@ -7,7 +7,26 @@ import adminKo from './locales/ko-KR/admin'
 import examplesEn from './locales/en-US/examples'
 import examplesKo from './locales/ko-KR/examples'
 
+import orderEditorEn from './locales/en-US/order-editor'
+import orderEditorKo from './locales/ko-KR/order-editor'
+import customerEditorEn from './locales/en-US/customer-editor'
+import customerEditorKo from './locales/ko-KR/customer-editor'
+
 export const resources = {
-  'en-US': { common: commonEn, workspace: workspaceEn, admin: adminEn, examples: examplesEn },
-  'ko-KR': { common: commonKo, workspace: workspaceKo, admin: adminKo, examples: examplesKo },
+  'en-US': {
+    common: commonEn,
+    workspace: workspaceEn,
+    admin: adminEn,
+    examples: examplesEn,
+    orderEditor: orderEditorEn,
+    customerEditor: customerEditorEn,
+  },
+  'ko-KR': {
+    common: commonKo,
+    workspace: workspaceKo,
+    admin: adminKo,
+    examples: examplesKo,
+    orderEditor: orderEditorKo,
+    customerEditor: customerEditorKo,
+  },
 } as const

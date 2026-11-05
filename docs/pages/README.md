@@ -7,8 +7,8 @@
 | `/`            | [Overview](overview.md)       | 워크스페이스 요약과 프로젝트 진입     |
 | `/projects`    | [Projects](projects.md)       | 프로젝트 생성·조회·편집·삭제·내보내기 |
 | `/analytics`   | [Analytics](analytics.md)     | 같은 기간의 방문 지표 비교            |
-| `/orders`      | [Orders](orders.md)           | 주문 조회와 상세 확인                 |
-| `/customers`   | [Customers](customers.md)     | 고객 조회와 프로필 확인               |
+| `/orders`      | [Orders](orders.md)           | 주문 생성·조회·편집·삭제              |
+| `/customers`   | [Customers](customers.md)     | 고객 생성·조회·편집·삭제              |
 | `/inbox`       | [Inbox](inbox.md)             | 메모리 샘플 메시지 분류와 읽기        |
 | `/settings`    | [Settings](settings.md)       | 브라우저 환경 설정                    |
 | `/components`  | [Components](components.md)   | UI 구성 요소 체험                     |

@@ -3,6 +3,10 @@ import { useQuery } from '@tanstack/react-query'
 import {
   ChevronLeft,
   ChevronRight,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
   Repeat2,
   Search,
   UserCheck,
@@ -10,7 +14,13 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { customersQueryOptions, customerStatuses, type CustomerStatus } from '@/entities/customer'
+import {
+  customersQueryOptions,
+  customerStatuses,
+  type CustomerStatus,
+  type SampleCustomer,
+} from '@/entities/customer'
+import { CustomerEditorDialog, CustomerDeleteDialog } from '@/features/customer-editor'
 import { MoneyDisplay, NumberDisplay } from '@/features/number-motion'
 import {
   useErrorMessage,
@@ -24,6 +34,12 @@ import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/shared/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/shared/ui/empty'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -57,6 +73,7 @@ interface CustomersPageProps {
 
 export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
   const { t } = useTranslation('admin')
+  const { t: editorT } = useTranslation('customerEditor')
   const errorMessage = useErrorMessage()
   const { formatNumber, formatMoney, formatDate } = useFormatters()
   const currency = useLocalePreferences((state) => state.currency)
@@ -65,6 +82,11 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
   const isLoading = customersQuery.isPending && !customersQuery.data
   const hasLoadError = customersQuery.isError && !customersQuery.data
   const { q, status, sort, page } = search
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [editingCustomer, setEditingCustomer] = useState<SampleCustomer | null>(null)
+  const [deletingCustomer, setDeletingCustomer] = useState<SampleCustomer | null>(null)
+  const actionTrigger = useRef<HTMLButtonElement | null>(null)
+  const openingCreatedDetails = useRef(false)
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const selectedCustomer = customers.find((item) => item.id === selectedCustomerId)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
@@ -88,14 +110,40 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
   const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
 
   useEffect(() => {
-    if (customersQuery.isSuccess && !customersQuery.isFetching && page > pageCount) {
+    if (
+      !isCreateOpen &&
+      !editingCustomer &&
+      !deletingCustomer &&
+      customersQuery.isSuccess &&
+      !customersQuery.isFetching &&
+      page > pageCount
+    ) {
       onSearchChange({ page: pageCount }, { replace: true })
     }
-  }, [customersQuery.isSuccess, customersQuery.isFetching, page, pageCount, onSearchChange])
+  }, [
+    customersQuery.isSuccess,
+    customersQuery.isFetching,
+    isCreateOpen,
+    editingCustomer,
+    deletingCustomer,
+    page,
+    pageCount,
+    onSearchChange,
+  ])
 
   // A refreshed response may remove the selected record; keep only valid UI selection.
   if (selectedCustomerId !== null && customersQuery.data && !selectedCustomer) {
     setSelectedCustomerId(null)
+  }
+
+  function restoreActionFocus(event: Event) {
+    event.preventDefault()
+    if (openingCreatedDetails.current) {
+      openingCreatedDetails.current = false
+      return
+    }
+    const target = actionTrigger.current?.isConnected ? actionTrigger.current : searchRef.current
+    target?.focus()
   }
 
   function resetFilters() {
@@ -136,6 +184,16 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
         title={t('customers.title')}
         description={t('customers.intro')}
         badgeLabel={t('common.sample')}
+        actions={
+          <Button
+            onClick={(event) => {
+              actionTrigger.current = event.currentTarget
+              setIsCreateOpen(true)
+            }}
+          >
+            <Plus aria-hidden="true" /> {editorT('newCustomer')}
+          </Button>
+        }
       />
 
       {customersQuery.isError && customersQuery.data && (
@@ -260,12 +318,13 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
                   }}
                 >
                   <colgroup>
-                    <col className="w-[28%]" />
+                    <col className="w-[26%]" />
                     <col className="w-[12%]" />
-                    <col className="w-[20%]" />
+                    <col className="w-[18%]" />
                     <col className="w-[10%]" />
                     <col className="w-[14%]" />
-                    <col className="w-[16%]" />
+                    <col className="w-[14%]" />
+                    <col className="w-[6%]" />
                   </colgroup>
                   <TableHeader>
                     <TableRow className="bg-muted/30 hover:bg-muted/30">
@@ -274,14 +333,17 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
                       <TableHead>{t('customers.location')}</TableHead>
                       <TableHead className="text-right">{t('customers.orders')}</TableHead>
                       <TableHead className="text-right">{t('customers.spent')}</TableHead>
-                      <TableHead className="pr-5">{t('customers.joined')}</TableHead>
+                      <TableHead>{t('customers.joined')}</TableHead>
+                      <TableHead>
+                        <span className="sr-only">{editorT('actions')}</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {isLoading
                       ? Array.from({ length: pageSize }, (_, index) => (
                           <TableRow key={index} className="h-18" aria-hidden="true">
-                            {Array.from({ length: 6 }, (_, cell) => (
+                            {Array.from({ length: 7 }, (_, cell) => (
                               <TableCell key={cell} className="px-5">
                                 <Skeleton className="h-4 w-full max-w-28" />
                               </TableCell>
@@ -333,8 +395,45 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
                             <TableCell className="text-right font-medium wrap-anywhere whitespace-normal tabular-nums">
                               {formatMoney(customer.spent / 100)}
                             </TableCell>
-                            <TableCell className="pr-5 text-muted-foreground">
+                            <TableCell className="text-muted-foreground">
                               {formatDate(customer.joined, { year: 'numeric' })}
+                            </TableCell>
+                            <TableCell className="pr-5">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-8"
+                                    aria-label={editorT('actionsLabel', { name: customer.name })}
+                                    onFocus={(event) => {
+                                      actionTrigger.current = event.currentTarget
+                                    }}
+                                    onPointerDown={(event) => {
+                                      actionTrigger.current = event.currentTarget
+                                    }}
+                                  >
+                                    <MoreHorizontal aria-hidden="true" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      setEditingCustomer(customer)
+                                    }}
+                                  >
+                                    <Pencil aria-hidden="true" /> {editorT('edit')}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    variant="destructive"
+                                    onSelect={() => {
+                                      setDeletingCustomer(customer)
+                                    }}
+                                  >
+                                    <Trash2 aria-hidden="true" /> {editorT('remove')}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -347,7 +446,7 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
                             className="h-18 hover:bg-transparent"
                             aria-hidden="true"
                           >
-                            <TableCell colSpan={6} />
+                            <TableCell colSpan={7} />
                           </TableRow>
                         ),
                       )}
@@ -449,6 +548,32 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
         </VStack>
       </Card>
 
+      <CustomerEditorDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onCloseAutoFocus={restoreActionFocus}
+        onCreated={(customer) => {
+          openingCreatedDetails.current = true
+          detailTrigger.current = actionTrigger.current
+          setSelectedCustomerId(customer.id)
+        }}
+      />
+      <CustomerEditorDialog
+        open={editingCustomer !== null}
+        customer={editingCustomer ?? undefined}
+        onOpenChange={(open) => {
+          if (!open) setEditingCustomer(null)
+        }}
+        onCloseAutoFocus={restoreActionFocus}
+      />
+      <CustomerDeleteDialog
+        open={deletingCustomer !== null}
+        customer={deletingCustomer}
+        onOpenChange={(open) => {
+          if (!open) setDeletingCustomer(null)
+        }}
+        onCloseAutoFocus={restoreActionFocus}
+      />
       <Sheet
         open={selectedCustomer !== undefined}
         onOpenChange={(open) => {
@@ -546,9 +671,11 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
                       <VStack align="stretch" className="gap-1">
                         <dt className="text-xs text-muted-foreground">{t('customers.type')}</dt>
                         <dd>
-                          {selectedCustomer.orders > 1
-                            ? t('customers.returningCustomer')
-                            : t('customers.firstTimeCustomer')}
+                          {selectedCustomer.orders === 0
+                            ? editorT('noPurchaseHistory')
+                            : selectedCustomer.orders === 1
+                              ? t('customers.firstTimeCustomer')
+                              : t('customers.returningCustomer')}
                         </dd>
                       </VStack>
                     </dl>
