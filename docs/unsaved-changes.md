@@ -10,7 +10,7 @@ Settings의 일반 설정 초안과 프로젝트·주문·고객 편집창의 �
 | 미저장 변경                          | 폐기 확인    | 취소·Escape·바깥 클릭·닫기 버튼 모두 폐기 확인 | 브라우저 기본 경고 |
 | 폼 저장 중                           | 차단         | 차단, 취소/저장 비활성화, 닫기 버튼 숨김       | 브라우저 기본 경고 |
 
-앱 내부 탐색에는 사이드바, 명령 팔레트, Router 이동, 브라우저 뒤로/앞으로가 포함됩니다. Router가 관리하는 탐색을 우회하는 `ignoreBlocker`를 입력 보호 흐름에서 사용하지 않습니다. 확인창의 **계속 편집**과 Escape는 이동을 취소하고 입력을 유지합니다. 확인창 바깥 클릭은 폐기를 승인하지 않습니다. **변경 사항 버리기**만 해당 요청을 진행하며 저장소에 초안을 쓰지 않습니다. 확인창이 열린 동안 들어오는 추가 요청은 거절해 처음 선택한 목적지를 바꾸지 않습니다. 다른 폼의 blocker를 우회하지 않습니다.
+앱 내부 탐색에는 사이드바, 명령 팔레트, Router 이동, 브라우저 뒤로/앞으로가 포함됩니다. Router가 관리하는 탐색을 우회하는 `ignoreBlocker`를 입력 보호 흐름에서 사용하지 않습니다. 확인창의 **계속 편집**과 Escape는 이동을 취소하고 입력을 유지합니다. 확인창에 초점이 들어온 직후에도 Escape를 받을 수 있도록 내용 영역의 키보드 경로에서 처리하며, 상위 편집창까지 같은 입력을 전달하지 않습니다. 확인창 바깥 클릭은 폐기를 승인하지 않습니다. **변경 사항 버리기**만 해당 요청을 진행하며 저장소에 초안을 쓰지 않습니다. 확인창이 열린 동안 들어오는 추가 요청은 거절해 처음 선택한 목적지를 바꾸지 않습니다. 다른 폼의 blocker를 우회하지 않습니다.
 
 Settings는 현재 이름·compact 값과 저장된 설정을 비교합니다. 검증 오류가 있는 입력도 보호하며, 저장·초기화 후에는 즉시 해제합니다. 외관·언어·통화는 즉시 적용되는 별도 설정이므로 일반 폼의 dirty 상태에 포함하지 않습니다. 확인 취소 시 이름 입력으로 초점을 복구하고, 외관 탭 때문에 입력이 없으면 일반 탭으로 복구해 키보드로 초안을 다시 열 수 있게 합니다.
 
@@ -33,7 +33,7 @@ ProjectEditor는 창을 연 시점의 이름·설명·상태와 입력을 비교
 - [공통 hook 테스트](../src/shared/hooks/use-unsaved-changes.test.tsx): 실제 memory router의 이동, 중복 요청, 확인 Promise 정리, 여러 blocker 보존.
 - [Settings 테스트](../src/pages/settings/ui/settings-page.test.tsx): 초안 유지/폐기, compact 변경과 원복, clean·저장·초기화 이후 이동, 숨겨진 일반 탭의 초점 복구.
 - [ProjectEditor 테스트](../src/features/project-editor/ui/project-editor-dialog.test.tsx): clean/dirty 닫기, 재진입 초기화, 원복, 실제 Query/HTTP 경계의 대기·성공·응답 손실. 저장 중 clean 폼도 이동을 막습니다.
-- [입력 보호 E2E](../e2e/unsaved-changes.spec.ts): `keeps settings drafts when navigation is cancelled and discards only on confirmation`, `protects settings against browser history and reload without trapping a saved form`, `protects project drafts for Escape, cancel, outside click and close while retaining focus`.
+- [입력 보호 E2E](../e2e/unsaved-changes.spec.ts): `keeps settings drafts when navigation is cancelled and discards only on confirmation`, `protects settings against browser history and reload without trapping a saved form`, `protects project drafts for Escape, cancel, outside click and close while retaining focus`, `handles Escape as soon as the discard prompt receives focus`.
 
 [주문·고객 E2E](../e2e/commerce.spec.ts)는 주문 편집의 폐기 취소, 고객 저장 거부와 응답 손실에서 입력 보존, 실제 HTTP 저장 후 새로고침 지속성을 검증합니다.
 
