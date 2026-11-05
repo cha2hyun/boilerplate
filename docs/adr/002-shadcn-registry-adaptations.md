@@ -12,6 +12,7 @@
 
 - registry가 추가한 `cn` 패키지 import를 기존 `@/shared/lib/utils`로 통일합니다. 이 공통 진입점은 공식 `cn`을 재공개하며 `clsx` + `tailwind-merge` 조합을 별도로 유지하지 않습니다. 클래스 조합과 전이 의존성 경계는 [UI 기본 원칙](../design/principles.md#클래스-조합)을 따릅니다.
 - 필요한 type-only import, 명시적 문자열 변환, nullish coalescing을 적용합니다.
+- Button의 기존 `link` variant는 hover 여부와 관계없이 밑줄을 표시합니다. 터치 환경에서도 텍스트 동작을 식별하도록 하는 좁은 표현 보완이며, 별도 variant나 primitive를 만들지 않습니다. DOM 의미·탭 동작과 적용 범위는 [텍스트 링크 규칙](../design/text-links.md)을 따릅니다.
 - Recharts payload의 `fill`을 `unknown`에서 검사하고 키를 문자열/숫자에서만 만듭니다. Tooltip formatter에는 Recharts 계약에 맞게 전체 payload 배열을 전달합니다.
 - Progress의 현재 값을 Radix Root에도 전달하여 `aria-valuenow`가 제공되도록 합니다.
 - `useIsMobile`은 `matchMedia`를 `useSyncExternalStore`로 구독합니다. effect 안에서 동기 setState를 하지 않으며 정리 시 구독을 해제합니다.
