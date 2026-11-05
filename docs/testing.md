@@ -58,6 +58,8 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 모든 브라우저 스펙은 `e2e/fixtures.ts`를 사용합니다. fixture는 외부 Frankfurter 요청과 Pretendard CDN 요청을 `BrowserContext.route`로 고정하여 CI가 외부 공급자 가용성에 의존하지 않도록 합니다. 실패 테스트는 같은 경로를 해당 테스트 안에서 재정의합니다. 폰트는 버전을 고정한 `pretendard` 개발 의존성의 원본 CSS·WOFF2·WOFF를 CDN URL과 CORS 헤더 그대로 응답하며, 잘못된 버전·경로는 실패합니다. 기존 workspace 검사에서 CDN stylesheet/subset 요청과 한글·영문 glyph 및 400/500/600만 로드되는지 확인합니다. 이는 CDN 가용성 검사가 아니므로 폰트 변경 시 실제 CDN의 HTTP/CORS와 원본 파일 일치를 별도로 확인합니다. 실제 앱에는 자체 호스팅 Pretendard fallback이나 환율 목업을 추가하지 않으며 개발/배포 앱은 CDN과 공개 API를 직접 호출합니다. 외부 통합 변경 때 실제 응답/CORS 확인과 단위 테스트의 스키마/오류/캐시 검증을 함께 수행합니다.
 
+외부 요청 fixture는 같은 테스트 context를 공유합니다. 종료 시 `context.unrouteAll({ behavior: 'wait' })`로 진행 중인 응답이 끝난 뒤 interception을 해제합니다. 폰트 파일을 읽는 중에 기본 `unroute`로 마지막 handler를 제거하면 요청이 먼저 계속 처리되어 뒤늦은 `fulfill`과 충돌할 수 있습니다.
+
 | Playwright project | viewport    | 입력/환경            |
 | ------------------ | ----------- | -------------------- |
 | `desktop`          | 1440 × 1000 | Chromium 데스크톱    |
