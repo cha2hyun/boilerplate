@@ -64,14 +64,10 @@ function WorkspaceSidebar() {
   const workspaceName = usePreferences((state) => state.workspaceName)
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="px-2 pt-5 pb-3">
+      <SidebarHeader className="px-2 pt-5 pb-3 md:py-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              size="lg"
-              className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center hover:bg-transparent"
-            >
+            <SidebarMenuButton asChild size="lg" className="p-0 hover:bg-transparent">
               <Link
                 to="/"
                 aria-label={t('shell.blueprintOverview', { product: product.name })}
@@ -85,7 +81,7 @@ function WorkspaceSidebar() {
                 >
                   <Boxes className="size-5" />
                 </HStack>
-                <span className="text-lg font-semibold tracking-tight group-data-[collapsible=icon]:hidden">
+                <span className="text-lg font-semibold tracking-tight transition-opacity duration-200 ease-out group-data-[collapsible=icon]:opacity-0 motion-reduce:transition-none">
                   {product.wordmark}
                   <span className="text-muted-foreground">.</span>
                 </span>
@@ -97,9 +93,16 @@ function WorkspaceSidebar() {
       <SidebarContent>
         {navigationGroups.map((group) => (
           <SidebarGroup key={group} className={group === 'resources' ? 'mt-auto' : undefined}>
-            <SidebarGroupLabel className="h-auto min-h-8 wrap-anywhere whitespace-normal">
-              {group === 'workspace' ? workspaceName : t(`navigationGroups.${group}`)}
-            </SidebarGroupLabel>
+            <div
+              data-slot="sidebar-group-label-collapse"
+              className="grid grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-out group-data-[collapsible=icon]:grid-rows-[0fr] motion-reduce:transition-none"
+            >
+              <div className="min-h-0 overflow-hidden">
+                <SidebarGroupLabel className="h-auto min-h-8 wrap-anywhere whitespace-normal md:w-[calc(var(--sidebar-width)-2rem)]">
+                  {group === 'workspace' ? workspaceName : t(`navigationGroups.${group}`)}
+                </SidebarGroupLabel>
+              </div>
+            </div>
             <SidebarGroupContent>
               <SidebarMenu>
                 {navigation
@@ -110,7 +113,7 @@ function WorkspaceSidebar() {
                         asChild
                         isActive={pathname === item.to}
                         tooltip={t(item.labelKey)}
-                        className="h-10 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
+                        className="h-10"
                       >
                         <Link
                           to={item.to}
@@ -119,7 +122,7 @@ function WorkspaceSidebar() {
                           }}
                         >
                           <item.icon />
-                          <span className="group-data-[collapsible=icon]:sr-only">
+                          <span className="transition-opacity duration-200 ease-out group-data-[collapsible=icon]:opacity-0 motion-reduce:transition-none">
                             {t(item.labelKey)}
                           </span>
                         </Link>
@@ -128,17 +131,13 @@ function WorkspaceSidebar() {
                   ))}
                 {group === 'resources' && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      tooltip={t('shell.documentation')}
-                      className="group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:justify-center"
-                    >
+                    <SidebarMenuButton asChild tooltip={t('shell.documentation')} className="h-10">
                       <a href={product.documentationUrl} target="_blank" rel="noreferrer">
                         <ExternalLink />
-                        <span className="group-data-[collapsible=icon]:sr-only">
+                        <span className="transition-opacity duration-200 ease-out group-data-[collapsible=icon]:opacity-0 motion-reduce:transition-none">
                           {t('shell.documentation')}
                         </span>
-                        <ExternalLink className="ml-auto size-3 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                        <ExternalLink className="ml-auto size-3 text-muted-foreground transition-opacity duration-200 ease-out group-data-[collapsible=icon]:opacity-0 motion-reduce:transition-none" />
                       </a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

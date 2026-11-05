@@ -1,5 +1,206 @@
 import { expect, fontCdnBaseUrl, test, type Page } from './fixtures.js'
 import { pageMetadata } from '../src/app/seo/metadata.ts'
+import { storageKeys } from '../src/shared/config/product.js'
+
+async function recordSidebarMotion(page: Page, reverse?: { atWidth: number; endWidth: number }) {
+  return page.evaluate(async (reverse) => {
+    const rail = document.querySelector<HTMLElement>('[data-slot="sidebar"][data-state]')
+    const container = rail?.querySelector<HTMLElement>('[data-slot="sidebar-container"]')
+    const gap = rail?.querySelector<HTMLElement>('[data-slot="sidebar-gap"]')
+    const inset = document.querySelector<HTMLElement>('[data-slot="sidebar-inset"]')
+    const trigger = document.querySelector<HTMLButtonElement>('[data-sidebar="trigger"]')
+    if (!rail || !container || !gap || !inset || !trigger) {
+      throw new Error('The desktop sidebar geometry is missing.')
+    }
+    const groups = [...rail.querySelectorAll('[data-slot="sidebar-group"]')]
+    const buttons = [
+      ...rail.querySelectorAll<HTMLAnchorElement>('[data-slot="sidebar-menu-button"]'),
+    ]
+    const read = () => ({
+      state: rail.dataset.state,
+      width: container.getBoundingClientRect().width,
+      gap: gap.getBoundingClientRect().width,
+      insetLeft: inset.getBoundingClientRect().left,
+      labels: [...rail.querySelectorAll('[data-slot="sidebar-group-label"]')].map(
+        (label) => label.getBoundingClientRect().height,
+      ),
+      icons: buttons.map((button) => {
+        const icon = button.querySelector('svg')
+        if (!icon) throw new Error('A sidebar navigation icon is missing.')
+        const box = icon.getBoundingClientRect()
+        const row = button.getBoundingClientRect()
+        return {
+          href: button.getAttribute('href'),
+          group: groups.indexOf(button.closest('[data-slot="sidebar-group"]')!),
+          x: box.x + box.width / 2,
+          y: box.y + box.height / 2,
+          rowHeight: row.height,
+          centered: Math.abs(box.y + box.height / 2 - row.y - row.height / 2),
+        }
+      }),
+    })
+    const running = () =>
+      [...rail.getAnimations({ subtree: true }), ...inset.getAnimations()].some(
+        (animation) => animation.pending || animation.playState === 'running',
+      )
+    const frames = [read()]
+    const start = frames[0]!
+    let expectedState = start.state === 'expanded' ? 'collapsed' : 'expanded'
+    let reversedAt: number | null = null
+    trigger.click()
+    // Capture actual browser frames; CSS owns the duration and its cancellation on reversal.
+    while (true) {
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
+      const frame = read()
+      frames.push(frame)
+      const active = running()
+      if (
+        reverse !== undefined &&
+        reversedAt === null &&
+        active &&
+        frame.width <= reverse.atWidth &&
+        frame.width > reverse.endWidth + 0.5 &&
+        frame.width < start.width - 0.5
+      ) {
+        reversedAt = frames.length - 1
+        expectedState = start.state!
+        trigger.click()
+        continue
+      }
+      if (frame.state === expectedState && !active) break
+    }
+    return { frames, reversedAt }
+  }, reverse)
+}
+
+type SidebarMotionFrame = Awaited<ReturnType<typeof recordSidebarMotion>>['frames'][number]
+
+function expectSidebarMotionPath(frames: SidebarMotionFrame[]) {
+  const first = frames[0]!
+  const last = frames.at(-1)!
+  const expectMonotonic = (values: number[], name: string) => {
+    const start = values[0]!
+    const end = values.at(-1)!
+    const direction = Math.sign(end - start)
+    let furthest = 0
+    for (const value of values) {
+      expect(value, `${name}: lower endpoint`).toBeGreaterThanOrEqual(Math.min(start, end) - 0.5)
+      expect(value, `${name}: upper endpoint`).toBeLessThanOrEqual(Math.max(start, end) + 0.5)
+      const progress = (value - start) * direction
+      expect(progress, `${name}: must not reverse direction`).toBeGreaterThanOrEqual(furthest - 0.5)
+      furthest = Math.max(furthest, progress)
+    }
+  }
+  for (const property of ['width', 'gap', 'insetLeft'] as const) {
+    expectMonotonic(
+      frames.map((frame) => frame[property]),
+      property,
+    )
+  }
+  for (const [index, icon] of first.icons.entries()) {
+    expectMonotonic(
+      frames.map((frame) => frame.icons[index]!.y),
+      `${icon.href} icon y`,
+    )
+  }
+  expect(first.icons.map(({ href }) => href)).toEqual(last.icons.map(({ href }) => href))
+}
+
+test('keeps sidebar icons and row spacing stable through collapse, expand, and reversal', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === 'mobile', 'The mobile sidebar uses a separate modal sheet.')
+  const workspaceName = 'W'.repeat(40)
+  await page.addInitScript(
+    ({ key, workspaceName }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({ state: { workspaceName, compactMode: false }, version: 1 }),
+      )
+    },
+    { key: storageKeys.workspacePreferences, workspaceName },
+  )
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/projects')
+  await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
+  await expect(page.locator('#main-content [data-number-state="running"]')).toHaveCount(0)
+  await page.evaluate(() => document.fonts.ready)
+  const rail = page.locator('[data-slot="sidebar"][data-state]')
+  const trigger = page.locator('[data-sidebar="trigger"]')
+  if ((await rail.getAttribute('data-state')) === 'collapsed') await trigger.click()
+  await expect(rail).toHaveAttribute('data-state', 'expanded')
+  await rail.locator('[data-slot="sidebar-content"]').evaluate((content) => {
+    content.scrollTop = 0
+  })
+  const label = rail.locator('[data-slot="sidebar-group-label"]').filter({ hasText: workspaceName })
+  await expect(label).toHaveText(workspaceName)
+  const fullLabel = await label.evaluate((element) => {
+    const range = document.createRange()
+    range.selectNodeContents(element)
+    const text = range.getBoundingClientRect()
+    const clip = element.parentElement!.getBoundingClientRect()
+    return {
+      lines: range.getClientRects().length,
+      overflowX: element.scrollWidth - element.clientWidth,
+      clipped: Math.max(clip.top - text.top, text.bottom - clip.bottom),
+    }
+  })
+  expect(fullLabel.lines).toBeGreaterThan(1)
+  expect(fullLabel.overflowX).toBeLessThanOrEqual(0.5)
+  expect(fullLabel.clipped).toBeLessThanOrEqual(0.5)
+  await trigger.focus()
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+
+  const collapse = await recordSidebarMotion(page)
+  const expand = await recordSidebarMotion(page)
+  const expanded = collapse.frames[0]!
+  const collapsed = collapse.frames.at(-1)!
+  const middleWidth = (expanded.width + collapsed.width) / 2
+  const reversal = await recordSidebarMotion(page, {
+    atWidth: middleWidth,
+    endWidth: collapsed.width,
+  })
+  await testInfo.attach('sidebar-motion-frames', {
+    body: JSON.stringify({ collapse, expand, reversal }),
+    contentType: 'application/json',
+  })
+  for (const motion of [collapse, expand, reversal]) {
+    expect(
+      motion.frames.some(
+        (frame) => frame.width > collapsed.width + 0.5 && frame.width < expanded.width - 0.5,
+      ),
+    ).toBe(true)
+    for (const frame of motion.frames) {
+      for (const [index, height] of frame.labels.entries()) {
+        expect(Math.abs(height - expanded.labels[index]!)).toBeLessThanOrEqual(0.5)
+      }
+      for (const [index, icon] of frame.icons.entries()) {
+        expect(Math.abs(icon.x - 32), `${icon.href} icon x`).toBeLessThanOrEqual(0.5)
+        expect(icon.centered, `${icon.href} vertical center`).toBeLessThanOrEqual(0.5)
+        expect(icon.rowHeight, `${icon.href} row height`).toBe(icon.group === -1 ? 48 : 40)
+        const previous = frame.icons[index - 1]
+        if (previous && previous.group === icon.group) {
+          const initialGap = expanded.icons[index]!.y - expanded.icons[index - 1]!.y
+          expect(
+            Math.abs(icon.y - previous.y - initialGap),
+            `${icon.href} row spacing`,
+          ).toBeLessThanOrEqual(0.5)
+        }
+      }
+    }
+  }
+  expectSidebarMotionPath(collapse.frames)
+  expectSidebarMotionPath(expand.frames)
+  expect(reversal.reversedAt).not.toBeNull()
+  const reversedAt = reversal.reversedAt!
+  expectSidebarMotionPath(reversal.frames.slice(0, reversedAt + 1))
+  expectSidebarMotionPath(reversal.frames.slice(reversedAt))
+  await expect(rail).toHaveAttribute('data-state', 'expanded')
+  for (const [index, icon] of reversal.frames.at(-1)!.icons.entries()) {
+    expect(Math.abs(icon.y - expanded.icons[index]!.y)).toBeLessThanOrEqual(0.5)
+  }
+  await expect(trigger).toBeFocused()
+})
 
 test('preloads the Orders route on intent and reuses it while restoring detail history', async ({
   page,
