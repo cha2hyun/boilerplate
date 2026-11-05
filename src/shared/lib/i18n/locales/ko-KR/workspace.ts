@@ -197,9 +197,6 @@ const workspace = {
   shell: {
     blueprintOverview: 'Blueprint 개요',
     documentation: '문서',
-    workspaceSettings: '워크스페이스 설정',
-    yourWorkspace: '내 워크스페이스',
-    makeItYours: '내게 맞게 설정하세요',
     notFound: '페이지를 찾을 수 없습니다',
     skip: '본문으로 건너뛰기',
     searchWorkspace: '워크스페이스 검색',
