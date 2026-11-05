@@ -103,6 +103,8 @@ main에는 `CI Gate`와 `Conventional PR title`을 GitHub Actions 제공 필수 
 
 `core`의 `e2e/design-visual.spec.ts`는 대표 KPI/표/폼 조합의 기준 이미지를 비교하고, 작은 텍스트에 사용하는 불투명 토큰 쌍의 light/dark 대비를 확인합니다. `e2e/accessibility.spec.ts`는 키보드 대화상자/폼 오류 연결, 실행 중 reduced-motion 변경, 모바일 200% 글자 확대에서 핵심 행동 도달 여부를 검사합니다. 세부 범위와 한계는 [접근성](design/accessibility.md), 이미지 검토·갱신은 [시각 회귀](design/visual-regression.md)가 소유합니다.
 
+Sidebar 공간 전환은 `workspace.spec.ts`의 desktop/tablet 회귀가 실제 `requestAnimationFrame`으로 측정합니다. 40자 워크스페이스 이름의 펼친 전체 표시를 유지하고, 접기·펼치기·중간 반전에서 아이콘 X 정렬, Y의 끝점 범위와 단조 이동, 그룹 안의 행 간격, sidebar gap과 본문 위치를 확인합니다. 중간 너비가 실제로 관측돼야 하며 CSS 전환 시간을 복제한 고정 sleep이나 애니메이션을 끈 스크린샷으로 대신하지 않습니다. `accessibility.spec.ts`는 진행 중인 Sidebar 전환에서 reduced motion을 켰을 때 최종 위치로 정착하고 초점을 유지하는지도 확인합니다. 프레임 기록은 실패 분석용 첨부 자료이며 렌더링 FPS나 모든 기기의 성능 보증은 아닙니다.
+
 브라우저 runner는 `ubuntu-24.04`, 브라우저 버전은 lockfile로 고정합니다. 기준은 같은 Linux 환경에서 검토한 PNG만 사용하며 자동 갱신하지 않습니다. 새 브라우저 job·중복 빌드는 추가하지 않습니다. 전체 언어·테마·화면 조합이나 보조기술 준수 전체를 증명하는 검사는 아닙니다.
 
 문서만 바뀌어도 changes job이 `node scripts/check-page-specs.mjs`를 실행합니다. 의존성을 설치하지 않으며 필수 항목/경로의 구조를 검사합니다. 자연어 기획과 구현의 의미가 같은지는 해당 코드·행동 테스트·리뷰가 확인합니다.

@@ -41,7 +41,7 @@ PageHeader → 일반/외관 탭입니다. 일반에는 이름 입력·compact �
 - 임시 상태: [화면](../../src/pages/settings/ui/settings-page.tsx)의 이름·밀도 초안과 오류, Tabs의 선택. 이름과 밀도의 기본값은 store만 소유합니다.
 - 탐색 보호: [공통 hook](../../src/shared/hooks/use-unsaved-changes.ts)과 [AlertDialog 조합](../../src/shared/ui/unsaved-changes-dialog.tsx). Router가 앱 이동과 브라우저 종료 경고 등록을 소유합니다.
 
-저장한 워크스페이스 이름은 [앱 셸](../../src/widgets/app-shell/ui/app-shell.tsx)의 첫 탐색 그룹 제목에 즉시 반영됩니다. 접힌 탐색 레일에서는 그룹 제목을 숨기며, 펼치거나 모바일 탐색을 열면 같은 이름을 확인합니다. 하단 프로필·전환 블록은 추가하지 않습니다.
+저장한 워크스페이스 이름은 [앱 셸](../../src/widgets/app-shell/ui/app-shell.tsx)의 첫 탐색 그룹 제목에 즉시 반영됩니다. 접힌 탐색 레일에서는 그룹 제목과 그 공간을 함께 접으며, 펼치거나 모바일 탐색을 열면 긴 이름도 줄바꿈해 전체를 확인합니다. 전환 중에는 이름의 줄바꿈 폭을 유지하여 숨은 문구가 메뉴를 밀어내지 않습니다. 아이콘 기준선·행 높이와 빠른 반전·움직임 줄이기는 [사이드바 모션 계약](../design/motion.md)을 따릅니다. 하단 프로필·전환 블록은 추가하지 않습니다.
 
 ## 수용 기준
 

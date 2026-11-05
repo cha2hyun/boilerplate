@@ -149,6 +149,69 @@ test('honors live reduced motion for overlays, loading feedback, and spatial tra
   await expect(confirmation).toBeHidden()
 
   const sidebarTrigger = page.locator('[data-sidebar="trigger"]')
+  const desktopMotion =
+    (viewport?.width ?? 1440) >= 768
+      ? await page.evaluateHandle(() => {
+          const rail = document.querySelector<HTMLElement>('[data-slot="sidebar"][data-state]')!
+          const container = rail.querySelector<HTMLElement>('[data-slot="sidebar-container"]')!
+          const gap = rail.querySelector<HTMLElement>('[data-slot="sidebar-gap"]')!
+          const inset = document.querySelector<HTMLElement>('[data-slot="sidebar-inset"]')!
+          const trigger = document.querySelector<HTMLButtonElement>('[data-sidebar="trigger"]')!
+          const media = matchMedia('(prefers-reduced-motion: reduce)')
+          const read = () => ({
+            state: rail.dataset.state,
+            width: container.getBoundingClientRect().width,
+            gap: gap.getBoundingClientRect().width,
+            insetLeft: inset.getBoundingClientRect().left,
+            icons: [...rail.querySelectorAll('[data-slot="sidebar-menu-button"]')].map((button) => {
+              const box = button.querySelector('svg')!.getBoundingClientRect()
+              return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+            }),
+            active: [...rail.getAnimations({ subtree: true }), ...inset.getAnimations()].filter(
+              (animation) => animation.pending || animation.playState === 'running',
+            ).length,
+          })
+          const target = read()
+          return {
+            start() {
+              const initial = read()
+              let previous = initial
+              let changed = false
+              let resolveMiddle: (frame: ReturnType<typeof read>) => void
+              const middle = new Promise<ReturnType<typeof read>>((resolve) => {
+                resolveMiddle = resolve
+              })
+              const reduced = new Promise<{
+                before: ReturnType<typeof read>
+                after: ReturnType<typeof read>
+                target: ReturnType<typeof read>
+              }>((resolve) => {
+                const onReduce = (event: MediaQueryListEvent) => {
+                  if (!event.matches) return
+                  media.removeEventListener('change', onReduce)
+                  changed = true
+                  const before = previous
+                  requestAnimationFrame(() => resolve({ before, after: read(), target }))
+                }
+                media.addEventListener('change', onReduce)
+              })
+              const sample = () => {
+                if (changed) return
+                previous = read()
+                const interior =
+                  previous.width > Math.min(initial.width, target.width) + 0.5 &&
+                  previous.width < Math.max(initial.width, target.width) - 0.5
+                if (interior || (previous.state === target.state && previous.active === 0))
+                  resolveMiddle(previous)
+                requestAnimationFrame(sample)
+              }
+              trigger.click()
+              requestAnimationFrame(sample)
+              return { initial, middle, reduced }
+            },
+          }
+        })
+      : undefined
   await sidebarTrigger.click()
   if ((viewport?.width ?? 1440) < 768) {
     const sidebar = page.getByRole('dialog', { name: 'Sidebar', exact: true })
@@ -164,6 +227,34 @@ test('honors live reduced motion for overlays, loading feedback, and spatial tra
       'none',
     )
     await expect(page.locator('[data-slot="sidebar-gap"]')).toHaveCSS('transition-property', 'none')
+    // Reverse from the reduced-motion endpoint, then change the preference while width is moving.
+    await page.emulateMedia({ reducedMotion: 'no-preference' })
+    const transition = await desktopMotion!.evaluateHandle((motion) => motion.start())
+    const middle = await transition.evaluate(async (motion) => motion.middle)
+    expect(middle.active).toBeGreaterThan(0)
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const interrupted = await transition.evaluate(async (motion) => motion.reduced)
+    const initial = await transition.evaluate((motion) => motion.initial)
+    expect(interrupted.before.width).toBeGreaterThan(
+      Math.min(initial.width, interrupted.target.width) + 0.5,
+    )
+    expect(interrupted.before.width).toBeLessThan(
+      Math.max(initial.width, interrupted.target.width) - 0.5,
+    )
+    expect(interrupted.after.active).toBe(0)
+    expect(interrupted.after.state).toBe(interrupted.target.state)
+    for (const property of ['width', 'gap', 'insetLeft'] as const) {
+      expect(
+        Math.abs(interrupted.after[property] - interrupted.target[property]),
+      ).toBeLessThanOrEqual(0.5)
+    }
+    for (const [index, icon] of interrupted.after.icons.entries()) {
+      expect(Math.abs(icon.x - interrupted.target.icons[index]!.x)).toBeLessThanOrEqual(0.5)
+      expect(Math.abs(icon.y - interrupted.target.icons[index]!.y)).toBeLessThanOrEqual(0.5)
+    }
+    await expect(sidebarTrigger).toBeFocused()
+    await transition.dispose()
+    await desktopMotion!.dispose()
   }
 })
 
