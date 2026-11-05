@@ -6,6 +6,7 @@ React + TypeScript + Vite + pnpm 프런트엔드입니다. 현재 데이터/워�
 
 1. 요청의 완료 조건, `git status --short`, 관련 코드를 확인하고 다른 변경을 보존하세요.
 2. [README](README.md), [아키텍처](docs/architecture.md), [문서 지도](docs/README.md)에서 작업에 필요한 문서만 선택하세요. UI는 [디자인 시스템 인덱스](docs/design-system.md)에서 해당 주제로 이동합니다. 상세 규칙을 이 파일에 모으지 마세요.
+   페이지 목적·행동·상태를 바꿀 때는 [페이지 기획 명세](docs/pages/README.md)의 해당 문서를 함께 갱신하고 소유 코드·수용 기준에 연결하세요.
 3. 여러 레이어/API/저장 계약이 바뀌는 작업만 [계획 템플릿](docs/plans/_template.md)을 사용하세요. 패키지/lockfile이 실행 환경의 기준이며 pnpm만 사용합니다.
 4. 작업 시작과 완료 때 열린 Dependabot PR과 최신 원격 SHA의 Actions를 확인하고 [의존성 유지보수](docs/dependency-maintenance.md)의 처리·보류·최종 main 검증 기준을 따르세요.
 
@@ -16,6 +17,7 @@ React + TypeScript + Vite + pnpm 프런트엔드입니다. 현재 데이터/워�
 - UI는 설치된 shadcn, lucide, Tailwind 의미 토큰, Pretendard 400/500/600을 사용합니다. 새 custom primitive나 UI 프레임워크 의존성을 추가하지 마세요. 행·열 배치는 중앙 정렬을 기본으로 하는 HStack/VStack을 사용하며 [레이아웃 규칙](docs/design/layout.md)을 따릅니다. 승인된 TextLink 조합은 [링크 규칙](docs/design/text-links.md)을 따릅니다. CSS는 `src/app/styles/globals.css`만 사용하며 neutral primary와 brand를 구분합니다.
 - 화면의 수량·통화·비율은 [숫자 표시](docs/number-formatting.md), 번역·환경 설정·실제 환율 변환은 [언어와 표시 통화](docs/i18n.md)의 공통 계약을 따릅니다.
 - 모든 페이지의 제목·설명·헤더 칩은 공통 PageHeader와 [페이지 헤더 규칙](docs/design/page-headers.md)을 사용합니다. 페이지마다 제목/칩 스타일을 재정의하지 마세요.
+- 상단 KPI는 MetricCard, 페이지 간격과 목록·폼 배치는 [공통 조합](docs/design/compositions.md)을 따릅니다. 긴 값은 [전체 표시 규칙](docs/design/content-overflow.md)을 확인하세요.
 - 로딩·오류/재시도·빈 결과·키보드·세 화면 구간을 함께 다루세요. [로딩과 모션](docs/loading-and-motion.md)의 단일 계약을 따르고 접근 가능한 이름과 초점 흐름을 보존합니다.
 
 ## 검증과 완료

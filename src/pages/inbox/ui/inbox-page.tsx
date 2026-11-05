@@ -119,7 +119,7 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
   }
 
   return (
-    <VStack align="stretch" className="gap-6">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('inbox.title')}
         description={t('inbox.intro')}
@@ -313,7 +313,7 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
                         id="message-subject"
                         ref={detailHeadingRef}
                         tabIndex={-1}
-                        className="text-xl leading-snug font-semibold tracking-tight outline-none"
+                        className="text-xl leading-snug font-semibold tracking-tight wrap-anywhere outline-none"
                       >
                         {selected.subject}
                       </h2>
@@ -322,8 +322,10 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
                           <AvatarFallback className="text-xs">{selected.initials}</AvatarFallback>
                         </Avatar>
                         <VStack align="stretch" className="min-w-0 flex-1">
-                          <p className="text-sm font-medium">{selected.sender}</p>
-                          <p className="truncate text-xs text-muted-foreground">{selected.email}</p>
+                          <p className="text-sm font-medium wrap-anywhere">{selected.sender}</p>
+                          <p className="text-xs wrap-anywhere text-muted-foreground">
+                            {selected.email}
+                          </p>
                         </VStack>
                         <time dateTime={selected.date} className="text-xs text-muted-foreground">
                           {formatDate(selected.date, { year: 'numeric' })}
@@ -333,7 +335,9 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
                     <Separator />
                     <VStack align="stretch" className="gap-5 p-5 text-sm leading-7 xl:p-6">
                       {selected.body.map((paragraph) => (
-                        <p key={paragraph}>{paragraph}</p>
+                        <p key={paragraph} className="wrap-anywhere">
+                          {paragraph}
+                        </p>
                       ))}
                     </VStack>
                     <div className="mt-auto border-t p-5 text-xs text-muted-foreground xl:px-6">

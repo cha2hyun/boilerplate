@@ -5,6 +5,7 @@ import {
   Check,
   CircleAlert,
   Folder,
+  Gauge,
   Globe,
   Inbox,
   LayoutDashboard,
@@ -20,6 +21,7 @@ import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/ui/page-header'
+import { MetricCard } from '@/shared/ui/metric-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
@@ -452,19 +454,18 @@ function FeedbackExamples() {
         </CardHeader>
         <VStack asChild align="stretch" className="gap-5">
           <CardContent>
-            <div className="rounded-lg border p-5">
-              <p className="text-sm text-muted-foreground">
-                {numberStyle === 'decimal'
+            <MetricCard
+              label={
+                numberStyle === 'decimal'
                   ? t('foundations.decimalSample')
-                  : t('foundations.currencySample', { currency: numberStyle })}
-              </p>
-              <HStack className="mt-2 h-9 text-3xl font-semibold tracking-tight">
-                <NumberDisplay key={replay} value={value} format={format} animate={animate} />
-              </HStack>
-              <p className="mt-2 text-xs text-muted-foreground">
-                {t('foundations.originalValue', { value: formatNumber(value) })}
-              </p>
-            </div>
+                  : t('foundations.currencySample', { currency: numberStyle })
+              }
+              icon={Gauge}
+              value={
+                <NumberDisplay key={replay} wrap value={value} format={format} animate={animate} />
+              }
+              footer={t('foundations.originalValue', { value: formatNumber(value) })}
+            />
             <VStack align="stretch" className="gap-2">
               <Label htmlFor="foundation-number-style">{t('foundations.numberFormat')}</Label>
               <Select value={numberStyle} onValueChange={setNumberStyle}>
@@ -610,7 +611,7 @@ function FeedbackExamples() {
 export function FoundationsPage() {
   const { t } = useTranslation('examples')
   return (
-    <VStack align="stretch" className="min-w-0 gap-7">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('foundations.title')}
         description={t('foundations.description')}

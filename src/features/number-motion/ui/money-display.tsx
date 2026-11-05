@@ -7,6 +7,7 @@ interface MoneyDisplayProps {
   value: number | null | undefined
   format?: MoneyFormatOptions
   animate?: boolean
+  wrap?: boolean
   className?: string
 }
 

@@ -140,7 +140,7 @@ function ProjectForm({
           )}
         </VStack>
         <VStack align="stretch" className="gap-2">
-          <Label htmlFor={`${formId}-description`}>
+          <Label htmlFor={`${formId}-description`} className="flex-wrap">
             {t('editor.description')}{' '}
             <span className="font-normal text-muted-foreground">{t('editor.optional')}</span>
           </Label>
@@ -219,7 +219,12 @@ function ProjectForm({
             {t('common.cancel')}
           </Button>
           <Button type="submit" disabled={isPending}>
-            {isPending && <LoaderCircle className="animate-spin" aria-hidden="true" />}
+            {isPending && (
+              <LoaderCircle
+                className="animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
+            )}
             {t(isPending ? 'editor.saving' : project ? 'common.save' : 'editor.create')}
           </Button>
         </DialogFooter>

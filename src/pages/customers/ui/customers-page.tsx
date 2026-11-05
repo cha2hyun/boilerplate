@@ -28,6 +28,7 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/ui/page-header'
+import { MetricCard } from '@/shared/ui/metric-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
@@ -130,7 +131,7 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
   ]
 
   return (
-    <VStack align="stretch" className="min-w-0 gap-6">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('customers.title')}
         description={t('customers.intro')}
@@ -151,33 +152,20 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summaries.map(({ title, value, description, Icon }) => (
-          <Card
+          <MetricCard
             key={title}
-            className="gap-3 py-5 shadow-none"
-            aria-label={title}
-            aria-busy={isLoading}
-          >
-            <HStack asChild justify="between" className="px-5">
-              <CardHeader>
-                <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-                <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
-              </CardHeader>
-            </HStack>
-            <VStack asChild align="stretch" className="gap-1 px-5">
-              <CardContent>
-                <HStack className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-16" />
-                  ) : customersQuery.data ? (
-                    <NumberDisplay animate value={value} format={countFormat} />
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </HStack>
-                <p className="text-xs text-muted-foreground">{description}</p>
-              </CardContent>
-            </VStack>
-          </Card>
+            label={title}
+            icon={Icon}
+            loading={isLoading}
+            value={
+              customersQuery.data ? (
+                <NumberDisplay animate wrap value={value} format={countFormat} />
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )
+            }
+            footer={description}
+          />
         ))}
       </div>
 
@@ -259,13 +247,18 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
               )}
             </HStack>
             {isLoading || visibleCustomers.length ? (
-              <div
-                role="region"
-                aria-label={t('customers.table')}
-                aria-busy={isLoading}
-                className="h-120 min-w-0 border-y"
-              >
-                <Table className="min-w-200 table-fixed">
+              <div className="h-120 min-w-0 border-y">
+                <Table
+                  className="min-w-200 table-fixed"
+                  containerProps={{
+                    role: 'region',
+                    'aria-label': t('customers.table'),
+                    'aria-busy': isLoading,
+                    tabIndex: 0,
+                    className:
+                      'h-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
+                  }}
+                >
                   <colgroup>
                     <col className="w-[28%]" />
                     <col className="w-[12%]" />
@@ -334,10 +327,10 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
                             <TableCell className="text-muted-foreground">
                               {customer.country}
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">
+                            <TableCell className="text-right wrap-anywhere whitespace-normal tabular-nums">
                               {formatNumber(customer.orders)}
                             </TableCell>
-                            <TableCell className="text-right font-medium tabular-nums">
+                            <TableCell className="text-right font-medium wrap-anywhere whitespace-normal tabular-nums">
                               {formatMoney(customer.spent / 100)}
                             </TableCell>
                             <TableCell className="pr-5 text-muted-foreground">
@@ -473,7 +466,7 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
           }}
         >
           <SheetHeader className="border-b p-6 pr-12">
-            <SheetTitle className="break-words">
+            <SheetTitle className="wrap-anywhere">
               {selectedCustomer?.name ?? t('customers.details')}
             </SheetTitle>
             <SheetDescription>
@@ -483,37 +476,45 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
             </SheetDescription>
           </SheetHeader>
           {selectedCustomer && (
-            <VStack align="stretch" className="@container/customer-details gap-6 px-6 pb-6 text-sm">
+            <VStack
+              align="stretch"
+              className="@container/customer-details min-w-0 gap-6 px-6 pb-6 text-sm wrap-anywhere"
+            >
               <HStack className="gap-3">
-                <Avatar className="size-12">
+                <Avatar className="size-12 shrink-0">
                   <AvatarFallback className="font-medium">
                     {selectedCustomer.initials}
                   </AvatarFallback>
                 </Avatar>
                 <VStack align="start" className="min-w-0 gap-1.5">
-                  <p className="break-all text-muted-foreground">{selectedCustomer.email}</p>
+                  <p className="wrap-anywhere text-muted-foreground">{selectedCustomer.email}</p>
                   <CustomerStatusBadge status={selectedCustomer.status} />
                 </VStack>
               </HStack>
               <div className="grid grid-cols-1 gap-3 @xs/customer-details:grid-cols-2">
-                <Card className="gap-2 py-4 shadow-none">
+                <Card className="min-w-0 gap-2 py-4 shadow-none">
                   <CardHeader className="px-4">
                     <CardTitle className="text-xs font-normal text-muted-foreground">
                       {t('customers.lifetimeOrders')}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-2xl font-semibold tabular-nums">
-                    <NumberDisplay animate value={selectedCustomer.orders} format={countFormat} />
+                    <NumberDisplay
+                      animate
+                      wrap
+                      value={selectedCustomer.orders}
+                      format={countFormat}
+                    />
                   </CardContent>
                 </Card>
-                <Card className="gap-2 py-4 shadow-none">
+                <Card className="min-w-0 gap-2 py-4 shadow-none">
                   <CardHeader className="px-4">
                     <CardTitle className="text-xs font-normal text-muted-foreground">
                       {t('customers.currencySpent', { currency })}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="px-4 text-xl font-semibold tabular-nums">
-                    <MoneyDisplay animate value={selectedCustomer.spent / 100} />
+                    <MoneyDisplay animate wrap value={selectedCustomer.spent / 100} />
                   </CardContent>
                 </Card>
               </div>

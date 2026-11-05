@@ -7,6 +7,7 @@
 | 명령                    | 범위                                                              | 기본 실행 위치      |
 | ----------------------- | ----------------------------------------------------------------- | ------------------- |
 | `pnpm check`            | 포맷, ESLint, 타입, FSD/UI/토큰 및 단위/E2E 범주 정적 검사        | 로컬                |
+| `pnpm check:page-specs` | 페이지 기획 누락·중복·필수 섹션·로컬 링크 정적 검사               | 로컬 / 문서 전용 CI |
 | `pnpm check:ci`         | 정적 검사 + 가드레일 테스트 + 전체 단위 테스트 + production build | Actions quality job |
 | `pnpm test:unit`        | 전체 Vitest 범주                                                  | Actions             |
 | `pnpm test:guardrails`  | 아키텍처 검사기, 경로별 HTML, E2E 범주 회귀 테스트                | Actions             |
@@ -84,6 +85,14 @@ PR 제목은 별도 `PR Title` workflow가 opened/edited/synchronize/reopened에
 수동 `workflow_dispatch`에서는 `all`, `core`, `samples`를 선택합니다. 품질/단위/build는 항상 실행하고 선택한 브라우저 범주만 뒤따릅니다. 최종 이름은 `Manual CI result`이며 PR의 필수 `CI Gate`와 구분합니다.
 
 main에는 `CI Gate`와 `Conventional PR title`을 GitHub Actions 제공 필수 검사로 설정합니다. workflow 자체에는 경로 필터를 두지 않아 문서 PR에도 gate가 존재합니다. 포크에는 원격 보호 설정이 자동 적용되지 않으므로 [설정·검증 절차](ci-gate.md#포크-후-설정)를 따릅니다.
+
+## 디자인·접근성 회귀
+
+`core`의 `e2e/design-visual.spec.ts`는 대표 KPI/표/폼 조합의 기준 이미지를 비교하고, 작은 텍스트에 사용하는 불투명 토큰 쌍의 light/dark 대비를 확인합니다. `e2e/accessibility.spec.ts`는 키보드 대화상자/폼 오류 연결, 실행 중 reduced-motion 변경, 모바일 200% 글자 확대에서 핵심 행동 도달 여부를 검사합니다. 세부 범위와 한계는 [접근성](design/accessibility.md), 이미지 검토·갱신은 [시각 회귀](design/visual-regression.md)가 소유합니다.
+
+브라우저 runner는 `ubuntu-24.04`, 브라우저 버전은 lockfile로 고정합니다. 기준은 같은 Linux 환경에서 검토한 PNG만 사용하며 자동 갱신하지 않습니다. 새 브라우저 job·중복 빌드는 추가하지 않습니다. 전체 언어·테마·화면 조합이나 보조기술 준수 전체를 증명하는 검사는 아닙니다.
+
+문서만 바뀌어도 changes job이 `node scripts/check-page-specs.mjs`를 실행합니다. 의존성을 설치하지 않으며 필수 항목/경로의 구조를 검사합니다. 자연어 기획과 구현의 의미가 같은지는 해당 코드·행동 테스트·리뷰가 확인합니다.
 
 ## 선택 실행: Lighthouse
 

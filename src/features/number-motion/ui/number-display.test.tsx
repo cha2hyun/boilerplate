@@ -147,6 +147,33 @@ describe('NumberDisplay', () => {
     expect(vi.getTimerCount()).toBe(0)
   })
 
+  it('keeps the complete accessible value and original deadline when wrapping changes', () => {
+    const value = 1234567890.5
+    const { container, rerender } = render(
+      <NumberDisplay animate value={value} format={currencyFormat} />,
+    )
+    advanceTime(150, true)
+    const currentText = visualNumber(container).textContent
+    const reservations = [...container.querySelectorAll('.invisible')].map(
+      (element) => element.textContent,
+    )
+
+    rerender(<NumberDisplay animate wrap value={value} format={currencyFormat} />)
+    expect(visualNumber(container).textContent).toBe(currentText)
+    expect(accessibleNumber(container)).toHaveTextContent('$1,234,567,890.50')
+    expect(
+      [...container.querySelectorAll('.invisible')].map((element) => element.textContent),
+    ).toEqual(reservations)
+    advanceTime(150)
+    expect(visualNumber(container)).toHaveTextContent('$1,234,567,890.50')
+    expect(container.querySelector('[data-number-state]')).toHaveAttribute(
+      'data-number-state',
+      'idle',
+    )
+    expect(frames.size).toBe(0)
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
   it('stops immediately when disabled and starts a fresh transition when enabled', () => {
     const { container, rerender } = render(
       <NumberDisplay animate value={100400} format={{ notation: 'compact' }} />,

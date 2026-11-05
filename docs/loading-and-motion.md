@@ -6,7 +6,7 @@
 
 스켈레톤이 나타나거나 사라져도 **Card의 width/height가 바뀌지 않아야 합니다**. 성공 Card를 대략 비슷한 높이의 Skeleton 하나로 교체하지 않습니다. 같은 Card/Header/Content/Footer, grid 열, padding, gap, border를 유지하고 내용 슬롯만 바꿉니다.
 
-- KPI 레이블/설명/아이콘을 유지하고 수치 행의 높이를 고정합니다. 현재 주요 수치 슬롯은 `h-9`입니다.
+- KPI 레이블/설명/아이콘을 유지하고 `MetricCard`의 같은 수치 프레임을 사용합니다. 공통 최소 카드 높이는 192px, 수치 슬롯은 `min-h-18`(72px), footer는 `min-h-8`(32px)로 두 줄을 예약합니다. 일반 USD/KRW 샘플의 로딩/성공 치수를 유지하며 예약 영역보다 긴 예외 데이터는 잘리지 않도록 확장합니다. 상세 기준은 [화면 조합](design/compositions.md)과 [긴 콘텐츠](design/content-overflow.md)가 소유합니다.
 - 차트는 같은 높이의 프레임 안에서 Skeleton/차트/빈 상태/오류를 전환합니다.
 - 표는 열 구성·너비·행 높이·페이지 영역을 예약합니다. 데이터가 적거나 오류가 있어도 바깥 Card가 접히지 않게 고정 viewport 안에 empty/error 콘텐츠를 표시합니다. 초과 데이터는 그 영역에서 스크롤하거나 페이지를 나눕니다.
 - footer의 페이지 안내나 긴 설명이 로딩/성공 때 서로 다르게 줄바꿈하지 않도록 같은 responsive grid를 사용합니다.
@@ -15,6 +15,8 @@
 `isPending && !data`인 최초 조회에서만 Skeleton을 표시합니다. 캐시 hit와 background refetch는 기존 콘텐츠를 유지합니다. 로딩 화면을 보이게 하려고 캐시를 지우거나 최소 대기 시간을 추가하지 않습니다. Skeleton 장식은 접근성 트리에서 숨기고 Card의 `aria-busy` 또는 하나의 상태 문구로 로딩을 전달합니다.
 
 Skeleton의 pulse도 `prefers-reduced-motion: reduce`에서 중단합니다. 이 처리는 공유 shadcn Skeleton이 소유하며 화면마다 별도 애니메이션을 추가하지 않습니다.
+
+Dialog·메뉴·Sidebar 등의 공간 전환과 spinner의 reduced-motion 구현은 [모션](design/motion.md)을 따릅니다.
 
 ## 숫자 모션은 선택적으로 300ms 동안 실행한다
 
@@ -31,6 +33,7 @@ Skeleton의 pulse도 `prefers-reduced-motion: reduce`에서 중단합니다. 이
 - 목표 값이 바뀌거나 컴포넌트가 새로 나타날 때 실행합니다. 일반적인 부모 rerender나 동일 값 background refresh마다 재시작하지 않습니다.
 - `prefers-reduced-motion: reduce`이면 즉시 최종값을 보여 줍니다. 도중에 해당 설정이 켜져도 즉시 끝내고, hidden 문서에서는 불필요한 애니메이션을 완료 처리합니다.
 - 화면 낭독기는 정적인 최종값 한 번을 읽습니다. 매 프레임의 숫자를 live region으로 알리지 않습니다. unmount 때 frame·timer·이벤트 구독을 정리합니다.
+- `wrap`은 기본 false이며 KPI/좁은 요약에서는 명시해서 켭니다. 최종·중간 문자열에 같은 줄바꿈을 적용해 필요한 높이도 예약합니다. 줄바꿈 변경은 타임라인을 재시작하지 않으며 값·형식·접근 가능한 문자열을 바꾸지 않습니다.
 
 ## 확인 기준
 

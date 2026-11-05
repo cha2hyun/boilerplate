@@ -84,7 +84,10 @@ export function ProjectDeleteDialog({
             disabled={deleteProject.isPending || !project}
           >
             {deleteProject.isPending && (
-              <LoaderCircle className="animate-spin" aria-hidden="true" />
+              <LoaderCircle
+                className="animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
             )}
             {t(deleteProject.isPending ? 'delete.pending' : 'common.deleteProject')}
           </Button>

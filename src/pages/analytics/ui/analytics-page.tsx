@@ -8,15 +8,7 @@ import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18
 import type { SearchChange } from '@/shared/lib/search-params'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/shared/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import {
   ChartContainer,
   ChartLegend,
@@ -26,6 +18,7 @@ import {
   type ChartConfig,
 } from '@/shared/ui/chart'
 import { PageHeader } from '@/shared/ui/page-header'
+import { MetricCard } from '@/shared/ui/metric-card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
@@ -107,7 +100,7 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
   ]
 
   return (
-    <VStack align="stretch" className="gap-6">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('analytics.title')}
         description={t('analytics.intro')}
@@ -161,31 +154,20 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => (
-          <Card
+          <MetricCard
             key={metric.label}
-            className="gap-4 shadow-xs"
-            aria-label={metric.label}
-            aria-busy={isLoading}
-          >
-            <CardHeader className="gap-2">
-              <CardDescription className="text-xs font-medium">{metric.label}</CardDescription>
-              <CardAction>
-                <metric.icon className="size-4 text-muted-foreground" />
-              </CardAction>
-              <HStack asChild className="h-9 text-3xl font-semibold tracking-tight tabular-nums">
-                <CardTitle>
-                  {isLoading ? (
-                    <Skeleton className="h-8 w-28" />
-                  ) : metric.value !== undefined ? (
-                    <NumberDisplay animate value={metric.value} format={metric.format} />
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </CardTitle>
-              </HStack>
-            </CardHeader>
-            <CardFooter className="text-xs text-muted-foreground">{metric.detail}</CardFooter>
-          </Card>
+            label={metric.label}
+            icon={metric.icon}
+            loading={isLoading}
+            value={
+              metric.value !== undefined ? (
+                <NumberDisplay animate wrap value={metric.value} format={metric.format} />
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )
+            }
+            footer={metric.detail}
+          />
         ))}
       </div>
 
@@ -386,7 +368,7 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                 ) : data?.sources.length ? (
                   data.sources.map((source) => (
                     <TableRow key={source.source} className="h-10">
-                      <TableCell className="truncate font-medium">
+                      <TableCell className="font-medium wrap-anywhere whitespace-normal">
                         {sourceLabels[source.source] ?? source.source}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">
@@ -454,7 +436,9 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                 ) : data?.pages.length ? (
                   data.pages.map((page) => (
                     <TableRow key={page.path} className="h-10">
-                      <TableCell className="truncate font-medium">{page.path}</TableCell>
+                      <TableCell className="font-medium wrap-anywhere whitespace-normal">
+                        {page.path}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">
                         {formatNumber(page.views)}
                       </TableCell>

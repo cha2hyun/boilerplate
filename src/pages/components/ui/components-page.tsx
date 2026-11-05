@@ -66,7 +66,7 @@ export function ComponentsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [progress, setProgress] = useState(64)
   return (
-    <VStack align="stretch" className="gap-7">
+    <VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6">
       <PageHeader
         title={t('components.title')}
         description={t('components.description')}
@@ -122,7 +122,10 @@ export function ComponentsPage() {
                   {t('components.ghostAction')}
                 </Button>
                 <Button disabled>
-                  <LoaderCircle className="animate-spin" />
+                  <LoaderCircle
+                    className="animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
                   {t('components.processing')}
                 </Button>
               </CardContent>

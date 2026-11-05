@@ -6,6 +6,7 @@
 | -------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | 새 제품 초기화·브랜드·데모 정리  | [새 제품 도입](new-project.md)                                  | 패키지 이름, 브랜드/메타, 저장 namespace, 환경, 샘플 코드                       |
 | 레이어/새 기능 배치              | [아키텍처](architecture.md)                                     | `src/app`, `pages`, `widgets`, `features`, `entities`, `shared`                 |
+| 페이지 목적·행동·상태·수용 기준  | [페이지 기획 명세](pages/README.md)                             | `docs/pages`, 해당 라우트·화면·기존 테스트                                      |
 | UI·레이아웃·폰트·문구            | [디자인 시스템](design-system.md) → 해당 주제                   | `src/shared/ui`, `src/app/styles/globals.css`, 해당 화면                        |
 | 중앙 정렬·가로/세로 묶음         | [레이아웃](design/layout.md)                                    | `shared/ui/stack`, 해당 화면, 아키텍처 검사                                     |
 | 텍스트 링크·외부 새 탭           | [텍스트 링크](design/text-links.md)                             | `shared/ui/text-link`, `shared/lib/link-policy`, 공통 번역                      |

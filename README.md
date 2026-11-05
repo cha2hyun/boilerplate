@@ -108,6 +108,7 @@ Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이�
 | `pnpm check:architecture`        | FSD, shadcn 컨트롤, 스타일/토큰 규칙 검사         |
 | `pnpm check:unit-categories`     | 단위 테스트의 누락·중복 범주·미지원 이름 검사     |
 | `pnpm check:e2e-categories`      | E2E 범주의 누락·중복·없는 스펙 경로 검사          |
+| `pnpm check:page-specs`          | 페이지 기획 누락·중복·필수 항목·로컬 링크 검사    |
 | `pnpm test:guardrails`           | 구조 검사기, 경로별 HTML, E2E 범주 회귀 테스트    |
 | `pnpm format` / `pnpm lint`      | 포맷 적용 / 린트 검사                             |
 | `pnpm ui:add <component>`        | 설정된 shadcn registry에서 컴포넌트 추가          |
@@ -131,9 +132,11 @@ src/
 ```
 
 - [작업별 문서 지도](docs/README.md) — 필요한 책임의 문서만 선택
+- [페이지별 현재 기획과 수정 방법](docs/pages/README.md) — 목적·동작·상태·수용 기준
 - [새 제품 도입·브랜드·데모 정리](docs/new-project.md)
 - [아키텍처와 경계](docs/architecture.md)
 - [폰트·색상·반응형 규칙](docs/design-system.md)
+- [공통 화면 조합](docs/design/compositions.md) · [시각 기준 검토](docs/design/visual-regression.md)
 - [테스트 범주와 Actions 실행 정책](docs/testing.md)
 - [페이지별 OG·파비콘·북마크](docs/seo.md)
 - [시니어 코드 리뷰와 수정 근거](docs/reviews/production-code-review.md)
