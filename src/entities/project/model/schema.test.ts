@@ -1,10 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { seedProjects } from '../api/seed'
-import { projectInputSchema, projectSchema } from './schema'
+import { projectInputSchema, projectSchema, projectsSchema } from './schema'
 
 const validInput = { name: 'New project', description: 'A useful project', status: 'active' }
 
 describe('project schemas', () => {
+  it('rejects repeated identities without rejecting a valid empty or distinct list', () => {
+    const project = projectSchema.parse(seedProjects[0])
+    expect(
+      projectsSchema.safeParse([project, { ...project, name: 'Different project' }]).success,
+    ).toBe(false)
+    expect(projectsSchema.parse([])).toEqual([])
+    expect(projectsSchema.parse([project, { ...project, id: 'unique-project' }])).toHaveLength(2)
+  })
+
   it('normalizes editable text', () => {
     expect(
       projectInputSchema.parse({

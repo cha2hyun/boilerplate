@@ -1,3 +1,5 @@
+import { product } from '../../shared/config/product.ts'
+
 export interface PageMetadata {
   title: string
   description: string
@@ -9,48 +11,39 @@ export interface PageMetadata {
 export const pageMetadata = {
   '/': {
     title: 'Overview',
-    description:
-      'A clear view of your workspace, with sample metrics, recent activity, and projects in Blueprint.',
+    description: `A clear view of your workspace, with sample metrics, recent activity, and projects in ${product.name}.`,
   },
   '/projects': {
     title: 'Projects',
-    description:
-      'Organize projects, track progress, and explore a complete project workflow in the Blueprint demo workspace.',
+    description: `Organize projects, track progress, and explore a complete project workflow in the ${product.name} demo workspace.`,
   },
   '/analytics': {
     title: 'Analytics',
-    description:
-      'Explore sample visitor trends, traffic sources, and page performance in Blueprint Analytics.',
+    description: `Explore sample visitor trends, traffic sources, and page performance in ${product.name} Analytics.`,
   },
   '/orders': {
     title: 'Orders',
-    description:
-      'Browse sample orders, filter fulfillment status, and inspect order details in Blueprint.',
+    description: `Browse sample orders, filter fulfillment status, and inspect order details in ${product.name}.`,
   },
   '/customers': {
     title: 'Customers',
-    description:
-      'Explore sample customer profiles, purchase history, and customer activity in Blueprint.',
+    description: `Explore sample customer profiles, purchase history, and customer activity in ${product.name}.`,
   },
   '/inbox': {
     title: 'Inbox',
-    description:
-      'Explore sample conversations, organize messages, and try the Blueprint inbox workflow.',
+    description: `Explore sample conversations, organize messages, and try the ${product.name} inbox workflow.`,
   },
   '/components': {
     title: 'Components',
-    description:
-      'Explore Blueprint’s accessible UI components, semantic theme tokens, and Pretendard typography.',
+    description: `Explore ${product.name}’s accessible UI components, semantic theme tokens, and Pretendard typography.`,
   },
   '/settings': {
     title: 'Settings',
-    description:
-      'Personalize the Blueprint demo workspace with theme, layout, and workspace preferences.',
+    description: `Personalize the ${product.name} demo workspace with theme, layout, and workspace preferences.`,
   },
   '/foundations': {
     title: 'Foundations',
-    description:
-      'Explore Blueprint’s design foundations, layout recipes, writing principles, and accessible feedback.',
+    description: `Explore ${product.name}’s design foundations, layout recipes, writing principles, and accessible feedback.`,
   },
 } as const satisfies Record<string, PageMetadata>
 
@@ -58,11 +51,11 @@ export type PagePath = keyof typeof pageMetadata
 const koreanPageMetadata: Record<PagePath, PageMetadata> = {
   '/': {
     title: '개요',
-    description: 'Blueprint의 샘플 지표, 최근 활동과 프로젝트를 한눈에 확인하세요.',
+    description: `${product.name}의 샘플 지표, 최근 활동과 프로젝트를 한눈에 확인하세요.`,
   },
   '/projects': {
     title: '프로젝트',
-    description: 'Blueprint 데모 워크스페이스에서 프로젝트를 관리하고 진행 상황을 확인하세요.',
+    description: `${product.name} 데모 워크스페이스에서 프로젝트를 관리하고 진행 상황을 확인하세요.`,
   },
   '/analytics': {
     title: '분석',
@@ -83,11 +76,11 @@ const koreanPageMetadata: Record<PagePath, PageMetadata> = {
   },
   '/settings': {
     title: '설정',
-    description: 'Blueprint 워크스페이스의 테마, 레이아웃과 환경 설정을 변경하세요.',
+    description: `${product.name} 워크스페이스의 테마, 레이아웃과 환경 설정을 변경하세요.`,
   },
   '/foundations': {
     title: '디자인 기준',
-    description: 'Blueprint의 디자인 기준, 레이아웃, 문구와 접근 가능한 피드백을 살펴보세요.',
+    description: `${product.name}의 디자인 기준, 레이아웃, 문구와 접근 가능한 피드백을 살펴보세요.`,
   },
 }
 export const pagePaths = Object.keys(pageMetadata) as PagePath[]
@@ -142,10 +135,10 @@ export function createPageHead(
     : locale === 'ko-KR'
       ? {
           title: '페이지를 찾을 수 없어요',
-          description: 'Blueprint에서 이 페이지를 찾을 수 없어요.',
+          description: `${product.name}에서 이 페이지를 찾을 수 없어요.`,
         }
-      : { title: 'Page not found', description: 'This page could not be found in Blueprint.' }
-  const title = `${page.title} · Blueprint`
+      : { title: 'Page not found', description: `This page could not be found in ${product.name}.` }
+  const title = `${page.title} · ${product.name}`
   const tags: HeadTag[] = [
     { tag: 'title', attributes: {}, text: title },
     { tag: 'meta', attributes: { name: 'description', content: page.description } },
@@ -157,7 +150,7 @@ export function createPageHead(
       },
     },
     { tag: 'meta', attributes: { property: 'og:type', content: 'website' } },
-    { tag: 'meta', attributes: { property: 'og:site_name', content: 'Blueprint' } },
+    { tag: 'meta', attributes: { property: 'og:site_name', content: product.name } },
     { tag: 'meta', attributes: { property: 'og:locale', content: locale.replace('-', '_') } },
     { tag: 'meta', attributes: { property: 'og:title', content: title } },
     { tag: 'meta', attributes: { property: 'og:description', content: page.description } },
@@ -177,8 +170,8 @@ export function createPageHead(
     const imageAlt =
       page.imageAlt ??
       (locale === 'ko-KR'
-        ? 'Blueprint 워크스페이스 — 다음 제품을 위한 기반.'
-        : 'Blueprint workspace — a clear foundation for your next product.')
+        ? `${product.name} 워크스페이스 — 다음 제품을 위한 기반.`
+        : `${product.name} workspace — a clear foundation for your next product.`)
     tags.push(
       { tag: 'link', attributes: { rel: 'canonical', href: url } },
       { tag: 'meta', attributes: { property: 'og:url', content: url } },

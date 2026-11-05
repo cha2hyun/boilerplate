@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { customerInputSchema, customerSchema } from './schema'
+import { customerInputSchema, customerSchema, customersSchema } from './schema'
 import { sampleCustomers } from '../api/seed'
 
 const input = {
@@ -12,6 +12,17 @@ const input = {
 }
 
 describe('customer edit contract', () => {
+  it('rejects repeated identities without rejecting a valid empty or distinct list', () => {
+    const customer = customerSchema.parse(sampleCustomers[0])
+    expect(
+      customersSchema.safeParse([customer, { ...customer, name: 'Different customer' }]).success,
+    ).toBe(false)
+    expect(customersSchema.parse([])).toEqual([])
+    expect(customersSchema.parse([customer, { ...customer, id: 'unique-customer' }])).toHaveLength(
+      2,
+    )
+  })
+
   it('normalizes contact fields and strips purchase history and server-owned fields', () => {
     expect(
       customerInputSchema.parse({

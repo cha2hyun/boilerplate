@@ -1,5 +1,14 @@
 export default {
   common: {
+    showSummary: '요약 펼치기',
+    hideSummary: '요약 접기',
+    rowsPerPage: '페이지당 행 수',
+    rowsCount_one: '{{formattedCount}}개 행',
+    rowsCount_other: '{{formattedCount}}개 행',
+    detailUnavailable: '해당 내역을 찾을 수 없습니다. 삭제되었거나 링크가 잘못되었을 수 있습니다.',
+    backToList: '목록으로 돌아가기',
+    openDetailLink: '새 탭에서 상세 열기',
+
     sample: '샘플',
     tryAgain: '다시 시도',
     reset: '초기화',
@@ -10,6 +19,17 @@ export default {
     pageCount: '{{current}} / {{total}} 페이지',
   },
   orders: {
+    history: {
+      title: '변경 기록',
+      description:
+        '주문·결제 상태의 변경 내역입니다. 변경자를 확인하지 않는 데모 기록이며 운영 감사 로그가 아닙니다.',
+      empty: '이 주문에 기록된 변경 내역이 없습니다.',
+      status: '주문 상태',
+      payment: '결제 상태',
+      initial: '초기 값: {{value}}',
+      changed: '{{from}} → {{to}}',
+    },
+
     title: '주문',
     intro: '주문을 관리하고 배송 진행 상황과 상세 정보를 살펴보세요.',
     refreshError: '주문을 새로고침하지 못했어요',

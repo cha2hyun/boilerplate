@@ -96,12 +96,20 @@ jobs:
         with:
           name: production-dist
           path: dist/
-      - run: pnpm exec playwright install --with-deps chromium
+      - name: Install the browsers needed by this category
+        env:
+          TEST_CATEGORY: ${{ matrix.category }}
+        run: |
+          if [ "$TEST_CATEGORY" = core ]; then
+            pnpm exec playwright install --with-deps chromium webkit
+          else
+            pnpm exec playwright install --with-deps chromium
+          fi
       - name: Test the shared production bundle
         env:
           TEST_CATEGORY: ${{ matrix.category }}
         run: pnpm "test:e2e:$TEST_CATEGORY"
-      - name: Upload failure diagnostics
+      - name: Upload failed or flaky test diagnostics
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:

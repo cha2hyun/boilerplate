@@ -36,16 +36,16 @@ import { httpProjectAdapter } from './http'
 
 ## 상태의 소유권
 
-| 상태                            | 소유자                    | 이유                                                |
-| ------------------------------- | ------------------------- | --------------------------------------------------- |
-| 경로와 탐색                     | TanStack Router           | 새로고침/직접 링크에 일관된 진입점                  |
-| 차트 기간·검색·필터·정렬·페이지 | TanStack Router search    | Zod 검증 후 새로고침·뒤로/앞으로·직접 링크에서 복원 |
-| 원격/샘플 조회 데이터           | TanStack Query            | 캐시, 로딩/오류, 요청 취소, mutation 후 무효화      |
-| 워크스페이스 이름/compact mode  | Zustand                   | 서버와 독립적인 UI 환경 설정의 명시적 소유권        |
-| 언어·표시 통화                  | Zustand                   | 검증·저장하는 독립적인 UI 환경 설정                 |
-| USD/KRW 기준 환율               | TanStack Query            | 공개 API의 검증된 원격 데이터와 공유 캐시           |
-| light/dark/system 테마          | shadcn Vite ThemeProvider | 공식 Vite recipe 기반의 class 적용/시스템 테마 구독 |
-| 폼 입력/열린 대화상자           | 해당 컴포넌트/feature     | 수명이 짧고 다른 영역에 공개할 이유가 없음          |
+| 상태                                    | 소유자                    | 이유                                                |
+| --------------------------------------- | ------------------------- | --------------------------------------------------- |
+| 경로와 탐색                             | TanStack Router           | 새로고침/직접 링크에 일관된 진입점                  |
+| 차트 기간·검색·필터·정렬·페이지·상세 ID | TanStack Router search    | Zod 검증 후 새로고침·뒤로/앞으로·직접 링크에서 복원 |
+| 원격/샘플 조회 데이터                   | TanStack Query            | 캐시, 로딩/오류, 요청 취소, mutation 후 무효화      |
+| 워크스페이스 이름/compact mode          | Zustand                   | 서버와 독립적인 UI 환경 설정의 명시적 소유권        |
+| 언어·표시 통화                          | Zustand                   | 검증·저장하는 독립적인 UI 환경 설정                 |
+| USD/KRW 기준 환율                       | TanStack Query            | 공개 API의 검증된 원격 데이터와 공유 캐시           |
+| light/dark/system 테마                  | shadcn Vite ThemeProvider | 공식 Vite recipe 기반의 class 적용/시스템 테마 구독 |
+| 폼 입력·편집/삭제 확인창                | 해당 컴포넌트/feature     | 수명이 짧고 다른 영역에 공개할 이유가 없음          |
 
 Query 결과를 Zustand에 복제하지 않습니다. 서버 상태의 진실 공급원은 서버이며 데모에서는 API 어댑터입니다. API 응답은 Zod로 검증하고 컴포넌트에는 검증된 도메인 데이터를 전달합니다. 데이터 어댑터는 `demo`와 `api` 모드에서 같은 계약을 따릅니다. 캐시 수명·무효화·화면 갱신은 [Query 캐시](query-cache.md), 응답/페이지/정렬/저장 규칙은 [API 계약](api-contract.md)이 소유합니다.
 
@@ -72,7 +72,8 @@ Analytics, Orders, Customers의 조회 데이터는 각각 `entities/traffic`, `
 ## 자동 검사와 한계
 
 - TypeScript strict 및 ESLint typed rules로 타입 경계, 미처리 Promise, React Hooks, Query 사용을 검사합니다. E2E 파일도 별도 TypeScript 프로젝트로 검사하고 비동기 브라우저 동작/검증의 누락된 `await`를 ESLint로 확인합니다.
-- `scripts/check-architecture.mjs`는 TypeScript AST로 FSD import와 JSX 컨트롤/style을 검사합니다. CSS 파일 위치/선택자와 고정 팔레트 유틸리티도 확인합니다. 숫자 포맷 소유 파일과 테스트 밖의 직접 `Intl.NumberFormat`·`toFixed`·`toPrecision` 호출을 거부합니다. 숫자 `toLocaleString`과 수량을 포함한 문자열 등의 전체 사용 규칙은 리뷰로 확인합니다.
+- `scripts/check-architecture.mjs`는 TypeScript AST로 FSD import와 JSX 컨트롤/style을 검사합니다. 파일 내부 `const` 별칭, 정적 객체·중첩 spread·문자열 키를 따라가며 매개변수·블록·함수의 이름 가림과 순환을 구분합니다. JSX에 나중에 명시한 prop과 정적 spread의 덮어쓰기 순서를 유지합니다. CSS 파일 위치/선택자와 고정 팔레트 유틸리티도 확인합니다. 숫자 포맷 소유 파일과 테스트 밖의 직접 `Intl.NumberFormat`·`toFixed`·`toPrecision` 호출을 거부합니다. 숫자 `toLocaleString`과 수량을 포함한 문자열 등의 전체 사용 규칙은 리뷰로 확인합니다.
+- 색상·두께 유틸리티는 실제 `className`, 클래스 조합 함수와 `cva`의 클래스 입력에서 검사합니다. 번역·설명·variant 이름 같은 일반 문자열은 클래스가 아닙니다. JSX 색상 prop, ChartConfig 및 차트 config/style의 색상도 검사합니다. 다른 파일의 값, 함수 호출 결과, mutable binding, 보이는 쓰기로 변경된 객체와 해석할 수 없는 spread는 안전하다고 증명하지 않습니다. 객체를 외부 함수에 넘긴 뒤의 변경 등 전체 데이터 흐름도 분석하지 않으므로 해당 경계는 리뷰가 담당합니다.
 - 가드레일 회귀 테스트는 허용/금지 import, 상대 경로, 동적 import, UI/색상 규칙을 고정합니다.
 - 정적 검사는 shadcn 코드의 출처, 실제 접근성, 런타임 환경, 브라우저 동작을 보증하지 않습니다. 코드 리뷰와 브라우저 검증을 함께 수행합니다.
 

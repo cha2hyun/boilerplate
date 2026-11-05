@@ -28,16 +28,14 @@ afterEach(() => {
 })
 
 describe('order mutation cache reconciliation', () => {
-  it.each([
-    { operation: 'create', uncertain: false },
-    { operation: 'update', uncertain: false },
-    { operation: 'delete', uncertain: false },
-    { operation: 'create', uncertain: true },
-    { operation: 'update', uncertain: true },
-    { operation: 'delete', uncertain: true },
-  ] as const)(
-    'cancels a stale GET before $operation reconciliation (uncertain: $uncertain)',
-    async ({ operation, uncertain }) => {
+  it.each(
+    (['create', 'update', 'delete'] as const).flatMap((operation) =>
+      ([null, 'network', 500, 502, 504] as const).map((failure) => ({ operation, failure })),
+    ),
+  )(
+    'cancels a stale GET before $operation reconciliation (failure: $failure)',
+    async ({ operation, failure }) => {
+      const uncertain = failure !== null
       const existing = orderSchema.parse(sampleOrders[0])
       const input = orderInputSchema.parse({ ...existing, city: 'Updated city' })
       const changed = orderSchema.parse({
@@ -62,7 +60,10 @@ describe('order mutation cache reconciliation', () => {
         vi.fn<typeof fetch>((_url, options) => {
           if (options?.method) {
             writes += 1
-            if (uncertain) return Promise.reject(new TypeError('Response lost after commit'))
+            if (failure === 'network')
+              return Promise.reject(new TypeError('Response lost after commit'))
+            if (typeof failure === 'number')
+              return Promise.resolve(new Response(null, { status: failure }))
             return Promise.resolve(
               operation === 'delete' ? new Response(null, { status: 204 }) : Response.json(changed),
             )
@@ -115,7 +116,11 @@ describe('order mutation cache reconciliation', () => {
           firstResponse.resolve(Response.json(sampleOrders))
           const settled = await outcome
           if (uncertain)
-            expect(settled).toMatchObject({ code: 'NETWORK_ERROR', mayHaveSucceeded: true })
+            expect(settled).toMatchObject({
+              code: failure === 'network' ? 'NETWORK_ERROR' : 'HTTP_ERROR',
+              status: failure === 'network' ? null : failure,
+              mayHaveSucceeded: true,
+            })
         })
         expect(firstSignal?.aborted).toBe(true)
         expect(reads).toBe(2)

@@ -45,6 +45,7 @@ describe('persistent demo orders', () => {
     '{invalid',
     JSON.stringify({ version: 99, orders: [] }),
     JSON.stringify({ version: 1, orders: [{ id: 'invalid' }] }),
+    JSON.stringify({ version: 1, orders: [sampleOrders[0], sampleOrders[0]] }),
   ])('repairs malformed storage %s', async (raw) => {
     const storage = memoryStorage(raw)
     expect(await createDemoOrderAdapter({ storage, delayMs: 0 }).list()).toEqual(sampleOrders)
@@ -57,6 +58,18 @@ describe('persistent demo orders', () => {
   it('preserves a valid empty stored list', async () => {
     const storage = memoryStorage(JSON.stringify({ version: 1, orders: [] }))
     expect(await createDemoOrderAdapter({ storage, delayMs: 0 }).list()).toEqual([])
+  })
+
+  it('rejects a generated ID collision without replacing existing orders', async () => {
+    const storage = memoryStorage()
+    const adapter = createDemoOrderAdapter({ storage, delayMs: 0, createId: () => 'collision' })
+    await adapter.create(input)
+    const before = storage.getItem(ORDER_STORAGE_KEY)
+    await expect(adapter.create({ ...input, city: 'Second city' })).rejects.toMatchObject({
+      status: 409,
+    })
+    expect(storage.getItem(ORDER_STORAGE_KEY)).toBe(before)
+    expect((await adapter.list()).filter((order) => order.id === 'collision')).toHaveLength(1)
   })
 
   it.each(['read', 'write'] as const)(

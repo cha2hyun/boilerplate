@@ -80,12 +80,18 @@ export function createApiClient(baseUrl: string) {
 
       status = response.status
       if (!response.ok) {
+        // A server or gateway failure does not prove that a write was rolled back.
+        // Preserve the HTTP status while sending uncertain writes through reconciliation.
+        const mayHaveSucceeded = !readOnly && response.status >= 500
         throw new ApiError(
-          response.status === 404
-            ? 'This item could not be found. Refresh and try again.'
-            : `The request failed (${String(response.status)}). Please try again.`,
+          mayHaveSucceeded
+            ? `Unable to confirm the request result (${String(response.status)}). ${uncertainWriteMessage}`
+            : response.status === 404
+              ? 'This item could not be found. Refresh and try again.'
+              : `The request failed (${String(response.status)}). Please try again.`,
           'HTTP_ERROR',
           response.status,
+          mayHaveSucceeded,
         )
       }
 

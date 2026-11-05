@@ -1,4 +1,6 @@
 import type { PropsWithChildren } from 'react'
+import { httpProjectAdapter } from './http'
+import { seedProjects } from './seed'
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import { afterEach, expect, it, vi } from 'vitest'
@@ -19,6 +21,18 @@ vi.mock('@/shared/config', () => ({
 afterEach(() => {
   cleanup()
   vi.unstubAllGlobals()
+})
+
+it('rejects duplicate identities at the HTTP list boundary', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(Response.json([seedProjects[0], seedProjects[0]])),
+  )
+  await expect(httpProjectAdapter.list()).rejects.toMatchObject({
+    code: 'INVALID_RESPONSE',
+    status: 200,
+    mayHaveSucceeded: false,
+  })
 })
 
 it('sends the HTTP project CRUD contract and synchronizes the active list from server responses', async () => {

@@ -1,10 +1,52 @@
 import { describe, expect, it } from 'vitest'
 import { sampleOrders } from '../api/seed'
-import { orderInputSchema, orderLimits, orderSchema } from './schema'
+import {
+  orderHistoryEntrySchema,
+  orderInputSchema,
+  orderLimits,
+  orderSchema,
+  ordersSchema,
+} from './schema'
 
 const input = orderInputSchema.parse(sampleOrders[0])
 
 describe('order validation boundaries', () => {
+  it('defaults missing legacy history to empty without accepting fabricated or malformed events', () => {
+    const { history, ...legacy } = orderSchema.parse(sampleOrders[0])
+    expect(history).toEqual([])
+    expect(orderSchema.parse(legacy).history).toEqual([])
+    const valid = {
+      field: 'status',
+      occurredAt: '2026-11-05T10:00:00+09:00',
+      from: 'Processing',
+      to: 'Shipped',
+    }
+    expect(orderHistoryEntrySchema.parse(valid)).toEqual(valid)
+    expect(orderInputSchema.parse({ ...input, history: [valid] })).not.toHaveProperty('history')
+    for (const invalid of [
+      { ...valid, from: 'Paid' },
+      { ...valid, to: 'Processing' },
+      { ...valid, occurredAt: 'yesterday' },
+      { ...valid, field: 'payment', from: 'Pending', to: 'Shipped' },
+    ])
+      expect(orderHistoryEntrySchema.safeParse(invalid).success).toBe(false)
+    expect(
+      orderSchema.safeParse({
+        ...legacy,
+        history: Array.from({ length: orderLimits.history + 1 }, () => valid),
+      }).success,
+    ).toBe(false)
+  })
+
+  it('rejects repeated identities without rejecting a valid empty or distinct list', () => {
+    const order = orderSchema.parse(sampleOrders[0])
+    expect(ordersSchema.safeParse([order, { ...order, city: 'Different city' }]).success).toBe(
+      false,
+    )
+    expect(ordersSchema.parse([])).toEqual([])
+    expect(ordersSchema.parse([order, { ...order, id: 'unique-order' }])).toHaveLength(2)
+  })
+
   it('strips server-owned fields and trims submitted text', () => {
     expect(orderInputSchema.parse({ ...sampleOrders[0], city: ' Seoul ' })).toEqual({
       ...input,

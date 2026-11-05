@@ -23,7 +23,11 @@ export const projectSchema = projectInputSchema.extend({
   updatedAt: z.iso.datetime({ offset: true }),
 })
 
-export const projectsSchema = z.array(projectSchema)
+export const projectsSchema = z
+  .array(projectSchema)
+  .refine((projects) => new Set(projects.map((project) => project.id)).size === projects.length, {
+    message: 'Project IDs must be unique within a list.',
+  })
 
 export type Project = z.infer<typeof projectSchema>
 export type ProjectInput = z.infer<typeof projectInputSchema>

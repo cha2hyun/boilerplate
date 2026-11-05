@@ -14,6 +14,19 @@ export const ordersSearchSchema = z.object({
     .default('newest')
     .catch('newest'),
   page: searchPageSchema,
+  pageSize: z
+    .union([
+      z.literal(6),
+      z.literal(12),
+      z.literal(24),
+      z.literal('6'),
+      z.literal('12'),
+      z.literal('24'),
+    ])
+    .transform((value) => Number(value) as 6 | 12 | 24)
+    .default(6)
+    .catch(6),
+  detail: searchTextSchema.transform((value) => value.trim()),
 })
 
 export type OrdersSearch = z.infer<typeof ordersSearchSchema>

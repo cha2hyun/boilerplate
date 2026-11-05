@@ -127,14 +127,44 @@ describe('HTTP client', () => {
     },
   )
 
-  it('keeps an explicit rejected write distinct from an uncertain result', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 409 })))
-    await expect(request('/projects', schema, { method: 'POST' })).rejects.toMatchObject({
-      code: 'HTTP_ERROR',
-      status: 409,
-      mayHaveSucceeded: false,
-    })
-  })
+  it.each([400, 401, 403, 404, 409, 422, 429])(
+    'keeps an explicitly rejected HTTP %s write distinct from an uncertain result',
+    async (status) => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status })))
+      await expect(request('/projects', schema, { method: 'POST' })).rejects.toMatchObject({
+        code: 'HTTP_ERROR',
+        status,
+        mayHaveSucceeded: false,
+      })
+    },
+  )
+
+  it.each([500, 502, 503, 504])(
+    'requires reconciliation for HTTP %s writes without claiming a rollback',
+    async (status) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue(new Response('Private error body', { status })),
+      )
+      for (const method of ['POST', 'PATCH', 'DELETE']) {
+        const pending = request('/projects', schema, { method })
+        await expect(pending).rejects.toMatchObject({
+          code: 'HTTP_ERROR',
+          status,
+          mayHaveSucceeded: true,
+        })
+        await expect(pending).rejects.toThrow('Your changes may have been saved.')
+        await expect(pending).rejects.not.toThrow('Private error body')
+      }
+      for (const method of ['GET', 'HEAD']) {
+        await expect(request('/projects', schema, { method })).rejects.toMatchObject({
+          code: 'HTTP_ERROR',
+          status,
+          mayHaveSucceeded: false,
+        })
+      }
+    },
+  )
 
   it('preserves cancellation rather than reporting a network failure', async () => {
     const controller = new AbortController()

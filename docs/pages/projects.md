@@ -6,6 +6,8 @@
 
 프로젝트를 찾고 생성·편집·삭제하며 진행 상태를 관리합니다. 데모 모드의 변경은 브라우저 저장소에 남고 새로고침 후 복원됩니다. API 연결 경계는 있으나 현재 워크스페이스가 운영 인증·권한·공유 협업을 제공한다는 뜻은 아닙니다.
 
+데모 모드의 PageHeader는 샘플 배지와 명시적인 데모 설명을 제공합니다. API 모드에서는 해당 데모 배지·설명을 사용하지 않습니다.
+
 ## 정보 구조와 주요 행동
 
 PageHeader의 새 프로젝트 → 전체 프로젝트 요약 → 조회 도구가 있는 표 → 페이지 도구 순서입니다. 이름과 행 메뉴에서 편집, 행 메뉴에서 삭제 확인을 엽니다. 생성·편집은 검증된 폼으로 저장하고 삭제는 확인 대화상자에서 완료합니다. [화면 조합](../design/compositions.md)의 요약+관리 목록 구조를 따릅니다.
@@ -39,6 +41,7 @@ PageHeader의 새 프로젝트 → 전체 프로젝트 요약 → 조회 도구�
 - URL: [라우트](../../src/app/routes/projects.tsx), [표 조회 스키마](../../src/widgets/project-table/model/search.ts). 타입·기본값·페이지 크기는 이 모델이 소유합니다.
 - Query/저장: [프로젝트 Query와 mutation](../../src/entities/project/api/queries.ts), [데모 adapter](../../src/entities/project/api/demo.ts). Overview와 같은 캐시를 사용합니다.
 - 임시 상태: [화면](../../src/pages/projects/ui/projects-page.tsx)의 생성 창, [표](../../src/widgets/project-table/ui/project-table.tsx)의 선택/열 표시/편집·삭제, [편집 폼](../../src/features/project-editor/ui/project-editor-dialog.tsx). 조회 조건을 Zustand에 복제하지 않습니다.
+- 표 조합: [열 정의](../../src/widgets/project-table/ui/use-project-columns.tsx), [조회·내보내기 도구](../../src/widgets/project-table/ui/project-table-toolbar.tsx), [행·로딩·빈 상태](../../src/widgets/project-table/ui/project-table-viewport.tsx), [페이지 이동](../../src/widgets/project-table/ui/project-table-pagination.tsx), [CSV 변환·다운로드](../../src/widgets/project-table/lib/export-projects.ts). URL·선택·대화상자·초점 상태의 소유자는 기존 표 조합으로 유지합니다.
 
 ## 수용 기준
 

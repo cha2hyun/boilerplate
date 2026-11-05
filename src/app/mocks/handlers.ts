@@ -31,9 +31,19 @@ async function mutationResponse(action: () => Promise<unknown>, status = 200) {
       ? new HttpResponse(null, { ...responseOptions, status })
       : Response.json(value, { ...responseOptions, status })
   } catch (error) {
-    const status = error instanceof ApiError && error.status === 404 ? 404 : 500
+    const status =
+      error instanceof ApiError && (error.status === 404 || error.status === 409)
+        ? error.status
+        : 500
     return HttpResponse.json(
-      { message: status === 404 ? 'Record not found.' : 'The change could not be saved.' },
+      {
+        message:
+          status === 404
+            ? 'Record not found.'
+            : status === 409
+              ? 'The record already exists.'
+              : 'The change could not be saved.',
+      },
       { ...responseOptions, status },
     )
   }

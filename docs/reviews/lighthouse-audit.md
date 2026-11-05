@@ -1,10 +1,29 @@
 # Lighthouse 실측과 개선
 
+## 2026-11-05: 현재 CDN 구성의 Actions 재측정
+
+폰트 CDN 전환 이후 실제 production 번들을 표준 GitHub-hosted Ubuntu/Chrome 156 runner에서 Lighthouse 13.6.0의 기본 모바일 프로필로 측정했다. 기본 demo, 기본 light 테마, 실제 폰트 CDN 요청, 공개 origin 미설정이다. E2E의 외부 요청 fixture는 사용하지 않았다. 아래는 각 조합 1회의 실험실 측정이다.
+
+| 코드 / 화면                    | 성능 | 접근성 | Best Practices | SEO | FCP / LCP (ms) | TBT (ms) | CLS      |
+| ------------------------------ | ---- | ------ | -------------- | --- | -------------- | -------- | -------- |
+| 기존 main `8b2b6d8` / Overview | 72   | 96     | 100            | 63  | 1,638 / 1,638  | 1,622    | 0        |
+| 개선 `01716fb` / Overview      | 73   | 96     | 100            | 63  | 1,614 / 1,614  | 1,536    | 0.000138 |
+| 대비 수정 `2ba2bb6` / Overview | 77   | 100    | 100            | 63  | 1,568 / 1,568  | 1,006    | 0.000138 |
+| 개선 `01716fb` / Projects      | 68   | 100    | 100            | 63  | 2,553 / 2,553  | 1,123    | 0        |
+
+실행 근거: [기존 main Overview](https://github.com/cha2hyun/boilerplate/actions/runs/42035431392), [개선 Overview](https://github.com/cha2hyun/boilerplate/actions/runs/42034735087), [개선 Projects](https://github.com/cha2hyun/boilerplate/actions/runs/42034963167), [대비 수정 후 Overview](https://github.com/cha2hyun/boilerplate/actions/runs/42036040040). 네 보고서 모두 runtime error와 run warning이 없었다. 원본 HTML/JSON은 해당 Actions artifact에서 3일 동안 보관한다.
+
+과거 아래 macOS 수치와 실행 환경·테마·폰트 공급 방식이 다르므로 98→73을 코드 회귀로 단정하지 않는다. 같은 runner 종류의 main/PR 비교도 단일 실행이며 benchmark index가 1,800/2,084로 달라 1점 차이를 개선으로 주장하지 않는다. 현재 재현된 과제는 모바일 main-thread 작업량이다. 실제 사용자 지표나 모든 페이지의 성능 보증은 아니다. 기능 제거, 지연 시간 숨김, 테스트용 데이터 축소로 점수를 바꾸지 않았다.
+
+Overview 접근성 실패는 밝은 테마 Avatar 이니셜의 `muted-foreground` / `muted` 조합(12px, 4.34:1)이었다. 이 조합을 공통 Avatar의 `foreground` / `muted`로 바꾸고 실제 텍스트·배경의 두 테마 대비를 브라우저 회귀로 추가했다. 수정 후 Overview 접근성은 100이며 해당 대비 실패가 사라졌다. 성능 77은 benchmark index 2,257인 별도 단일 측정이므로 색상 변경의 성능 개선으로 해석하지 않는다. SEO 63은 의도된 `noindex, nofollow` 정책이며 점수를 위해 색인을 허용하지 않는다.
+
+## 2026-11-03: 이전 로컬 측정 기록
+
 측정일: 2026-11-03. Chrome 156.0.8078.80 / Lighthouse 13.6.0 / macOS / production `pnpm preview` (`127.0.0.1:4173`). 기본 demo 데이터와 OS를 따르는 dark 테마에서 측정했다. `VITE_SITE_URL`은 설정하지 않았다.
 
 후속 변경(2026-11-05): 폰트 제공을 [jsDelivr CDN](../design/typography.md)으로 전환해 번들 폰트와 Vite font inlining 설정을 제거했다. 아래 폰트/CSS 용량과 성능 수치는 전환 전 기록이며 CDN 전환 후 재측정한 값이 아니다.
 
-## 범위와 결과
+### 범위와 결과
 
 Overview의 모바일·PC, Projects의 모바일을 수정 전후 각각 한 번씩 **순차 실행**했다. 모바일은 Lighthouse 기본 simulated throttling과 412×823 화면, PC는 공식 desktop preset을 사용했다. 각 실행은 별도 headless Chrome 프로필을 사용한다. 개발 서버/전체 단위/E2E suite를 중복 검사하지 않았다. 모든 보고서에 runtime error와 run warning은 없다.
 
@@ -22,7 +41,7 @@ Overview의 모바일·PC, Projects의 모바일을 수정 전후 각각 한 번
 
 수치는 단일 실험실 측정이며 반복 측정의 중앙값이나 실제 사용자 지표가 아니다. 특히 TBT의 수 ms 차이는 개선/회귀로 단정하지 않는다. CPU, 캐시, 네트워크, 실행 환경에 따라 점수가 달라진다는 [Lighthouse의 해석 기준](https://developer.chrome.com/docs/lighthouse/performance/performance-scoring)을 따른다. 다른 페이지, tablet, light 테마, 실제 API/인증, 배포 CDN/캐시/압축/HTTPS는 이번 측정 범위에 포함하지 않았다.
 
-## 적용한 개선
+### 적용한 개선
 
 1. **Overview 로딩 공간 예약**: analytics 응답 전 KPI만 표시하다가 chart/activity가 삽입되어 프로젝트 표가 약 한 영역만큼 밀렸다. 기존 shadcn Card/Skeleton으로 전체 영역을 예약했다. 성공 화면, 실제 데이터 흐름, demo 지연은 유지했다. PC의 주요 CLS가 제거됐다.
 2. **폰트의 불필요한 CSS 포함 제거**: 작은 Pretendard subset 3개가 Vite 기본 임계값에 의해 base64로 CSS에 포함되어 미사용 글리프도 전송됐다. [assetsInlineLimit callback](https://vite.dev/config/build-options#build-assetsinlinelimit)으로 폰트만 별도 해시 자산으로 출력한다. 276개 font-face와 400/500/600, 한글/영문 범위, WOFF fallback은 유지한다. CSS gzip은 **76,629 → 62,162 bytes (18.9% 감소)**, inline font 수는 3 → 0이다. CSS 절감에는 작은 새 skeleton/접근성 유틸리티도 반영되어 있다.
@@ -30,7 +49,7 @@ Overview의 모바일·PC, Projects의 모바일을 수정 전후 각각 한 번
 4. **검색 단축키와 접근 가능한 이름 정리**: 화면의 `Search ⌘ K`와 접근 가능한 이름 `Search workspace`가 일치하지 않았다. 단축키는 비상호작용 보조 표기로 분리하고 실제 지원하는 `Meta+K Control+K`를 `aria-keyshortcuts`로 선언했다. `label-content-name-mismatch`가 해결됐다. 이 항목은 초기 접근성 점수 100에도 별도 실패로 존재했으므로 점수만으로 판단하지 않았다.
 5. **유효한 robots.txt 제공**: 없는 `/robots.txt` 요청에 SPA HTML이 반환되어 37개 구문 오류가 발생했다. 정적 텍스트 파일을 제공하여 `robots-txt` 검사를 통과했다.
 
-## SEO 63점과 남은 개선 후보
+### SEO 63점과 남은 개선 후보
 
 SEO의 남은 실패는 **`is-crawlable` 하나**다. 실제 배포 origin이 없는 기본 빌드의 의도적인 `noindex, nofollow` 정책을 유지했다. 점수를 높이기 위해 가짜 도메인을 넣거나 색인을 허용하지 않았다. 공개 배포 시 실제 `VITE_SITE_URL`과 호스트 경로 설정을 적용하고 재측정해야 한다. 관리자/비공개 화면의 색인 정책은 제품 요구에 맞춰 별도로 결정한다. OG와 색인 정책/배포 설정은 [메타데이터 가이드](../seo.md)를 따른다.
 
@@ -40,7 +59,7 @@ SEO의 남은 실패는 **`is-crawlable` 하나**다. 실제 배포 origin이 �
 - **CSS/폰트**: 미사용 CSS 추정 약 39 KiB, 모바일 render-blocking 절감 추정 440 ms. 다른 페이지의 shadcn 유틸리티와 다국어 unicode-range 선언이 포함된다. 한 페이지의 coverage만으로 폰트/스타일을 삭제하지 않는다. 전체 subset preload도 추가하지 않았다.
 - **배포 환경**: 로컬 preview는 실제 호스트의 CDN·지연·캐시 정책을 대표하지 않는다. 공개 URL이 생기면 실제 배포 응답을 대상으로 확인한다.
 
-## 재현과 보고서
+### 재현과 보고서
 
 [Lighthouse CLI](https://github.com/GoogleChrome/lighthouse#using-the-node-cli)를 일회 실행하므로 앱 의존성을 추가하지 않았다. 같은 빌드를 사용하는 별도 터미널에서 실행한다.
 
@@ -66,7 +85,7 @@ PC는 `--preset=desktop`, Projects는 URL `/projects`를 선택한다. 동일 �
 
 개선 후 보고서 이름은 `after-overview-desktop.report.html`, `after-overview-mobile.report.html`, `after-projects-mobile.report.html`이다. 이 파일은 저장소에 커밋되지 않고 로컬 정리 시 삭제될 수 있으므로 영구 링크로 제공하지 않는다. 새 측정이 필요하면 Actions artifact를 사용한다. 위 측정 기록은 당시 결과이며 현재 변경의 성능 점수를 보증하지 않는다.
 
-## 검증 기록
+### 검증 기록
 
 - 변경 후 production build 성공, HTML/JSON 실측 보고서 6쌍 생성.
 - `pnpm check`의 포맷·ESLint·타입·아키텍처 정적 검사 통과.

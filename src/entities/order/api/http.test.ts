@@ -55,6 +55,31 @@ describe('order HTTP contract', () => {
     ).rejects.toMatchObject({ code: 'INVALID_RESPONSE', mayHaveSucceeded: true })
   })
 
+  it('rejects duplicate identities at the HTTP list boundary', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(Response.json([sampleOrders[0], sampleOrders[0]])),
+    )
+    await expect(httpOrderAdapter.list()).rejects.toMatchObject({
+      code: 'INVALID_RESPONSE',
+      status: 200,
+      mayHaveSucceeded: false,
+    })
+  })
+
+  it('accepts an older server without history and strips client-supplied history from writes', async () => {
+    const { history, ...legacy } = orderSchema.parse(sampleOrders[0])
+    expect(history).toEqual([])
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(Response.json(legacy))
+    vi.stubGlobal('fetch', fetchMock)
+    const untrustedInput = { ...legacy, history: [] }
+    const created = await httpOrderAdapter.create(untrustedInput)
+    expect(created.history).toEqual([])
+    const body = fetchMock.mock.calls[0]?.[1]?.body
+    if (typeof body !== 'string') throw new Error('Expected a serialized JSON request body.')
+    expect(JSON.parse(body)).not.toHaveProperty('history')
+  })
+
   it('aborts an in-flight HTTP list using the Query-provided signal', async () => {
     const controller = new AbortController()
     vi.stubGlobal(

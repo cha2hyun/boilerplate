@@ -1,3 +1,4 @@
+import { product } from '@/shared/config/product'
 import { useRef, useState } from 'react'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { toast } from 'sonner'
@@ -152,7 +153,9 @@ export function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>{t('settings.appearance')}</CardTitle>
-              <CardDescription>{t('settings.chooseAppearance')}</CardDescription>
+              <CardDescription>
+                {t('settings.chooseAppearance', { product: product.name })}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">

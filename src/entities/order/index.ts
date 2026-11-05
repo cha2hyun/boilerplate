@@ -14,5 +14,12 @@ export {
   orderStatuses,
   orderPaymentStatuses,
   orderLimits,
+  orderHistoryEntrySchema,
 } from './model/schema'
-export type { SampleOrder, OrderStatus, OrderInput } from './model/schema'
+export type {
+  SampleOrder,
+  OrderStatus,
+  OrderPaymentStatus,
+  OrderInput,
+  OrderHistoryEntry,
+} from './model/schema'

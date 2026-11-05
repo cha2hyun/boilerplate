@@ -507,11 +507,29 @@ test('returns command palette focus to its button or keyboard opener when dismis
   await expect(searchButton).toBeFocused()
 })
 
-test('validates, saves and resets workspace preferences across reloads', async ({ page }) => {
+test('validates, saves and resets workspace preferences across reloads', async ({
+  page,
+  viewport,
+}) => {
   await page.goto('/settings')
   const name = page.getByRole('textbox', { name: 'Workspace name', exact: true })
   const compact = page.getByRole('switch', { name: 'Compact layout', exact: true })
   const save = page.getByRole('button', { name: 'Save changes', exact: true })
+  const expectSidebarName = async (value: string) => {
+    const mobile = (viewport?.width ?? 1440) < 768
+    const tablet = !mobile && (viewport?.width ?? 1440) < 1280
+    if (mobile || tablet) await page.locator('[data-sidebar="trigger"]').click()
+    const label = page.locator('[data-slot="sidebar-group-label"]').filter({ hasText: value })
+    await expect(label).toHaveText(value)
+    await expect(label).toBeVisible()
+    await expect(label).toHaveCSS('opacity', '1')
+    if (mobile)
+      await page
+        .getByRole('dialog', { name: 'Sidebar', exact: true })
+        .getByRole('button', { name: 'Close', exact: true })
+        .click()
+    if (tablet) await page.locator('[data-sidebar="trigger"]').click()
+  }
   await name.fill('x')
   await save.click()
   await expect(page.getByRole('alert')).toHaveText('Use at least 2 characters')
@@ -524,10 +542,12 @@ test('validates, saves and resets workspace preferences across reloads', async (
   await expect(save).toBeDisabled()
   await page.reload()
   await expect(name).toHaveValue('Product Studio')
+  await expectSidebarName('Product Studio')
   await expect(compact).toHaveAttribute('aria-checked', 'true')
 
   await page.getByRole('button', { name: 'Reset preferences', exact: true }).click()
   await expect(name).toHaveValue('Acme Studio')
+  await expectSidebarName('Acme Studio')
   await expect(compact).toHaveAttribute('aria-checked', 'false')
   await expect(save).toBeDisabled()
   await page.reload()
@@ -760,7 +780,7 @@ test('keeps page titles and header badges consistent through responsive sidebar 
     })
   }
   await page.goto('/')
-  await expectPageHeader('Overview')
+  await expectPageHeader('Overview', 'Sample')
   const sidebarTrigger = page
     .getByRole('main')
     .getByRole('button', { name: 'Toggle Sidebar', exact: true })
@@ -810,7 +830,7 @@ test('keeps page titles and header badges consistent through responsive sidebar 
   }
   await page.getByRole('link', { name: 'Projects', exact: true }).click()
   await expect(page).toHaveURL('/projects')
-  await expectPageHeader('Projects', 'Workspace')
+  await expectPageHeader('Projects', 'Sample')
   if (isMobileLayout) {
     await expect(sidebar).toBeHidden()
     await expect(sidebarTrigger).toBeFocused()
