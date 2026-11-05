@@ -1,8 +1,10 @@
 # 타이포그래피
 
-기본 UI 서체는 [Pretendard 1.3.9](https://github.com/orioncactus/pretendard/tree/v1.3.9)의 **동적 subset**입니다. 공식 패키지의 Regular/Medium/SemiBold CSS만 가져오며 unicode-range에 해당하는 글리프 조각을 브라우저가 선택해서 요청합니다. Vite가 폰트를 같은 출처의 해시 자산으로 배포하므로 런타임 외부 CDN이 필요하지 않습니다. 전체 폰트/모든 subset을 preload하지 않습니다.
+기본 UI 서체는 [Pretendard 1.3.9](https://github.com/orioncactus/pretendard/tree/v1.3.9)의 **동적 subset**입니다. `index.html`이 jsDelivr의 공식 npm 패키지에서 Regular/Medium/SemiBold CSS를 직접 불러오며, unicode-range에 해당하는 글리프 조각도 브라우저가 CDN에서 선택해서 요청합니다. 버전은 `1.3.9`로 고정하고 `latest`나 전체 두께·전체 폰트 CSS로 교체하지 않습니다.
 
-작은 폰트 조각도 CSS에 base64로 포함하지 않도록 Vite의 font asset inlining을 끕니다. 그래야 화면에 쓰이지 않는 글리프가 초기 CSS와 함께 전송되지 않고 `unicode-range`에 따라 요청됩니다. 다른 작은 자산은 Vite 기본 정책을 유지합니다.
+CDN 기준 경로는 `https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/`입니다. `crossorigin` preconnect로 연결을 준비하고 공식 CSS의 `font-display: swap`을 유지합니다. 전체 폰트/모든 subset을 preload하거나 Vite 번들에 중복 포함하지 않습니다. 배포 환경에서 CSP를 설정한다면 `style-src`와 `font-src`에 `https://cdn.jsdelivr.net`을 허용해야 합니다.
+
+`pretendard` 개발 의존성은 브랜드 이미지 생성과 결정적인 E2E 응답에만 사용합니다. 버전을 변경할 때 `index.html`, `package.json`/lockfile, E2E의 CDN 경로와 이 문서를 함께 맞춥니다. 실제 CDN 응답·CORS는 별도로 확인하고 브라우저 회귀 검사는 [테스트 정책](../testing.md)에 따라 같은 버전의 원본 파일을 사용합니다.
 
 | 두께         | Tailwind        | 역할                                             |
 | ------------ | --------------- | ------------------------------------------------ |
@@ -33,4 +35,4 @@
 
 KPI의 레이블·숫자·footer 크기는 [공통 화면 조합](compositions.md)이 소유하며 페이지에서 재정의하지 않습니다.
 
-소유 코드: `src/app/styles/globals.css`, `src/shared/ui/page-header.tsx`, `src/shared/ui/metric-card.tsx`, `vite.config.ts`. 화면 표본: Components → Typography, Foundations → 기본·피드백.
+소유 코드: `index.html`, `src/app/styles/globals.css`, `src/shared/ui/page-header.tsx`, `src/shared/ui/metric-card.tsx`. 화면 표본: Components → Typography, Foundations → 기본·피드백.

@@ -42,7 +42,7 @@ Package dependencies retain their respective licenses. This notice preserves the
 
 ## Pretendard
 
-The default font uses the unmodified static dynamic subsets from the official `pretendard@1.3.9` package. Only Regular (400), Medium (500), and SemiBold (600) stylesheets are imported. Their Unicode ranges let the browser request the Korean, Latin, and other supported character slices it needs. Vite serves the font assets from the application build; the browser does not contact a font CDN.
+The default font uses the unmodified static dynamic subsets from the official `pretendard@1.3.9` package through jsDelivr. Only Regular (400), Medium (500), and SemiBold (600) stylesheets are linked in `index.html`. Their Unicode ranges let the browser request the Korean, Latin, and other supported character slices it needs directly from `https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/`. Font files are not bundled with the application. The same pinned package remains a development dependency for brand image generation and deterministic browser tests.
 
 - Source: [orioncactus/pretendard v1.3.9](https://github.com/orioncactus/pretendard/tree/v1.3.9)
 - Copyright (c) 2021, Kil Hyung-jin, with Reserved Font Name Pretendard.

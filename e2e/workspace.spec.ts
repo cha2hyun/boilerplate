@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures.js'
+import { expect, fontCdnBaseUrl, test, type Page } from './fixtures.js'
 import { pageMetadata } from '../src/app/seo/metadata.ts'
 
 test('serves page metadata without JavaScript and updates it during client navigation', async ({
@@ -575,6 +575,7 @@ test('recovers from an unknown route and returns focus after closing a component
 
 test('loads Korean and Latin Pretendard subsets at only the three approved weights', async ({
   page,
+  fontCdnRequests,
 }) => {
   await page.goto('/components')
   await page.getByRole('tab', { name: 'Typography', exact: true }).click()
@@ -603,6 +604,20 @@ test('loads Korean and Latin Pretendard subsets at only the three approved weigh
   })
   expect(faces.loaded.every((count) => count > 0)).toBe(true)
   expect(faces.declared).toEqual(['400', '500', '600'])
+  const styles = ['Regular', 'Medium', 'SemiBold']
+  expect(
+    await page
+      .locator('link[rel="stylesheet"][href*="/pretendard@"]')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href'))),
+  ).toEqual(styles.map((style) => `${fontCdnBaseUrl}Pretendard-${style}.css`))
+  for (const style of styles) {
+    expect(fontCdnRequests).toContain(`${fontCdnBaseUrl}Pretendard-${style}.css`)
+    expect(
+      fontCdnRequests.some((url) =>
+        url.startsWith(`${fontCdnBaseUrl}woff2-dynamic-subset/Pretendard-${style}.subset.`),
+      ),
+    ).toBe(true)
+  }
   await page.getByRole('tab', { name: 'Theme tokens', exact: true }).click()
   await expect(page.getByText('Brand · Blueprint Blue', { exact: true })).toBeVisible()
 })
