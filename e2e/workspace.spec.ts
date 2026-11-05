@@ -32,6 +32,83 @@ async function expectNoPageOverflow(page: Page) {
   expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport)
 }
 
+function overviewPanelGeometry({
+  revenue,
+  activity,
+  loading,
+}: {
+  revenue: string
+  activity: string
+  loading: boolean
+}) {
+  const cards = [...document.querySelectorAll('[data-slot="card"]')]
+  const chart = cards.find((card) => card.getAttribute('aria-label') === revenue)
+  const activityCard = [...document.querySelectorAll('[role="region"]')]
+    .find((region) => region.getAttribute('aria-label') === activity)
+    ?.closest('[data-slot="card"]')
+  if (
+    !chart ||
+    !activityCard ||
+    [chart, activityCard].some((card) => card.getAttribute('aria-busy') !== String(loading))
+  ) {
+    return null
+  }
+  return [chart, activityCard].map((card) => {
+    const footer = card.querySelector('[data-slot="card-footer"]')
+    const content = footer?.firstElementChild
+    if (!footer || !content) throw new Error('An overview panel footer is missing.')
+    const cardBox = card.getBoundingClientRect()
+    const footerBox = footer.getBoundingClientRect()
+    const contentBox = content.getBoundingClientRect()
+    const separator = Number.parseFloat(getComputedStyle(footer).borderTopWidth)
+    // Include the card's bottom padding: the visible footer band ends at its outer border.
+    const bandTop = footerBox.top + separator
+    const bandBottom = cardBox.bottom - Number.parseFloat(getComputedStyle(card).borderBottomWidth)
+    return {
+      top: cardBox.top + window.scrollY,
+      bottom: cardBox.bottom + window.scrollY,
+      divider: footerBox.top + window.scrollY,
+      separator,
+      footerHeight: bandBottom - bandTop,
+      contentCenter: contentBox.top + contentBox.height / 2 + window.scrollY,
+      centerDelta: Math.abs(contentBox.top + contentBox.height / 2 - (bandTop + bandBottom) / 2),
+      topSpace: contentBox.top - bandTop,
+      bottomSpace: bandBottom - contentBox.bottom,
+      contentHeight: contentBox.height,
+      lineHeight: Number.parseFloat(getComputedStyle(content).lineHeight),
+      horizontalOverflow: content.scrollWidth - content.clientWidth,
+      verticalOverflow: content.scrollHeight - content.clientHeight,
+    }
+  })
+}
+
+function expectOverviewPanelFooters(
+  panels: ReturnType<typeof overviewPanelGeometry>,
+  sideBySide: boolean,
+) {
+  if (!panels || panels.length !== 2) throw new Error('The overview panels are incomplete.')
+  for (const panel of panels) {
+    expect(panel.separator).toBeGreaterThan(0)
+    expect(panel.centerDelta).toBeLessThanOrEqual(1)
+    expect(panel.topSpace).toBeGreaterThanOrEqual(15)
+    expect(panel.bottomSpace).toBeGreaterThanOrEqual(15)
+    expect(panel.horizontalOverflow).toBeLessThanOrEqual(1)
+    expect(panel.verticalOverflow).toBeLessThanOrEqual(1)
+  }
+  const [chart, activity] = panels
+  if (!chart || !activity) throw new Error('The overview panels are incomplete.')
+  if (sideBySide) {
+    for (const edge of ['top', 'bottom', 'divider', 'contentCenter'] as const) {
+      expect(
+        Math.abs(chart[edge] - activity[edge]),
+        `Overview panel ${edge} alignment`,
+      ).toBeLessThanOrEqual(1)
+    }
+  } else {
+    expect(activity.top - chart.bottom).toBeGreaterThanOrEqual(19)
+  }
+}
+
 test('switches shared number formats and keeps compact motion text within its reserved width', async ({
   page,
 }) => {
@@ -238,6 +315,102 @@ test('loads the overview without browser errors and changes the revenue period',
   await testInfo.attach('Overview viewport', { path: screenshot, contentType: 'image/png' })
   expect(browserErrors).toEqual([])
 })
+
+for (const locale of ['en-US', 'ko-KR'] as const) {
+  for (const compact of [false, true]) {
+    test(`aligns overview footer dividers in ${locale}, ${compact ? 'compact' : 'normal'} layout, while loading and ready`, async ({
+      page,
+    }, testInfo) => {
+      const korean = locale === 'ko-KR'
+      const labels = {
+        revenue: korean ? '매출 현황' : 'Revenue overview',
+        activity: korean ? '최근 활동' : 'Recent activity',
+      }
+      await page.goto('/settings')
+      await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+      if (compact) {
+        await page.getByRole('switch', { name: 'Compact layout', exact: true }).click()
+        await page.getByRole('button', { name: 'Save changes', exact: true }).click()
+        await expect(page.getByRole('button', { name: 'Save changes', exact: true })).toBeDisabled()
+      }
+      if (korean) {
+        await page.getByRole('button', { name: 'Language', exact: true }).click()
+        await page.getByRole('menuitemradio', { name: '한국어', exact: true }).click()
+      }
+      await expect(page.locator('html')).toHaveAttribute('lang', locale)
+      await page.evaluate(async () => {
+        await Promise.all(
+          ['400', '500', '600'].map((weight) =>
+            document.fonts.load(
+              `${weight} 16px Pretendard`,
+              'Revenue overview Recent activity Explore projects Loading revenue… Oct 5 – Nov 3 · Revenue in USD 매출 현황 최근 활동 프로젝트 살펴보기 매출을 불러오는 중… 10월 5일 – 11월 3일 · 매출 단위: USD',
+            ),
+          ),
+        )
+        await document.fonts.ready
+      })
+      if (testInfo.project.name === 'mobile') {
+        await page
+          .getByRole('button', { name: korean ? '사이드바 전환' : 'Toggle Sidebar', exact: true })
+          .click()
+      }
+      // Register before navigation to capture the real demo request's cold-loading frame.
+      const cold = page.waitForFunction(overviewPanelGeometry, { ...labels, loading: true })
+      await page.getByRole('link', { name: korean ? '개요' : 'Overview', exact: true }).click()
+      const loadingHandle = await cold
+      const loading = await loadingHandle.jsonValue()
+      await loadingHandle.dispose()
+      const sideBySide = testInfo.project.name === 'desktop'
+      expectOverviewPanelFooters(loading, sideBySide)
+
+      const chart = page.getByLabel(labels.revenue, { exact: true })
+      await expect(chart).toHaveAttribute('aria-busy', 'false')
+      await page.evaluate(() => document.fonts.ready)
+      const ready = await page.evaluate(overviewPanelGeometry, { ...labels, loading: false })
+      expectOverviewPanelFooters(ready, sideBySide)
+      if (!loading || !ready) throw new Error('The overview loading transition is missing.')
+      for (const [index, panel] of loading.entries()) {
+        const loaded = ready[index]
+        if (!loaded) throw new Error('An overview panel disappeared after loading.')
+        for (const edge of ['top', 'bottom', 'divider', 'contentCenter'] as const) {
+          expect(
+            Math.abs(panel[edge] - loaded[edge]),
+            `${labels.revenue}: panel ${index} moved its ${edge} after loading`,
+          ).toBeLessThanOrEqual(1)
+        }
+      }
+      await expectNoPageOverflow(page)
+
+      if (sideBySide && !compact && !korean) {
+        await test.step('Keep shared footer alignment with simulated enlarged, wrapping text', async () => {
+          await chart.locator('[data-slot="card-footer"] > span').evaluate((text) => {
+            // Model enlarged copy in a constrained text column, not browser zoom.
+            text.style.fontSize = '200%'
+            text.style.lineHeight = '1.5'
+            text.style.maxInlineSize = '18ch'
+          })
+          const wrapped = await page.evaluate(overviewPanelGeometry, { ...labels, loading: false })
+          expectOverviewPanelFooters(wrapped, true)
+          if (!wrapped?.[0] || !ready[0]) throw new Error('The wrapped revenue footer is missing.')
+          expect(wrapped[0].contentHeight).toBeGreaterThan(wrapped[0].lineHeight)
+          expect(wrapped[0].footerHeight).toBeGreaterThan(ready[0].footerHeight)
+        })
+      }
+
+      const activity = page.getByRole('region', { name: labels.activity, exact: true })
+      const explore = page.getByRole('link', {
+        name: korean ? '프로젝트 살펴보기' : 'Explore projects',
+        exact: true,
+      })
+      await activity.focus()
+      await page.keyboard.press('Tab')
+      await expect(explore).toBeFocused()
+      await expect(explore).toBeInViewport({ ratio: 1 })
+      await page.keyboard.press('Enter')
+      await expect(page).toHaveURL('/projects')
+    })
+  }
+}
 
 test('persists the theme and keeps the shell stable through command palette navigation', async ({
   page,

@@ -177,7 +177,7 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
           )
         })}
       </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-stretch">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:grid-rows-[auto_minmax(0,1fr)_auto] xl:items-stretch xl:gap-y-6">
         <RevenueChart
           search={search}
           onSearchChange={onSearchChange}
@@ -186,7 +186,10 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
           error={analytics.error}
           onRetry={() => void analytics.refetch()}
         />
-        <Card className="gap-5 shadow-xs" aria-busy={isLoading}>
+        <Card
+          className="pb-0 shadow-xs xl:row-span-3 xl:grid xl:grid-rows-subgrid"
+          aria-busy={isLoading}
+        >
           <CardHeader>
             <CardTitle>{t('overview.activity')}</CardTitle>
             <CardDescription>{t('overview.activityDescription')}</CardDescription>
@@ -248,7 +251,7 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
               )}
             </CardContent>
           </VStack>
-          <CardFooter className="mt-auto border-t pt-4">
+          <CardFooter variant="bordered">
             <Button asChild variant="ghost" size="sm" className="w-full justify-between">
               <Link to="/projects">
                 {t('overview.explore')}

@@ -60,7 +60,11 @@ export function RevenueChart({
   const previous = visible.reduce((sum, point) => sum + point.previousRevenue, 0)
   const change = previous > 0 ? ((total - previous) / previous) * 100 : 0
   return (
-    <Card className="min-w-0 shadow-xs" aria-label={t('revenue.title')} aria-busy={isLoading}>
+    <Card
+      className="min-w-0 pb-0 shadow-xs xl:row-span-3 xl:grid xl:grid-rows-subgrid"
+      aria-label={t('revenue.title')}
+      aria-busy={isLoading}
+    >
       <CardHeader className="gap-1">
         <CardTitle>{t('revenue.title')}</CardTitle>
         <CardDescription>{t('revenue.description')}</CardDescription>
@@ -89,7 +93,7 @@ export function RevenueChart({
           </Select>
         </CardAction>
       </CardHeader>
-      <VStack asChild align="stretch" className="gap-6 xl:flex-1">
+      <VStack asChild align="stretch" className="gap-6">
         <CardContent>
           <HStack wrap className="min-h-9 min-w-0 gap-3">
             {isLoading ? (
@@ -227,8 +231,8 @@ export function RevenueChart({
           </div>
         </CardContent>
       </VStack>
-      <CardFooter className="border-t pt-4 text-xs text-muted-foreground">
-        <span className="block h-4 min-w-0 truncate">
+      <CardFooter variant="bordered" className="text-xs text-muted-foreground">
+        <span className="min-w-0 leading-4 wrap-anywhere">
           {isLoading
             ? t('revenue.loading')
             : firstDate && lastDate

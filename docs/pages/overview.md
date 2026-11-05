@@ -30,7 +30,7 @@ PageHeader와 새 프로젝트 → KPI → 매출 차트와 최근 활동 → �
 
 활동은 이름 있는 키보드 접근 가능 스크롤 영역이며 긴 문구를 줄바꿈합니다. 프로젝트 전문은 편집 대화상자로 확인합니다. [긴 콘텐츠](../design/content-overflow.md)를 따릅니다.
 
-PC에서 나란히 놓인 매출·활동 카드는 상단과 하단을 맞춥니다. 추가 높이는 매출 차트의 실제 그래프 영역이 채우며 footer 앞뒤에 빈 공간으로 남기지 않습니다. 로딩·빈 결과·오류도 같은 차트 프레임을 사용합니다. 모바일·태블릿에서는 각 카드가 내용 높이를 유지하고 그래프 영역은 240px입니다.
+PC에서 나란히 놓인 매출·활동 카드는 상단·하단·푸터 구분선·푸터 내용의 세로 중심을 모두 맞춥니다. 부모 grid의 헤더/본문/푸터 행을 공유하고 공통 CardFooter의 bordered variant를 사용합니다. 푸터가 여러 줄이 되면 두 카드의 푸터 행이 함께 늘어납니다. 추가 높이는 매출 차트의 실제 그래프 영역이 채우며 footer 앞뒤에 빈 공간으로 남기지 않습니다. 로딩·빈 결과·오류도 같은 차트 프레임을 사용합니다. 모바일·태블릿에서는 각 카드가 내용 높이를 유지하고 그래프 영역은 240px입니다.
 
 ## 상태 소유권과 구현 근거
 
@@ -41,7 +41,7 @@ PC에서 나란히 놓인 매출·활동 카드는 상단과 하단을 맞춥니
 ## 수용 기준
 
 - 기간 변경 → 매출 구간 변경, URL·새로고침·뒤로/앞으로 복원: [workspace E2E](../../e2e/workspace.spec.ts)의 `loads the overview without browser errors and changes the revenue period`.
-- 같은 workspace E2E에서 PC의 두 카드 상·하단 정렬과 실제 그래프의 높이 확장, 모바일·태블릿의 세로 배치와 240px 그래프 높이를 확인합니다.
+- 같은 workspace E2E에서 PC의 두 카드 상·하단 정렬과 실제 그래프의 높이 확장, 모바일·태블릿의 세로 배치와 240px 그래프 높이를 확인합니다. 푸터 정렬 matrix는 en-US/ko-KR와 기본/간결한 레이아웃의 loading→loaded에서 구분선·내용 중심·여백·잘림을 확인하며, desktop의 확대된 푸터 문구에서도 공유 행이 함께 늘어나는지 검증합니다.
 - 기간과 요약 정렬은 독립적으로 유효성 검사: [스키마 테스트](../../src/pages/overview/model/search.test.ts)의 `composes revenue period and recent project sorting independently`.
 - 최초 로딩·캐시 재방문·재조회 중 카드 공간과 기존 데이터를 유지: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Overview keeps card geometry and cached data through real demo requests`. 오류·빈 응답 상태는 이 테스트가 검증하지 않으므로 해당 상태 변경 시 별도로 확인합니다.
 - 기간 변경이 KPI·활동에 전파되지 않는 범위와 생성 뒤 두 페이지의 반영은 관련 소유 코드와 함께 검토합니다. 위 테스트 이름만으로 이 모든 의미가 자동 검증됐다고 보고하지 않습니다.
