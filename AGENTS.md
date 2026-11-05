@@ -19,6 +19,7 @@ React + TypeScript + Vite + pnpm 프런트엔드입니다. 현재 데이터/워�
 - 모든 페이지의 제목·설명·헤더 칩은 공통 PageHeader와 [페이지 헤더 규칙](docs/design/page-headers.md)을 사용합니다. 페이지마다 제목/칩 스타일을 재정의하지 마세요.
 - 상단 KPI는 MetricCard, 페이지 간격과 목록·폼 배치는 [공통 조합](docs/design/compositions.md)을 따릅니다. 긴 값은 [전체 표시 규칙](docs/design/content-overflow.md)을 확인하세요.
 - 로딩·오류/재시도·빈 결과·키보드·세 화면 구간을 함께 다루세요. [로딩과 모션](docs/loading-and-motion.md)의 단일 계약을 따르고 접근 가능한 이름과 초점 흐름을 보존합니다.
+- 저장하는 폼은 [미저장 입력 보호](docs/unsaved-changes.md), 앱 복구와 보고 연결은 [오류 처리](docs/error-handling.md)를 따릅니다. 오류 보고에 사용자 입력·원문·URL을 임의로 추가하지 마세요.
 
 ## 검증과 완료
 

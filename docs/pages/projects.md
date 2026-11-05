@@ -16,10 +16,13 @@ PageHeader의 새 프로젝트 → 전체 프로젝트 요약 → 조회 도구�
 - 초기화는 **검색·상태·페이지만** 되돌립니다. 정렬·정렬 방향·페이지 크기·열 표시·행 선택은 유지합니다. 검색이나 상태 필터가 있을 때만 활성화됩니다.
 - 열 표시는 임시 UI입니다. 행 선택은 프로젝트 ID로 관리하며 머리글 선택은 현재 페이지 행에 적용합니다.
 - 내보내기는 현재 필터 안에 선택된 행이 있으면 그 행들, 없으면 현재 필터에 맞는 전체 행을 CSV로 만듭니다. 현재 페이지만 또는 보이는 열만 내보내는 기능이 아닙니다. CSV 필드는 고정이고 수식처럼 해석될 수 있는 셀은 안전하게 처리합니다. 로딩·최초 오류·빈 결과에서는 내보내기를 사용할 수 없습니다.
+- 생성·수정 창의 이름·설명·상태가 창을 연 시점과 다르면 취소·Escape·바깥 클릭·닫기 버튼 및 앱 이동·뒤로/앞으로에서 폐기를 확인합니다. 계속 편집하면 입력과 이름 초점을 유지하며, 폐기 후 다시 열면 저장 값/새 프로젝트 기본값으로 시작합니다. 변경 없음·원복·저장 성공에는 확인하지 않습니다. 새로고침·탭 닫기 경고와 자동 저장이 없는 한계는 [미저장 입력 보호 계약](../unsaved-changes.md)을 따릅니다.
 
 ## 상태별 화면
 
 최초 로딩은 요약과 표 skeleton, 최초 실패는 결측 요약과 표 오류/재시도입니다. 캐시 재조회 중 기존 행을 유지하고 재조회 실패는 표 설명의 오류와 재시도로 알립니다. 전체 빈 목록과 검색 결과 없음은 구분하고 필터 빈 결과에는 초기화를 제공합니다. 데이터가 성공적으로 도착한 뒤에만 범위 밖 페이지를 보정합니다. 저장 중 중복 제출을 막고, 실패하면 입력을 유지해 오류를 설명합니다. 다른 탭에서 대상이 삭제된 수정 실패도 대화상자를 유지합니다.
+
+저장 중에는 dirty 여부와 무관하게 창 닫기와 앱 이동을 차단하고 브라우저 종료 경고를 유지합니다. 실패·저장 결과 불확실 상태에서 입력을 자동 폐기하거나 요청을 자동 재전송하지 않습니다. 기존 mutation 재조회와 오류 설명을 유지하고 성공한 저장 후에만 보호를 해제합니다.
 
 ## 반응형 동작
 
@@ -42,4 +45,5 @@ PageHeader의 새 프로젝트 → 전체 프로젝트 요약 → 조회 도구�
 - 생성·수정·삭제와 새로고침 지속성: [프로젝트 E2E](../../e2e/projects.spec.ts)의 `validates, creates, edits and deletes a project with persistence across reloads`.
 - 검색·상태·초기화·열 표시: 같은 파일의 `searches owners and projects, filters status, resets empty results, and changes visible columns`. 선택 CSV: `paginates projects and exports only selected rows as a safe CSV`.
 - 짧은 화면의 폼과 삭제된 대상 수정 오류: 같은 파일의 `keeps project validation and save controls reachable in a short viewport`, `keeps an edit open and explains the error when another tab deletes the project`.
+- 닫기 경로별 폐기 확인과 초점: [입력 보호 E2E](../../e2e/unsaved-changes.spec.ts)의 `protects project drafts for Escape, cancel, outside click and close while retaining focus`. clean·원복·폐기 후 재진입·저장 중 이동 차단·성공 후 해제·응답 손실 오류 보존: [편집창 테스트](../../src/features/project-editor/ui/project-editor-dialog.test.tsx).
 - URL 페이지가 최초 응답으로 초기화되지 않음: [표 테스트](../../src/widgets/project-table/ui/project-table.test.tsx)의 `keeps a restored page while loading and after a successful response`. 초기화의 보존 값 전체는 변경 시 코드와 함께 확인합니다.

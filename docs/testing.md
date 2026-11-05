@@ -74,6 +74,12 @@ pnpm test:e2e e2e/analytics-inbox.spec.ts --project tablet -g '필요한 테스�
 
 Playwright는 worker 2개, CI에서만 실패당 재시도 1회를 사용합니다. retry는 불안정한 테스트를 방치하는 수단이 아닙니다. 실패 trace/screenshot을 확인하고 실제 결함이나 재현 가능한 대기 조건을 수정합니다. Vite StrictMode/HMR 자체에 관련된 문제일 때만 별도 개발 서버 검증을 추가합니다.
 
+## 입력 보호와 앱 오류 복구 회귀
+
+`core`의 `e2e/unsaved-changes.spec.ts`는 설정의 페이지 이동/계속 편집/폐기, 프로젝트 폼의 닫기 경로와 초점 복구를 세 화면 구간에서 확인합니다. 브라우저 뒤로/앞으로 및 새로고침의 기본 확인창은 데스크톱에서만 확인하며, 저장 후에는 불필요한 확인이 없어야 합니다. 모바일 OS의 강제 종료까지 보장하는 검사는 아닙니다.
+
+`e2e/app-recovery.spec.ts`는 production 앱의 ThemeProvider가 실패하는 환경을 주입하고, Provider 바깥의 일반 오류 화면과 새로고침 후 정상 진입을 확인합니다. 테스트 전용 앱 라우트나 런타임 플래그를 추가하지 않습니다. 오류 보고의 개인정보 제외·중복 억제·adapter 실패 격리와 컴포넌트 경계는 해당 소유 코드 옆 단위 테스트가 확인합니다.
+
 ## Actions 구성과 실행 범위
 
 `quality` job은 frozen lockfile로 설치하고 정적 검사/가드레일/단위 테스트를 실행한 뒤 production build를 한 번만 만듭니다. `production-dist` artifact를 업로드하면 `core`, `samples` 브라우저 job이 같은 결과물을 내려받습니다. 각 화면 크기를 별도 job으로 쪼개지 않으며 브라우저 job은 최대 2개가 동시에 실행됩니다. 각 job의 worker 2개와 합쳐 최대 4개 브라우저 테스트 worker가 동작합니다.

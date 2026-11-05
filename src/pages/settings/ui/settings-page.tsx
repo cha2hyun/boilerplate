@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import { toast } from 'sonner'
 import { preferencesSchema, usePreferences } from '@/features/workspace-preferences'
+import { useUnsavedChanges } from '@/shared/hooks/use-unsaved-changes'
 import { useTranslation } from '@/shared/lib/i18n'
 import { useTheme } from '@/shared/lib/theme'
 import { Button } from '@/shared/ui/button'
@@ -20,6 +21,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Switch } from '@/shared/ui/switch'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
+import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog'
 
 export function SettingsPage() {
   const { t } = useTranslation('workspace')
@@ -30,12 +32,21 @@ export function SettingsPage() {
   const [error, setError] = useState<'settings.nameTooShort' | 'settings.nameTooLong'>()
   const dirty =
     workspaceName !== preferences.workspaceName || compactMode !== preferences.compactMode
+  const nameRef = useRef<HTMLInputElement>(null)
+  const generalTabRef = useRef<HTMLButtonElement>(null)
+  const protection = useUnsavedChanges({
+    dirty,
+    focusRef: nameRef,
+    fallbackFocusRef: generalTabRef,
+  })
   return (
     <VStack data-slot="page-content" align="stretch" className="max-w-4xl min-w-0 gap-6">
       <PageHeader title={t('settings.title')} description={t('settings.description')} />
       <Tabs defaultValue="general">
         <TabsList>
-          <TabsTrigger value="general">{t('settings.general')}</TabsTrigger>
+          <TabsTrigger value="general" ref={generalTabRef}>
+            {t('settings.general')}
+          </TabsTrigger>
           <TabsTrigger value="appearance">{t('settings.appearance')}</TabsTrigger>
         </TabsList>
         <TabsContent value="general" className="mt-6">
@@ -54,6 +65,7 @@ export function SettingsPage() {
               preferences.save(result.data)
               setWorkspaceName(result.data.workspaceName)
               setError(undefined)
+              protection.markSaved()
               toast.success(t('settings.updated'))
             }}
           >
@@ -68,6 +80,7 @@ export function SettingsPage() {
                     <Label htmlFor="workspace-name">{t('settings.workspaceName')}</Label>
                     <Input
                       id="workspace-name"
+                      ref={nameRef}
                       value={workspaceName}
                       onChange={(event) => {
                         setWorkspaceName(event.target.value)
@@ -112,6 +125,7 @@ export function SettingsPage() {
                       setWorkspaceName(resetPreferences.workspaceName)
                       setCompactMode(resetPreferences.compactMode)
                       setError(undefined)
+                      protection.markSaved()
                       toast.success(t('settings.resetToast'))
                     }}
                   >
@@ -175,6 +189,7 @@ export function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      <UnsavedChangesDialog {...protection.dialogProps} />
     </VStack>
   )
 }
