@@ -53,7 +53,9 @@ export const test = base.extend<{
       }
       await context.route(pattern, handler)
       await use(requests)
-      await context.unroute(pattern, handler)
+      // Both external fixtures share this test context. Drain pending file responses
+      // before removing interception, regardless of which fixture tears down first.
+      await context.unrouteAll({ behavior: 'wait' })
     },
     { auto: true },
   ],
@@ -72,7 +74,7 @@ export const test = base.extend<{
       // Keep every application /api request on its real demo adapter and query-cache path.
       await context.route(exchangeRateUrl, handler)
       await use(traffic)
-      await context.unroute(exchangeRateUrl, handler)
+      await context.unrouteAll({ behavior: 'wait' })
     },
     { auto: true },
   ],
