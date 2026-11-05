@@ -69,6 +69,12 @@
 
 아이콘 탐색 레일은 동일한 너비 안에서 중심을 맞춥니다. 감춘 텍스트·배지·avatar의 크기로 중심이 달라지지 않아야 합니다. 버튼의 이름·초점·Tooltip을 보존하고 배지는 펼친 상태나 상세 영역에 표시합니다.
 
+### 개발 도구 실행 버튼
+
+통합 TanStack Devtools의 기본 실행 버튼은 모든 화면 크기에서 `bottom-right` + `fixed`로 배치합니다. 화면 중간에 떠서 KPI를 가리지 않게 하며 기존 shadcn 32px 버튼을 유지합니다. 위치는 [공식 config](https://tanstack.com/devtools/latest/docs/configuration)가 소유하고 자식 아이콘만 별도 fixed/transform으로 옮기지 않습니다.
+
+저장된 설정이 config보다 우선하므로, 개발 전용 모듈이 마운트되기 전에 이전 기본값 `middle-right` + `fixed` 조합의 위치만 이전합니다. 다른 위치·floating 설정·패널 및 앱 환경 설정은 보존합니다. 현재 문서는 `viewport-fit=cover`를 사용하지 않으며, Devtools를 위해 앱 전체 viewport 정책을 변경하지 않습니다. 개발 전용 UI이므로 위치·스크롤·뷰포트 크기 변경·패널 열기/닫기는 개발 서버에서 좁혀 확인하고 production E2E에는 중복하지 않습니다.
+
 ## 검사와 완료 조건
 
 ### 넓은 표와 터치 스크롤
