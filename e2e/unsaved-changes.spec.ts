@@ -69,14 +69,12 @@ test('protects settings against browser history and reload without trapping a sa
 
   await name.fill('Reload draft')
   const nativeDialog = page.waitForEvent('dialog')
-  const reload = page.reload().then(
-    () => 'reloaded',
-    () => 'cancelled',
-  )
+  // page.reload waits for a navigation which must not finish when the user stays.
+  const reload = page.evaluate(() => window.location.reload())
   const confirmation = await nativeDialog
   expect(confirmation.type()).toBe('beforeunload')
   await confirmation.dismiss()
-  expect(await reload).toBe('cancelled')
+  await reload
   await expect(name).toHaveValue('Reload draft')
 
   await page.getByRole('button', { name: 'Save changes', exact: true }).click()
