@@ -6,6 +6,29 @@ React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러
 
 Overview·Analytics·Orders·Customers는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 300ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [숫자 표시 규칙](docs/number-formatting.md)·[로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
 
+## 미리보기
+
+실제 데모 화면을 캡처했습니다. Overview 미리보기는 밝은 테마와 어두운 테마에 맞춰 표시됩니다.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png" />
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/overview-light.png" />
+  <img src="docs/images/overview-light.png" alt="Overview 데스크톱 화면의 주요 지표와 차트" />
+</picture>
+
+<details>
+  <summary>주문 목록과 모바일 분석 화면 보기</summary>
+
+### Orders · 데스크톱
+
+![Orders 데스크톱 화면의 주문 상태 탭과 주문 목록](docs/images/orders-desktop.png)
+
+### Analytics · 모바일
+
+<img src="docs/images/analytics-mobile.png" alt="Analytics 모바일 화면의 기간 선택과 방문 지표" width="360" />
+
+</details>
+
 ## 실행
 
 헤더의 언어·통화 아이콘 메뉴에서 한국어·영어와 USD·KRW 표시를 각각 선택할 수 있으며 설정은 브라우저에 저장됩니다. 환율은 demo/api 모드 모두 Frankfurter 공개 API에서 실제로 조회합니다. 통화 메뉴 안에 환율을 표시하고, 원본 USD 금액을 환산합니다. 유효한 환율이 없으면 원화 금액은 `—`로 표시하며 같은 메뉴에서 재시도를 제공합니다. 번역·숫자·날짜·환율의 소유 경계는 [언어와 표시 통화](docs/i18n.md)를 따릅니다.
