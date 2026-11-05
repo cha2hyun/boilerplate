@@ -13,7 +13,7 @@
 | Analytics          | 모바일    | 한국어·dark  | 세로 KPI 배치와 긴 설명                      |
 | 프로젝트 생성 오류 | PC        | 영어·dark    | 폼·필드 오류·대화상자 액션                   |
 
-날짜와 시간대, 언어/통화/테마, 폰트 로딩, 숫자 전환 완료를 고정합니다. 목업 API의 실제 데모 경로는 유지하고 외부 환율만 기존 fixture로 고정합니다. 변동이 큰 차트 애니메이션이나 전체 페이지를 무조건 이미지로 고정하지 않습니다. 제목 크기·배지 중심·페이지 간격·cold/warm 카드 치수는 기존 DOM/행동 검사도 계속 담당합니다.
+날짜와 시간대, 언어/통화/테마, 폰트 로딩, 숫자 전환 완료를 고정합니다. 목업 API의 실제 데모 경로는 유지하고 외부 환율과 고정 버전 Pretendard CDN 파일은 기존 fixture로 제공합니다. 변동이 큰 차트 애니메이션이나 전체 페이지를 무조건 이미지로 고정하지 않습니다. 제목 크기·배지 중심·페이지 간격·cold/warm 카드 치수는 기존 DOM/행동 검사도 계속 담당합니다.
 
 ## 기준 이미지와 갱신
 
@@ -27,3 +27,7 @@
 참고: [Playwright 시각 비교](https://playwright.dev/docs/test-snapshots)는 동일 환경에서 기준 생성과 비교를 권장합니다. 현재 작은 픽셀 허용치는 렌더링 잡음용이며 배치·크기 변경의 허용 기준이 아닙니다.
 
 차트 축의 대비는 픽셀 기준과 별도로 실제 SVG computed fill을 검사합니다. `renders readable chart axes and avatar initials in both themes`가 Overview·Analytics의 축 글자가 현재 의미 토큰을 사용하는지와 카드 배경 대비를 확인합니다. 라이브러리 내부 DOM 변경으로 공통 선택자가 적용되지 않는 회귀를 포함합니다.
+
+같은 검사는 Overview·Projects의 Avatar 이니셜도 실제 computed color와 배경으로 확인합니다. 이니셜은 `muted` 배경 위 `foreground`를 사용하며, 12px 글자에서 4.5:1을 충족해야 합니다.
+
+2026-11-05 Orders 태블릿 기준은 `2ba2bb6`의 [Linux CI actual](https://github.com/cha2hyun/boilerplate/actions/runs/42036048774)에서 expected/actual/diff를 검토해 갱신했다. 핵심 7열, 오른쪽 고정 작업, 페이지 크기 선택과 결과 수, 이니셜 대비 변경을 승인했으며 필터·탭·행 높이는 유지한다. 허용 픽셀 수는 변경하지 않았다.

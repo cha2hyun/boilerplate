@@ -115,7 +115,7 @@ main에는 `CI Gate`와 `Conventional PR title`을 GitHub Actions 제공 필수 
 
 ## GitHub Free 사용량
 
-2026-11-03에 확인한 GitHub 공식 문서는 공개 저장소의 **표준 GitHub-hosted runner** 사용을 무료로 안내합니다. larger runner는 이 조건에 포함되지 않습니다. 이 workflow는 표준 `ubuntu-latest`만 사용합니다. [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
+2026-11-03에 확인한 GitHub 공식 문서는 공개 저장소의 **표준 GitHub-hosted runner** 사용을 무료로 안내합니다. larger runner는 이 조건에 포함되지 않습니다. CI는 표준 `ubuntu-latest`와 브라우저 검사용 `ubuntu-24.04`를 사용합니다. [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
 
 비공개 저장소에 적용되는 현재 GitHub Free 기본 제공량은 **월 $12 상당 compute usage와 500 MB Actions storage**입니다. 현재 문서는 이를 고정된 분 수가 아닌 금액으로 표기하며, compute는 다른 적격 compute 사용과 공유될 수 있습니다. 실제 저장소 공개 여부, 계정 잔여 사용량이나 지출 한도는 이 코드에서 확인하거나 변경하지 않습니다. [플랜별 포함 사용량](https://docs.github.com/en/billing/reference/product-usage-included).
 
