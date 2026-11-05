@@ -428,6 +428,105 @@ async function expectCommerceMetric(page: Page, label: string, value: string) {
   await expect(card.locator('[data-slot="metric-value"] .sr-only')).toHaveText(value)
 }
 
+async function expectEditorDateLayout(dialog: Locator, dateLabel: string, textLabel: string) {
+  const date = dialog.getByLabel(dateLabel, { exact: true })
+  const text = dialog.getByLabel(textLabel, { exact: true })
+  await expect(date).toBeVisible()
+  await expect(date).toHaveAttribute('type', 'date')
+  await expect(date).toBeEditable()
+  // Chromium checks geometry but does not reproduce iOS's native date sizing override.
+  // Keep the computed WebKit compatibility reset covered without testing class strings.
+  await expect(date).toHaveCSS('appearance', 'none')
+  await expect(date).toHaveCSS('box-sizing', 'border-box')
+  const dateId = await date.getAttribute('id')
+  const textId = await text.getAttribute('id')
+  if (!dateId || !textId) throw new Error('The editor fields need associated labels.')
+
+  const expectLayout = async () => {
+    await expect(async () => {
+      const layout = await dialog.evaluate(
+        (element, ids) => {
+          const dateInput = element.querySelector<HTMLInputElement>(`#${CSS.escape(ids.dateId)}`)
+          const textInput = element.querySelector<HTMLInputElement>(`#${CSS.escape(ids.textId)}`)
+          if (!dateInput || !textInput) throw new Error('The editor fields are missing.')
+          const ancestors = new Set<HTMLElement>()
+          const inputs = Array.from(
+            element.querySelectorAll<HTMLInputElement>('input:not([type="hidden"])'),
+          )
+          for (const input of inputs) {
+            for (let parent = input.parentElement; parent; parent = parent.parentElement) {
+              ancestors.add(parent)
+              if (parent === element) break
+            }
+          }
+          const scrollBody = Array.from(ancestors).find(
+            (parent) =>
+              parent.contains(dateInput) &&
+              /^(auto|scroll)$/.test(getComputedStyle(parent).overflowY),
+          )
+          if (!scrollBody) throw new Error('The editor has no vertically scrollable body.')
+          const bodyBox = scrollBody.getBoundingClientRect()
+          const bodyStyle = getComputedStyle(scrollBody)
+          const left = bodyBox.left + scrollBody.clientLeft + parseFloat(bodyStyle.paddingLeft)
+          const right =
+            bodyBox.left +
+            scrollBody.clientLeft +
+            scrollBody.clientWidth -
+            parseFloat(bodyStyle.paddingRight)
+          const dateBox = dateInput.getBoundingClientRect()
+          const textBox = textInput.getBoundingClientRect()
+          return {
+            heightDifference: Math.abs(dateBox.height - textBox.height),
+            widthDifference: Math.abs(dateBox.width - textBox.width),
+            leftDifference: Math.abs(dateBox.left - textBox.left),
+            // Include the form, field wrappers and clipped ancestors, so overflow-hidden
+            // cannot turn an oversized input into an apparently passing modal.
+            overflowingAncestors: Array.from(ancestors)
+              .filter((parent) => parent.scrollWidth > parent.clientWidth)
+              .map((parent) => ({
+                tag: parent.tagName,
+                width: parent.clientWidth,
+                scrollWidth: parent.scrollWidth,
+              })),
+            outOfBoundsInputs: inputs
+              .map((input) => ({
+                id: input.id,
+                left: input.getBoundingClientRect().left,
+                right: input.getBoundingClientRect().right,
+              }))
+              .filter((input) => input.left < left - 1 || input.right > right + 1),
+          }
+        },
+        { dateId, textId },
+      )
+      expect(
+        layout.heightDifference,
+        `${dateLabel} height matches ${textLabel}`,
+      ).toBeLessThanOrEqual(1)
+      expect(layout.widthDifference, `${dateLabel} width matches ${textLabel}`).toBeLessThanOrEqual(
+        1,
+      )
+      expect(layout.leftDifference, `${dateLabel} aligns with ${textLabel}`).toBeLessThanOrEqual(1)
+      expect(layout.overflowingAncestors, 'Editor ancestors have no horizontal overflow').toEqual(
+        [],
+      )
+      expect(layout.outOfBoundsInputs, 'Inputs stay inside the scroll body padding').toEqual([])
+    }).toPass()
+  }
+
+  const originalValue = await date.inputValue()
+  expect(originalValue).not.toBe('')
+  await date.fill('')
+  try {
+    await expect(date).toHaveValue('')
+    await expectLayout()
+  } finally {
+    await date.fill(originalValue)
+  }
+  await expect(date).toHaveValue(originalValue)
+  await expectLayout()
+}
+
 async function fillCustomerForm(dialog: Locator, name: string) {
   await dialog.getByLabel('Name', { exact: true }).fill(name)
   await dialog.getByLabel('Email', { exact: true }).fill('commerce.customer@example.com')
@@ -445,6 +544,8 @@ test('creates, edits and deletes an order with protected drafts and persisted to
   const trigger = page.getByRole('button', { name: 'New order', exact: true })
   await trigger.click()
   const editor = page.getByRole('dialog', { name: 'Create order', exact: true })
+  // Customer name occupies the same grid column as Order date at every viewport.
+  await expectEditorDateLayout(editor, 'Order date', 'Customer name')
   const customerName = editor.getByLabel('Customer name', { exact: true })
   await customerName.fill('Commerce order buyer')
   await page.keyboard.press('Escape')
@@ -500,6 +601,7 @@ test('creates, edits and deletes an order with protected drafts and persisted to
   await actions.click()
   await page.getByRole('menuitem', { name: 'Edit order', exact: true }).click()
   const edit = page.getByRole('dialog', { name: 'Edit order', exact: true })
+  await expectEditorDateLayout(edit, 'Order date', 'Customer name')
   await expect(edit.getByLabel('Shipping (USD)', { exact: true })).toHaveValue('0.29')
   await edit.getByLabel('Quantity', { exact: true }).first().fill('4')
   await edit.getByLabel('Order status', { exact: true }).click()
@@ -549,6 +651,7 @@ test('retains failed customer input and persists CRUD while clamping the final p
   await expect(trigger).toBeFocused()
   await trigger.click()
   await expect(editor.getByLabel('Name', { exact: true })).toHaveValue('')
+  await expectEditorDateLayout(editor, 'Joined', 'Name')
   await fillCustomerForm(editor, 'Commerce customer')
   await editor
     .getByRole('heading', { name: 'Create customer', exact: true })
@@ -605,6 +708,7 @@ test('retains failed customer input and persists CRUD while clamping the final p
   await page.getByRole('button', { name: 'Actions for Commerce customer', exact: true }).click()
   await page.getByRole('menuitem', { name: 'Edit customer', exact: true }).click()
   const edit = page.getByRole('dialog', { name: 'Edit customer', exact: true })
+  await expectEditorDateLayout(edit, 'Joined', 'Name')
   await edit.getByLabel('Name', { exact: true }).fill('Commerce customer updated')
   await edit.getByLabel('Status', { exact: true }).click()
   await page.getByRole('option', { name: 'Inactive', exact: true }).click()

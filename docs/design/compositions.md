@@ -58,4 +58,8 @@
 - Label의 `htmlFor`, 컨트롤 `id`, 도움말/오류의 `aria-describedby`를 연결합니다. 검증 오류는 `aria-invalid`와 `role="alert"`로 전달합니다. placeholder가 레이블을 대체하지 않습니다.
 - Settings는 로컬 환경 설정, 프로젝트·주문·고객 편집은 각 feature의 검증·mutation을 유지합니다. 제출·취소·초기화의 버튼 종류와 초점 복귀는 해당 흐름이 소유합니다. 반복 외형을 맞추려고 저장 수명·URL·입력 제한을 변경하지 않습니다.
 - 긴 오류/도움말을 고정 높이로 가리지 않습니다. Dialog/Sheet의 제목·설명·초점·닫기 동작은 설치된 공통 컴포넌트에 맡깁니다.
+- 날짜·시간 입력은 공통 `Input`이 native appearance를 정규화합니다. `date`/`datetime-local`/`time`/`month`/`week`는 `appearance-none`, `box-border`, `max-w-full`과 기존 `h-9 w-full min-w-0`로 다른 입력과 같은 높이·열 너비를 유지합니다. `type`과 값 형식을 보존해 브라우저 날짜 선택 기능은 유지하며, 폼마다 별도 크기나 custom picker로 우회하지 않습니다.
+- iOS의 날짜 입력은 native appearance가 최소 너비와 content-box 계산을 강제할 수 있습니다([WebKit 이슈](https://bugs.webkit.org/show_bug.cgi?id=301648)). 날짜 텍스트의 빈 값 높이·정렬은 기존 Tailwind Preflight가 소유하므로 WebKit pseudo-element reset을 중복하지 않습니다.
+- 폼에서 가로 넘침이 발생하면 실제 입력의 box-sizing·최소 너비와 부모의 grid/flex 경계를 먼저 확인합니다. 필요한 경계에 `min-w-0` 또는 `minmax(0,1fr)` 열을 적용하되, 원인이 개별 입력의 native appearance라면 공통 Input에서 수정합니다. 가로 `overflow-hidden`을 추가해 넘친 필드를 숨기는 방식은 해결로 인정하지 않습니다.
+- 주문·고객 CRUD 회귀 검사는 빈 날짜와 입력된 날짜의 실제 높이·좌우 경계, computed appearance/box-sizing, 입력부터 Dialog까지의 `scrollWidth <= clientWidth`를 확인합니다. 세 화면 구간의 Chromium 검증과 실제 iOS 날짜 선택 UI 검증은 구분합니다.
 - 저장 전 입력을 잃는 이동·닫기는 [미저장 입력 보호](../unsaved-changes.md)를 따릅니다. 확인창은 공통 shadcn AlertDialog 조합을 사용하며 폼마다 다른 문구·색·버튼 순서를 만들지 않습니다.
