@@ -177,7 +177,7 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
           )
         })}
       </div>
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px] xl:items-stretch">
         <RevenueChart
           search={search}
           onSearchChange={onSearchChange}

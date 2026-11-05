@@ -89,7 +89,7 @@ export function RevenueChart({
           </Select>
         </CardAction>
       </CardHeader>
-      <VStack asChild align="stretch" className="gap-6">
+      <VStack asChild align="stretch" className="gap-6 xl:flex-1">
         <CardContent>
           <HStack wrap className="min-h-9 min-w-0 gap-3">
             {isLoading ? (
@@ -123,7 +123,7 @@ export function RevenueChart({
               <span className="text-3xl font-semibold text-muted-foreground">—</span>
             )}
           </HStack>
-          <div className="h-60 w-full shrink-0">
+          <div className="relative h-60 min-h-60 w-full shrink-0 xl:flex-1">
             {isLoading ? (
               <Skeleton
                 className="h-full w-full"
@@ -153,7 +153,10 @@ export function RevenueChart({
                 {t('revenue.empty')}
               </HStack>
             ) : (
-              <ChartContainer config={config} className="aspect-auto h-60 w-full">
+              <ChartContainer
+                config={config}
+                className="absolute inset-0 aspect-auto h-full w-full"
+              >
                 <AreaChart
                   accessibilityLayer
                   aria-label={t('revenue.chartLabel')}
