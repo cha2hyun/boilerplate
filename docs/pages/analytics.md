@@ -28,6 +28,8 @@ PageHeader의 기간 선택 → 조회 날짜 안내 → KPI → 방문 추이�
 
 표 내용은 카드 내부 세로 스크롤을 사용합니다. 경로/유입 이름은 별도 상세 화면이 없으므로 줄바꿈으로 전문을 표시합니다. 공통 기준은 [긴 콘텐츠](../design/content-overflow.md)입니다.
 
+320–412px에서 글꼴을 200%로 확대해도 기기 이름·세션 수·비율을 잘라내지 않습니다. 기기 차트의 Y축은 Recharts의 `width="auto"`로 실제 tick 너비를 측정하고, 아래 기기 요약은 최소 행 높이와 자연 줄바꿈을 사용합니다. 차트 범례는 필요한 만큼 줄바꿈합니다. 공통 툴팁은 실제 차트 너비 안에서 항목·값 전문을 표시하며, plot 영역보다 넓을 때만 차트 왼쪽을 기준으로 배치합니다. 보통 너비에서는 포인터를 따르는 기존 배치를 유지합니다.
+
 ## 상태 소유권과 구현 근거
 
 - URL: [라우트](../../src/app/routes/analytics.tsx), [조회 스키마](../../src/pages/analytics/model/search.ts).
@@ -36,6 +38,7 @@ PageHeader의 기간 선택 → 조회 날짜 안내 → KPI → 방문 추이�
 
 ## 수용 기준
 
+- 같은 분석 E2E의 `keeps device labels, values, and tooltips readable at 200% text on narrow mobile screens`에서 412px 영어·320px 한국어의 Y축 경계, 기기 요약의 줄바꿈·행 비겹침과 키보드로 연 툴팁의 전체 수치를 확인합니다.
 - 기간 변경 → 모든 지표/차트/표 갱신과 URL 복원: [분석 E2E](../../e2e/analytics-inbox.spec.ts)의 `analytics period updates the metrics, charts, and traffic tables together`.
 - 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Analytics keeps card geometry and cached data through real demo requests`. 최초/재조회 실패·빈 응답은 이 테스트가 검증하지 않으므로 해당 상태 변경 시 별도로 확인합니다.
 - 무관한 URL 필드가 페이지 상태에 남지 않음: [조회 테스트](../../src/pages/analytics/model/search.test.ts)의 `defaults omitted parameters and excludes unrelated URL state`.

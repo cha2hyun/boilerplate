@@ -106,7 +106,35 @@ ${colorConfig
   )
 }
 
-const ChartTooltip = RechartsPrimitive.Tooltip
+const ChartTooltipLayoutContext = React.createContext<{
+  chartWidth: number | undefined
+  contentWidth: number
+  needsFullWidth: boolean
+  setContentWidth: (width: number) => void
+} | null>(null)
+
+function ChartTooltip({
+  position,
+  ...props
+}: React.ComponentProps<typeof RechartsPrimitive.Tooltip>) {
+  const chartWidth = RechartsPrimitive.useChartWidth()
+  const plotArea = RechartsPrimitive.usePlotArea()
+  const [contentWidth, setContentWidth] = React.useState(0)
+  const needsFullWidth = plotArea != null && contentWidth > plotArea.width
+  const layout = React.useMemo(
+    () => ({ chartWidth, contentWidth, needsFullWidth, setContentWidth }),
+    [chartWidth, contentWidth, needsFullWidth],
+  )
+
+  return (
+    <ChartTooltipLayoutContext.Provider value={layout}>
+      <RechartsPrimitive.Tooltip
+        {...props}
+        position={needsFullWidth && position?.x == null ? { ...position, x: 0 } : position}
+      />
+    </ChartTooltipLayoutContext.Provider>
+  )
+}
 
 function ChartTooltipContent({
   active,
@@ -137,6 +165,28 @@ function ChartTooltipContent({
   >) {
   const { config } = useChart()
   const { formatNumber } = useFormatters()
+  const layout = React.useContext(ChartTooltipLayoutContext)
+  const contentRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const element = contentRef.current
+    if (!layout) {
+      return
+    }
+    if (!element) {
+      layout.setContentWidth(0)
+      return
+    }
+    const measure = () => {
+      layout.setContentWidth(element.getBoundingClientRect().width)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => {
+      observer.disconnect()
+    }
+  }, [active, payload?.length, layout])
 
   const tooltipLabel = React.useMemo(() => {
     if (hideLabel || !payload?.length) {
@@ -170,8 +220,22 @@ function ChartTooltipContent({
 
   return (
     <div
+      ref={contentRef}
+      data-slot="chart-tooltip-content"
+      style={
+        layout?.chartWidth
+          ? ({
+              '--chart-tooltip-width': `${String(layout.chartWidth)}px`,
+              // Keep the measured width when stacking values so the layout cannot
+              // shrink below the plot threshold and oscillate between modes.
+              '--chart-tooltip-min-width': layout.needsFullWidth
+                ? `${String(Math.min(layout.contentWidth, layout.chartWidth))}px`
+                : undefined,
+            } as React.CSSProperties)
+          : undefined
+      }
       className={cn(
-        'grid min-w-[8rem] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl',
+        'grid max-w-(--chart-tooltip-width) min-w-[min(var(--chart-tooltip-min-width,8rem),var(--chart-tooltip-width,8rem))] items-start gap-1.5 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl',
         className,
       )}
     >
@@ -190,6 +254,7 @@ function ChartTooltipContent({
                 className={cn(
                   'flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground',
                   indicator === 'dot' && 'items-center',
+                  layout?.needsFullWidth && !formatter && 'grid grid-cols-[auto_minmax(0,1fr)]',
                 )}
               >
                 {formatter && item.value !== undefined && item.name !== undefined ? (
@@ -222,18 +287,25 @@ function ChartTooltipContent({
                     )}
                     <div
                       className={cn(
-                        'flex flex-1 justify-between leading-none',
+                        'flex min-w-0 flex-1 flex-wrap justify-between gap-x-3 gap-y-1.5 leading-none',
                         nestLabel ? 'items-end' : 'items-center',
+                        layout?.needsFullWidth && 'contents',
                       )}
                     >
-                      <div className="grid gap-1.5">
+                      <div className="grid min-w-0 gap-1.5 wrap-anywhere">
                         {nestLabel ? tooltipLabel : null}
                         <span className="text-muted-foreground">
                           {itemConfig?.label ?? item.name}
                         </span>
                       </div>
                       {item.value != null && (
-                        <span className="font-mono font-medium text-foreground tabular-nums">
+                        <span
+                          data-slot="chart-tooltip-value"
+                          className={cn(
+                            'min-w-0 font-mono font-medium wrap-anywhere text-foreground tabular-nums',
+                            layout?.needsFullWidth && 'col-span-full',
+                          )}
+                        >
                           {formatTooltipValue(item.value, valueFormatter ?? formatNumber)}
                         </span>
                       )}
@@ -270,7 +342,7 @@ function ChartLegendContent({
   return (
     <div
       className={cn(
-        'flex items-center justify-center gap-4',
+        'flex flex-wrap items-center justify-center gap-x-4 gap-y-2',
         position === 'top' ? 'pb-3' : 'pt-3',
         className,
       )}

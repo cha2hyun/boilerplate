@@ -163,9 +163,7 @@ test.describe('approved design compositions', () => {
     }
   })
 
-  test('keeps large converted KPI amounts readable without changing the reserved card height', async ({
-    page,
-  }) => {
+  test('keeps large converted KPI amounts readable within responsive cards', async ({ page }) => {
     await preparePage(page, { theme: 'light', locale: 'ko-KR', currency: 'KRW' })
     await page.addInitScript(() => {
       const originalFetch = window.fetch.bind(window)
@@ -200,7 +198,30 @@ test.describe('approved design compositions', () => {
     })
     expect(geometry.contentWidth).toBeLessThanOrEqual(geometry.width + 1)
     expect(geometry.contentHeight).toBeLessThanOrEqual(geometry.height + 1)
-    expect((await card.boundingBox())?.height).toBe(192)
+    const mobile = (page.viewportSize()?.width ?? 1440) < 768
+    if (mobile) {
+      await expect(card).toHaveCSS('min-height', '136px')
+      expect((await card.boundingBox())?.height).toBeGreaterThanOrEqual(136)
+      await page.setViewportSize({ width: 320, height: 568 })
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = '200%'
+      })
+      const overflow = await card.evaluate((element) =>
+        [element, ...element.querySelectorAll<HTMLElement>('*')]
+          .filter((child) => !child.classList.contains('sr-only'))
+          .filter((child) => child.clientWidth > 0 && child.scrollWidth > child.clientWidth + 1)
+          .map((child) => ({
+            slot: child.getAttribute('data-slot') ?? child.tagName,
+            text: child.textContent,
+            width: child.clientWidth,
+            contentWidth: child.scrollWidth,
+          })),
+      )
+      expect(overflow, 'Large mobile values remain complete at 200% text size').toEqual([])
+      expect((await card.boundingBox())?.height).toBeGreaterThan(272)
+    } else {
+      expect((await card.boundingBox())?.height).toBe(192)
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       page.viewportSize()!.width,
     )

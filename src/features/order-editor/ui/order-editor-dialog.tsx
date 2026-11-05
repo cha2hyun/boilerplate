@@ -119,6 +119,11 @@ function OrderForm({
           autoComplete="off"
           value={input[field]}
           disabled={isPending}
+          onFocus={(event) => {
+            // Radix restores the first field with preventScroll when its focus loop wraps.
+            // Keep that field visible inside this form's independently scrolling body.
+            if (field === 'customerName') event.currentTarget.scrollIntoView({ block: 'nearest' })
+          }}
           onChange={(event) => {
             updateInput({ ...input, [field]: event.target.value })
           }}

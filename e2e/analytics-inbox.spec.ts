@@ -213,3 +213,167 @@ test('inbox supports keyboard message selection and responsive focus recovery', 
   await expect(page.getByText('2 unread', { exact: true })).toBeVisible()
   await expectNoPageOverflow(page)
 })
+
+async function prepareLargeText(
+  page: Page,
+  route: '/analytics' | '/inbox',
+  width: number,
+  locale: 'en-US' | 'ko-KR',
+) {
+  await page.setViewportSize({ width, height: 915 })
+  await page.goto(route)
+  await page.getByRole('button', { name: /^(Language|언어 선택)$/ }).click()
+  await page.getByRole('menuitemradio', { name: locale === 'en-US' ? 'English' : '한국어' }).click()
+  await page.addStyleTag({ content: ':root { font-size: 200%; }' })
+  await page.evaluate(() => document.fonts.ready)
+}
+
+const largeTextCases = [
+  { width: 412, locale: 'en-US' },
+  { width: 320, locale: 'ko-KR' },
+] as const
+
+test('keeps device labels, values, and tooltips readable at 200% text on narrow mobile screens', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'This check covers narrow mobile text scaling.')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  for (const { width, locale } of largeTextCases) {
+    await prepareLargeText(page, '/analytics', width, locale)
+    const chart = page.locator('[data-slot="chart"]').nth(1)
+    const ticks = chart.locator('.recharts-yAxis-tick-labels .recharts-cartesian-axis-tick-value')
+    await expect(ticks).toHaveCount(3)
+    await expect
+      .poll(() =>
+        chart.evaluate((element) => {
+          const bounds = element.getBoundingClientRect()
+          return [
+            ...element.querySelectorAll(
+              '.recharts-yAxis-tick-labels .recharts-cartesian-axis-tick-value',
+            ),
+          ].every((tick) => {
+            const box = tick.getBoundingClientRect()
+            return box.left >= bounds.left - 1 && box.right <= bounds.right + 1
+          })
+        }),
+      )
+      .toBe(true)
+    const summary = page.locator('#main-content dl')
+    const rowBounds = await summary.locator(':scope > *').evaluateAll((rows) =>
+      rows.map((row) => {
+        const bounds = row.getBoundingClientRect()
+        const cells = [...row.querySelectorAll('dt,dd')]
+        return {
+          top: bounds.top,
+          bottom: bounds.bottom,
+          contained: cells.every((cell) => {
+            const box = cell.getBoundingClientRect()
+            return (
+              box.left >= bounds.left - 1 &&
+              box.right <= bounds.right + 1 &&
+              cell.scrollWidth <= cell.clientWidth + 1
+            )
+          }),
+        }
+      }),
+    )
+    expect(rowBounds).toHaveLength(3)
+    for (let index = 0; index < rowBounds.length; index += 1) {
+      expect(rowBounds[index]!.contained).toBe(true)
+      if (index > 0) expect(rowBounds[index - 1]!.bottom).toBeLessThanOrEqual(rowBounds[index]!.top)
+    }
+    await chart.scrollIntoViewIfNeeded()
+    await chart.getByRole('application').focus()
+    await page.keyboard.press('ArrowRight')
+    const tooltip = chart.locator('[data-slot="chart-tooltip-content"]')
+    await expect(tooltip).toBeVisible()
+    await expect(tooltip).toContainText('21,069')
+    await expect(tooltip).toBeInViewport({ ratio: 1 })
+    const tooltipBounds = await tooltip.boundingBox()
+    const chartBounds = await chart.boundingBox()
+    if (!tooltipBounds || !chartBounds) throw new Error('The chart tooltip is missing.')
+    expect(tooltipBounds.x).toBeGreaterThanOrEqual(chartBounds.x - 1)
+    expect(tooltipBounds.x + tooltipBounds.width).toBeLessThanOrEqual(
+      chartBounds.x + chartBounds.width + 1,
+    )
+    expect(
+      await tooltip.evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+    ).toBe(true)
+    const value = tooltip.locator('[data-slot="chart-tooltip-value"]')
+    await expect(value).toHaveText('21,069')
+    expect(
+      await value.evaluate((element) => {
+        const range = document.createRange()
+        range.selectNodeContents(element)
+        return range.getClientRects().length
+      }),
+    ).toBe(1)
+  }
+})
+
+test('keeps inbox navigation and detail actions inside the card at 200% text', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'mobile', 'This check covers narrow mobile text scaling.')
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  for (const { width, locale } of largeTextCases) {
+    await prepareLargeText(page, '/inbox', width, locale)
+    const card = page.locator('#main-content [data-slot="card"]')
+    const cardBounds = await card.boundingBox()
+    if (!cardBounds) throw new Error('The inbox card is missing.')
+    const unread = page.getByText(locale === 'en-US' ? '3 unread' : '읽지 않음 3개', {
+      exact: true,
+    })
+    const badgeBounds = await unread.boundingBox()
+    if (!badgeBounds) throw new Error('The unread count is missing.')
+    expect(badgeBounds.x).toBeGreaterThanOrEqual(cardBounds.x)
+    expect(badgeBounds.x + badgeBounds.width).toBeLessThanOrEqual(cardBounds.x + cardBounds.width)
+    for (const tab of await card.getByRole('tab').all()) {
+      await tab.scrollIntoViewIfNeeded()
+      const bounds = await tab.boundingBox()
+      if (!bounds) throw new Error('The message view tab is missing.')
+      expect(bounds.x).toBeGreaterThanOrEqual(cardBounds.x)
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(cardBounds.x + cardBounds.width)
+      await tab.tap()
+    }
+    await card.getByRole('tab', { name: locale === 'en-US' ? 'All' : '전체', exact: true }).tap()
+    const message = page.getByRole('button', { name: /Maya Chen/ }).first()
+    await message.tap()
+    const subject = page.getByRole('heading', { name: 'Website launch checklist', exact: true })
+    await expect(subject).toBeFocused()
+    const article = card.getByRole('article')
+    for (const button of await article.getByRole('button').all()) {
+      await button.scrollIntoViewIfNeeded()
+      const bounds = await button.boundingBox()
+      if (!bounds) throw new Error('The message action is missing.')
+      expect(bounds.x).toBeGreaterThanOrEqual(cardBounds.x)
+      expect(bounds.x + bounds.width).toBeLessThanOrEqual(cardBounds.x + cardBounds.width)
+      expect(
+        await button.evaluate((element) => element.scrollWidth <= element.clientWidth + 1),
+      ).toBe(true)
+    }
+    const sender = article.getByText('Maya Chen', { exact: true })
+    expect(
+      await sender.evaluate(
+        (element) =>
+          element.getBoundingClientRect().height <=
+          Number.parseFloat(getComputedStyle(element).lineHeight) * 2,
+      ),
+    ).toBe(true)
+    await article
+      .getByRole('button', { name: locale === 'en-US' ? 'Back' : '뒤로', exact: true })
+      .tap()
+    await expect(message).toBeFocused()
+    await message.tap()
+    await article
+      .getByRole('button', { name: locale === 'en-US' ? 'Archive' : '보관', exact: true })
+      .tap()
+    await expect(
+      page.getByRole('textbox', {
+        name: locale === 'en-US' ? 'Search messages' : '메시지 검색',
+        exact: true,
+      }),
+    ).toBeFocused()
+    await expectNoPageOverflow(page)
+  }
+})

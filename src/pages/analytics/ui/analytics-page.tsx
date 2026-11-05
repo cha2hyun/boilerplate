@@ -273,7 +273,7 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                     type="category"
                     tickLine={false}
                     axisLine={false}
-                    width={65}
+                    width="auto"
                   />
                   <XAxis type="number" hide />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
@@ -290,8 +290,13 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                 {Array.from({ length: 3 }, (_, index) => {
                   const device = data?.devices[index]
                   return (
-                    <HStack justify="between" key={device?.device ?? index} className="h-5 gap-3">
-                      <dt className="text-muted-foreground">
+                    <HStack
+                      wrap
+                      justify="between"
+                      key={device?.device ?? index}
+                      className="min-h-5 min-w-0 gap-x-3 gap-y-1"
+                    >
+                      <dt className="min-w-0 wrap-anywhere text-muted-foreground">
                         {device ? (
                           (deviceLabels[device.device] ?? device.device)
                         ) : isLoading ? (
@@ -300,23 +305,34 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                           '—'
                         )}
                       </dt>
-                      <dd className="font-medium tabular-nums">
-                        {isLoading ? (
-                          <Skeleton className="h-4 w-24" />
-                        ) : device ? (
-                          <>
-                            <NumberDisplay animate value={device.sessions} format={countFormat} />{' '}
-                            <span className="ml-1 text-xs font-normal text-muted-foreground">
-                              {formatNumber(
-                                data.sessions > 0 ? (device.sessions / data.sessions) * 100 : 0,
-                                { style: 'percent', maximumFractionDigits: 0 },
-                              )}
-                            </span>
-                          </>
-                        ) : (
-                          '—'
-                        )}
-                      </dd>
+                      <HStack
+                        asChild
+                        wrap
+                        className="min-w-0 gap-x-2 gap-y-1 font-medium tabular-nums"
+                      >
+                        <dd>
+                          {isLoading ? (
+                            <Skeleton className="h-4 w-24" />
+                          ) : device ? (
+                            <>
+                              <NumberDisplay
+                                animate
+                                wrap
+                                value={device.sessions}
+                                format={countFormat}
+                              />
+                              <span className="text-xs font-normal text-muted-foreground">
+                                {formatNumber(
+                                  data.sessions > 0 ? (device.sessions / data.sessions) * 100 : 0,
+                                  { style: 'percent', maximumFractionDigits: 0 },
+                                )}
+                              </span>
+                            </>
+                          ) : (
+                            '—'
+                          )}
+                        </dd>
+                      </HStack>
                     </HStack>
                   )
                 })}

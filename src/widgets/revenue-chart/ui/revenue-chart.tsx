@@ -65,10 +65,10 @@ export function RevenueChart({
       aria-label={t('revenue.title')}
       aria-busy={isLoading}
     >
-      <CardHeader className="gap-1">
+      <CardHeader className="gap-1 has-data-[slot=card-action]:grid-cols-1 sm:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
         <CardTitle>{t('revenue.title')}</CardTitle>
         <CardDescription>{t('revenue.description')}</CardDescription>
-        <CardAction>
+        <CardAction className="col-start-1 row-span-1 row-start-3 mt-3 w-full justify-self-stretch sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:w-auto sm:justify-self-end">
           <Select
             value={period}
             onValueChange={(value) => {
@@ -76,7 +76,10 @@ export function RevenueChart({
             }}
             disabled={!data}
           >
-            <SelectTrigger aria-label={t('revenue.period')} className="w-36">
+            <SelectTrigger
+              aria-label={t('revenue.period')}
+              className="min-h-9 w-full py-1.5 text-start whitespace-normal data-[size=default]:h-auto *:data-[slot=select-value]:line-clamp-none sm:w-36"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -105,6 +108,7 @@ export function RevenueChart({
               <>
                 <MoneyDisplay
                   animate
+                  wrap
                   value={total}
                   format={{ maximumFractionDigits: 0 }}
                   className="text-3xl font-semibold tracking-tight"

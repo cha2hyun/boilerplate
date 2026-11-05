@@ -115,11 +115,16 @@ export function SettingsPage() {
                   </HStack>
                 </CardContent>
               </VStack>
-              <HStack asChild justify="between" className="gap-4 border-t pt-6">
+              <VStack
+                asChild
+                align="stretch"
+                className="gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between"
+              >
                 <CardFooter>
                   <Button
                     type="button"
                     variant="ghost"
+                    className="h-auto min-h-9 py-1.5 whitespace-normal"
                     onClick={() => {
                       const resetPreferences = preferences.reset()
                       setWorkspaceName(resetPreferences.workspaceName)
@@ -131,11 +136,15 @@ export function SettingsPage() {
                   >
                     {t('settings.reset')}
                   </Button>
-                  <Button type="submit" disabled={!dirty}>
+                  <Button
+                    type="submit"
+                    className="h-auto min-h-9 py-1.5 whitespace-normal"
+                    disabled={!dirty}
+                  >
                     {t('common.save')}
                   </Button>
                 </CardFooter>
-              </HStack>
+              </VStack>
             </Card>
           </form>
         </TabsContent>
@@ -146,7 +155,7 @@ export function SettingsPage() {
               <CardDescription>{t('settings.chooseAppearance')}</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 {[
                   {
                     value: 'light' as const,
@@ -169,6 +178,7 @@ export function SettingsPage() {
                 ].map((option) => (
                   <VStack asChild key={option.value} align="start" className="h-auto gap-3 p-5">
                     <Button
+                      className="min-w-0 text-start whitespace-normal"
                       variant={theme === option.value ? 'secondary' : 'outline'}
                       onClick={() => {
                         setTheme(option.value)

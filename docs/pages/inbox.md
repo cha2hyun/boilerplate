@@ -31,6 +31,8 @@ PageHeader → 미보관 메시지의 미읽음 수와 샘플 안내 → 보기 
 
 목록 제목/미리보기는 축약하고 선택 상세로 본문을 읽습니다. 긴 사용자 텍스트 처리 변경은 [긴 콘텐츠](../design/content-overflow.md)를 기준으로 실제 상세 폭을 확인합니다.
 
+320–412px에서 글꼴을 200%로 확대하면 상단 메시지 수·보기 탭·상세 작업은 필요한 만큼 줄바꿈하고 높이를 늘립니다. 카드 바깥에 숨겨지는 탭이나 작업 문구가 없어야 합니다. 상세 발신자 정보는 날짜와 같은 행을 억지로 공유하지 않고 충분한 읽기 너비를 확보한 뒤 줄바꿈합니다. 뒤로 가기와 보관 이후의 초점 복귀는 확대 여부와 관계없이 유지합니다.
+
 ## 상태 소유권과 구현 근거
 
 - URL: [라우트](../../src/app/routes/inbox.tsx), [조회 스키마](../../src/pages/inbox/model/search.ts)의 검색과 보기.
@@ -39,6 +41,7 @@ PageHeader → 미보관 메시지의 미읽음 수와 샘플 안내 → 보기 
 
 ## 수용 기준
 
+- 같은 Inbox E2E의 `keeps inbox navigation and detail actions inside the card at 200% text`에서 412px 영어·320px 한국어의 미읽음 배지·탭·상세 작업 경계, 발신자 가독성, 터치 선택과 초점 복귀를 확인합니다.
 - 미읽음/검색 조합·빈 결과 복구·URL: [Inbox E2E](../../e2e/analytics-inbox.spec.ts)의 `inbox combines unread and search filters and recovers from an empty result`.
 - 읽음·미읽음·보관·복원: 같은 파일의 `inbox marks sample messages read and unread and restores an archived conversation`.
 - 키보드 선택·반응형 초점: 같은 파일의 `inbox supports keyboard message selection and responsive focus recovery`.

@@ -56,7 +56,7 @@ export function ProjectDeleteDialog({
       <AlertDialogContent onCloseAutoFocus={onCloseAutoFocus}>
         <AlertDialogHeader>
           <AlertDialogTitle>{t('delete.title')}</AlertDialogTitle>
-          <AlertDialogDescription>
+          <AlertDialogDescription className="wrap-anywhere">
             {t('delete.description', { name: project?.name ?? '' })}
           </AlertDialogDescription>
         </AlertDialogHeader>

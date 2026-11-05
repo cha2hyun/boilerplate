@@ -148,7 +148,7 @@ function CustomerForm({
   }
 
   return (
-    <VStack asChild align="stretch" className="gap-5">
+    <VStack asChild align="stretch" className="min-w-0 gap-5">
       <form
         onSubmit={(event) => {
           void handleSubmit(event)
@@ -156,7 +156,7 @@ function CustomerForm({
         noValidate
       >
         {textFields.map((field) => (
-          <VStack key={field} align="stretch" className="gap-2">
+          <VStack key={field} align="stretch" className="min-w-0 gap-2">
             <Label htmlFor={`${formId}-${field}`}>{t(`fields.${field}`)}</Label>
             <Input
               id={`${formId}-${field}`}
@@ -224,10 +224,20 @@ function CustomerForm({
           </div>
         )}
         <DialogFooter className="pt-2">
-          <Button type="button" variant="outline" disabled={isPending} onClick={onRequestClose}>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-auto min-h-9 min-w-0 py-1.5 whitespace-normal"
+            disabled={isPending}
+            onClick={onRequestClose}
+          >
             {t('cancel')}
           </Button>
-          <Button type="submit" disabled={isPending}>
+          <Button
+            type="submit"
+            className="h-auto min-h-9 min-w-0 py-1.5 whitespace-normal"
+            disabled={isPending}
+          >
             {isPending && (
               <LoaderCircle
                 className="animate-spin motion-reduce:animate-none"

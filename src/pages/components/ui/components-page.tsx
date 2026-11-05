@@ -79,13 +79,20 @@ export function ComponentsPage() {
           </Button>
         }
       />
-      <Tabs defaultValue="components">
-        <TabsList>
-          <TabsTrigger value="components">{t('components.componentsTab')}</TabsTrigger>
-          <TabsTrigger value="tokens">{t('components.tokensTab')}</TabsTrigger>
-          <TabsTrigger value="typography">{t('components.typographyTab')}</TabsTrigger>
-        </TabsList>
-        <TabsContent value="components" className="mt-6 grid items-start gap-5 xl:grid-cols-2">
+      <Tabs defaultValue="components" className="min-w-0">
+        <div
+          className="min-w-0 scroll-px-1 overflow-x-auto pb-1"
+          onFocusCapture={(event) => {
+            event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+          }}
+        >
+          <TabsList>
+            <TabsTrigger value="components">{t('components.componentsTab')}</TabsTrigger>
+            <TabsTrigger value="tokens">{t('components.tokensTab')}</TabsTrigger>
+            <TabsTrigger value="typography">{t('components.typographyTab')}</TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="components" className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-2">
           <Card>
             <CardHeader>
               <CardTitle>{t('components.linksTitle')}</CardTitle>
@@ -108,20 +115,35 @@ export function ComponentsPage() {
             </CardHeader>
             <HStack asChild wrap className="gap-3">
               <CardContent>
-                <Button onClick={() => toast.success(t('components.primaryToast'))}>
+                <Button
+                  className="h-auto min-h-9 max-w-full py-1.5 whitespace-normal"
+                  onClick={() => toast.success(t('components.primaryToast'))}
+                >
                   <Plus />
                   {t('components.primaryAction')}
                 </Button>
-                <Button variant="secondary" onClick={() => toast(t('components.secondaryToast'))}>
+                <Button
+                  className="h-auto min-h-9 max-w-full py-1.5 whitespace-normal"
+                  variant="secondary"
+                  onClick={() => toast(t('components.secondaryToast'))}
+                >
                   {t('components.secondaryAction')}
                 </Button>
-                <Button variant="outline" onClick={() => toast.info(t('components.outlineToast'))}>
+                <Button
+                  className="h-auto min-h-9 max-w-full py-1.5 whitespace-normal"
+                  variant="outline"
+                  onClick={() => toast.info(t('components.outlineToast'))}
+                >
                   {t('components.outlineAction')}
                 </Button>
-                <Button variant="ghost" onClick={() => toast(t('components.ghostToast'))}>
+                <Button
+                  className="h-auto min-h-9 max-w-full py-1.5 whitespace-normal"
+                  variant="ghost"
+                  onClick={() => toast(t('components.ghostToast'))}
+                >
                   {t('components.ghostAction')}
                 </Button>
-                <Button disabled>
+                <Button className="h-auto min-h-9 max-w-full py-1.5 whitespace-normal" disabled>
                   <LoaderCircle
                     className="animate-spin motion-reduce:animate-none"
                     aria-hidden="true"
@@ -144,7 +166,7 @@ export function ComponentsPage() {
                   <Badge variant="outline">{t('components.draft')}</Badge>
                   <Badge variant="destructive">{t('components.needsAttention')}</Badge>
                 </HStack>
-                <HStack className="gap-3">
+                <HStack wrap className="gap-3">
                   <HStack className="-space-x-2">
                     {['JD', 'AK', 'ML', 3].map((name) => (
                       <Avatar key={name} className="border-2 border-background">
@@ -203,11 +225,12 @@ export function ComponentsPage() {
               <CardContent>
                 <Alert>
                   <Check />
-                  <AlertTitle>{t('components.upToDate')}</AlertTitle>
+                  <AlertTitle className="line-clamp-none">{t('components.upToDate')}</AlertTitle>
                   <AlertDescription>{t('components.workspaceReady')}</AlertDescription>
                 </Alert>
                 <HStack wrap className="gap-3">
                   <Button
+                    className="h-auto min-h-9 max-w-full py-1.5 whitespace-normal"
                     variant="outline"
                     onClick={() =>
                       toast.success(t('components.changesSaved'), {
@@ -220,7 +243,12 @@ export function ComponentsPage() {
                   </Button>
                   <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline">{t('components.openDialog')}</Button>
+                      <Button
+                        className="h-auto min-h-9 max-w-full py-1.5 whitespace-normal"
+                        variant="outline"
+                      >
+                        {t('components.openDialog')}
+                      </Button>
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
@@ -259,7 +287,7 @@ export function ComponentsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="self-start"
+                  className="h-auto min-h-8 max-w-full self-start py-1 whitespace-normal"
                   onClick={() => {
                     setProgress((value) => (value >= 100 ? 0 : Math.min(100, value + 12)))
                   }}
@@ -310,7 +338,7 @@ export function ComponentsPage() {
           </Card>
           <Alert className="mt-5">
             <Check />
-            <AlertTitle>{t('components.colorRoleTitle')}</AlertTitle>
+            <AlertTitle className="line-clamp-none">{t('components.colorRoleTitle')}</AlertTitle>
             <AlertDescription>{t('components.colorRoleDescription')}</AlertDescription>
           </Alert>
         </TabsContent>
@@ -361,7 +389,7 @@ export function ComponentsPage() {
             </Card>
             <Alert>
               <Check />
-              <AlertTitle>{t('components.hierarchyTitle')}</AlertTitle>
+              <AlertTitle className="line-clamp-none">{t('components.hierarchyTitle')}</AlertTitle>
               <AlertDescription>{t('components.hierarchyDescription')}</AlertDescription>
             </Alert>
           </TabsContent>

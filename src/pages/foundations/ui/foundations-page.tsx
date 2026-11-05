@@ -144,12 +144,10 @@ function LayoutExamples() {
         </CardHeader>
         <VStack asChild align="stretch" className="gap-4">
           <CardContent>
-            <HStack className="gap-3 rounded-lg border p-4">
+            <HStack wrap className="gap-3 rounded-lg border p-4">
               <Folder className="size-5 shrink-0" aria-hidden="true" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium" title={t('foundations.reportName')}>
-                  {t('foundations.reportName')}
-                </p>
+              <div className="min-w-0 flex-1 basis-40">
+                <p className="text-sm font-medium wrap-anywhere">{t('foundations.reportName')}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {t('foundations.reportDescription')}
                 </p>
@@ -205,7 +203,7 @@ function LayoutExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.railDescription')}</CardDescription>
         </CardHeader>
-        <HStack asChild className="gap-6">
+        <HStack asChild wrap className="gap-6">
           <CardContent>
             <VStack
               className="w-14 shrink-0 gap-2 rounded-lg border bg-muted/30 py-3"
@@ -230,7 +228,7 @@ function LayoutExamples() {
                 </Tooltip>
               ))}
             </VStack>
-            <VStack align="stretch" className="min-w-0 flex-1 gap-2">
+            <VStack align="stretch" className="min-w-0 flex-1 basis-40 gap-2">
               <p className="text-sm font-medium" aria-live="polite">
                 {t('foundations.railSelected', { label: t(railSelection.label) })}
               </p>
@@ -337,11 +335,11 @@ function ContentExamples() {
                 t('foundations.emptyHelp'),
               ],
             ].map(([label, example, description]) => (
-              <HStack key={label} className="gap-3">
+              <HStack key={label} wrap className="gap-3">
                 <Badge variant="outline" className="shrink-0">
                   {label}
                 </Badge>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1 basis-40">
                   <p className="text-sm leading-6 font-medium">{example}</p>
                   <p className="mt-1 text-xs leading-5 text-muted-foreground">{description}</p>
                 </div>
@@ -556,19 +554,23 @@ function FeedbackExamples() {
               {recovered ? (
                 <Alert>
                   <Check aria-hidden="true" />
-                  <AlertTitle>{t('foundations.loadedTitle')}</AlertTitle>
+                  <AlertTitle className="line-clamp-none">
+                    {t('foundations.loadedTitle')}
+                  </AlertTitle>
                   <AlertDescription>{t('foundations.loadedDescription')}</AlertDescription>
                 </Alert>
               ) : (
                 <Alert variant="destructive">
                   <CircleAlert aria-hidden="true" />
-                  <AlertTitle>{t('foundations.failedTitle')}</AlertTitle>
+                  <AlertTitle className="line-clamp-none">
+                    {t('foundations.failedTitle')}
+                  </AlertTitle>
                   <AlertDescription>{t('foundations.failedDescription')}</AlertDescription>
                 </Alert>
               )}
             </div>
             <Button
-              className="self-start"
+              className="h-auto min-h-9 max-w-full self-start py-1.5 whitespace-normal"
               variant="outline"
               onClick={() => {
                 setRecovered((current) => !current)
@@ -589,16 +591,16 @@ function FeedbackExamples() {
           </CardTitle>
           <CardDescription>{t('foundations.loadingDescription')}</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((item) => (
             <VStack
               align="stretch"
               key={item}
-              className="gap-3 rounded-lg border p-4"
+              className="min-w-0 gap-3 rounded-lg border p-4"
               aria-hidden="true"
             >
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-8 w-32" />
+              <Skeleton className="h-4 w-24 max-w-full" />
+              <Skeleton className="h-8 w-32 max-w-full" />
               <Skeleton className="h-3 w-40 max-w-full" />
             </VStack>
           ))}
@@ -618,7 +620,12 @@ export function FoundationsPage() {
         badgeLabel={t('foundations.standards')}
       />
       <Tabs defaultValue="basics" className="min-w-0">
-        <div className="min-w-0 overflow-x-auto pb-1">
+        <div
+          className="min-w-0 scroll-px-1 overflow-x-auto pb-1"
+          onFocusCapture={(event) => {
+            event.target.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+          }}
+        >
           <TabsList aria-label={t('foundations.tabsLabel')}>
             <TabsTrigger value="basics">{t('foundations.basicsTab')}</TabsTrigger>
             <TabsTrigger value="layout">{t('foundations.layoutTab')}</TabsTrigger>

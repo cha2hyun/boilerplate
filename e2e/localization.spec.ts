@@ -4,6 +4,52 @@ function revenueValue(page: Page, label: string) {
   return page.locator(`[data-slot="card"][aria-label="${label}"] [data-number-state] > .sr-only`)
 }
 
+async function expectReadableRevenueChart(page: Page, korean: boolean) {
+  const card = page.locator('[data-slot="card"]').filter({
+    has: page.getByText(korean ? '매출 현황' : 'Revenue overview', { exact: true }),
+  })
+  const header = card.locator('[data-slot="card-header"]')
+  if ((page.viewportSize()?.width ?? 0) < 640) {
+    const description = await header.locator('[data-slot="card-description"]').boundingBox()
+    const period = await header.getByRole('combobox').boundingBox()
+    if (!description || !period) throw new Error('Revenue header controls are missing.')
+    expect(period.y).toBeGreaterThanOrEqual(description.y + description.height)
+    expect(Math.abs(period.x - description.x)).toBeLessThanOrEqual(1)
+    expect(Math.abs(period.width - description.width)).toBeLessThanOrEqual(1)
+  }
+
+  const chart = card.locator('svg.recharts-surface').first()
+  await chart.scrollIntoViewIfNeeded()
+  const bounds = await chart.boundingBox()
+  if (!bounds) throw new Error('Revenue chart is missing.')
+  // Escape dismisses the last Recharts point while closing the currency menu.
+  // Traverse the plot as a pointer user would to select a fresh point.
+  await page.mouse.move(bounds.x + bounds.width * 0.25, bounds.y + bounds.height * 0.5)
+  await page.mouse.move(bounds.x + bounds.width * 0.6, bounds.y + bounds.height * 0.5)
+  const tooltip = card.locator('[data-slot="chart-tooltip-content"]')
+  await expect(tooltip).toBeVisible()
+  const values = tooltip.locator('[data-slot="chart-tooltip-value"]')
+  await expect(values).toHaveCount(2)
+  const rows = await values.evaluateAll((elements) =>
+    elements.map((value) => {
+      const name = value.previousElementSibling
+      if (!name) throw new Error('Tooltip value must have its series name.')
+      const valueBounds = value.getBoundingClientRect()
+      const nameBounds = name.getBoundingClientRect()
+      return {
+        gap: valueBounds.left - nameBounds.right,
+        left: nameBounds.left,
+        right: valueBounds.right,
+      }
+    }),
+  )
+  for (const row of rows) {
+    expect(row.gap).toBeGreaterThanOrEqual(11.5)
+    expect(row.left).toBeGreaterThanOrEqual(0)
+    expect(row.right).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0)
+  }
+}
+
 async function expectResponsiveControls(page: Page, korean: boolean) {
   const language = page.getByRole('button', {
     name: korean ? '언어 선택' : 'Language',
@@ -37,7 +83,10 @@ async function expectResponsiveControls(page: Page, korean: boolean) {
 test('persists independent language and currency choices and reuses the reference rate across navigation', async ({
   page,
   exchangeRateMock,
-}) => {
+}, testInfo) => {
+  if (testInfo.project.name === 'mobile') {
+    await page.setViewportSize({ width: 320, height: 740 })
+  }
   await page.goto('/')
   await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
   await expect(page.getByRole('heading', { name: 'Overview', level: 1, exact: true })).toBeVisible()
@@ -58,6 +107,7 @@ test('persists independent language and currency choices and reuses the referenc
   await expect(englishCurrency).toBeFocused()
   await expect(revenueValue(page, 'Total revenue')).toHaveText('$30,630')
   await expectResponsiveControls(page, false)
+  await expectReadableRevenueChart(page, false)
 
   await page.getByRole('button', { name: 'Language', exact: true }).click()
   await page.getByRole('menuitemradio', { name: '한국어', exact: true }).click()
@@ -85,6 +135,7 @@ test('persists independent language and currency choices and reuses the referenc
     page.getByText('워크스페이스 청구 금액 ₩336,150 결제를 완료했습니다.', { exact: true }),
   ).toBeVisible()
   await expectResponsiveControls(page, true)
+  await expectReadableRevenueChart(page, true)
   expect(exchangeRateMock.requests).toBe(1)
 
   await page.getByRole('link', { name: '전체 프로젝트 보기', exact: true }).click()

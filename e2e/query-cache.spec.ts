@@ -173,6 +173,11 @@ for (const sample of pages) {
     const cards = page.locator(cardSelector)
     await expectReadyCards(cards, sample.cards)
     const after = await captureCards(cards)
+    const metricHeight = (page.viewportSize()?.width ?? 1440) < 768 ? 136 : 192
+    const metricHeights = await page
+      .locator('[data-metric-card]')
+      .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height))
+    for (const height of metricHeights) expect(height).toBe(metricHeight)
     if (sample.name === 'Overview') await expectOverviewComparisonsCentered(page)
     expect(after).toHaveLength(before.length)
     before.forEach((loading, index) => {
