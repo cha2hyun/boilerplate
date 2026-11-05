@@ -1046,6 +1046,40 @@ for (const route of ['orders', 'customers'] as const) {
     )
     await page.goBack()
     await expect(details).toBeVisible()
+    await details
+      .getByRole('button', {
+        name: `Edit ${route === 'orders' ? 'order' : 'customer'}`,
+        exact: true,
+      })
+      .click()
+    const nameInput = editor.getByLabel(route === 'orders' ? 'Customer name' : 'Name', {
+      exact: true,
+    })
+    await nameInput.fill('Unsaved detail history draft')
+    await page.evaluate(() => window.history.forward())
+    const discard = page.getByRole('alertdialog', {
+      name: 'Discard unsaved changes?',
+      exact: true,
+    })
+    await discard.getByRole('button', { name: 'Keep editing', exact: true }).click()
+    await expect(nameInput).toHaveValue('Unsaved detail history draft')
+    await expect(page).toHaveURL((url) => url.searchParams.get('detail') === id)
+    await page.evaluate(() => window.history.forward())
+    await discard.getByRole('button', { name: 'Discard changes', exact: true }).click()
+    await expect(editor).toBeHidden()
+    await expect(details).toBeHidden()
+    await expect(page).toHaveURL((url) => !url.searchParams.has('detail'))
+    await page.goBack()
+    await expect(details).toBeVisible()
+    await expect(editor).toBeHidden()
+    await details
+      .getByRole('button', {
+        name: `Edit ${route === 'orders' ? 'order' : 'customer'}`,
+        exact: true,
+      })
+      .click()
+    await expect(nameInput).toHaveValue('Olivia Rhye')
+    await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
     await page.goForward()
     await expect(details).toBeHidden()
     await page.goto(`/${route}?pageSize=24&detail=missing-record`)

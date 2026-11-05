@@ -234,7 +234,17 @@ async function captureColdCards(page: Page, expectedCount: number) {
       const cards = [...document.querySelectorAll(selector)]
       if (
         cards.length !== count ||
-        cards.some((card) => card.getAttribute('aria-busy') !== 'true')
+        cards.some((card) => {
+          const bounds = card.getBoundingClientRect()
+          // Mobile summaries remain mounted while collapsed. Measure the displayed loading
+          // layout only, after the same user action that exposes the ready-state cards.
+          return (
+            card.getAttribute('aria-busy') !== 'true' ||
+            !card.checkVisibility() ||
+            bounds.width <= 0 ||
+            bounds.height <= 0
+          )
+        })
       ) {
         return null
       }

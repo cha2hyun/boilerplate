@@ -32,7 +32,17 @@ export function CustomersPage({ search, onSearchChange }: CustomersPageProps) {
   )
   const isLoading = query.isPending && !query.data
   const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [editingCustomer, setEditingCustomer] = useState<SampleCustomer | null>(null)
+  const [editSession, setEditSession] = useState<{
+    record: SampleCustomer
+    detail: string
+  } | null>(null)
+  const editingCustomer = editSession?.detail === search.detail ? editSession.record : null
+  // Approved history navigation must also dismiss the editor owned by the previous detail.
+  if (editSession && editSession.detail !== search.detail) setEditSession(null)
+
+  function setEditingCustomer(record: SampleCustomer | null) {
+    setEditSession(record ? { record, detail: search.detail } : null)
+  }
   const [deletingCustomer, setDeletingCustomer] = useState<SampleCustomer | null>(null)
   const selected = query.data?.find((item) => item.id === search.detail)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)

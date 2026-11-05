@@ -239,6 +239,33 @@ async function sendJson(path: string, method: string, body?: unknown) {
 
 describe('demo commerce HTTP mutations', () => {
   it.each(commerceInputs)(
+    'keeps $endpoint ID collisions as HTTP 409 without changing saved data',
+    async ({ endpoint, input }) => {
+      server.use(
+        ...createDemoHandlers({
+          orders: createDemoOrderAdapter({
+            storage: null,
+            delayMs: 0,
+            createId: () => 'duplicate-id',
+          }),
+          customers: createDemoCustomerAdapter({
+            storage: null,
+            delayMs: 0,
+            createId: () => 'duplicate-id',
+          }),
+          delayMs: 0,
+        }),
+      )
+      expect((await sendJson(endpoint, 'POST', input)).status).toBe(201)
+      const before: unknown = await (await sendJson(endpoint, 'GET')).json()
+      const rejected = await sendJson(endpoint, 'POST', input)
+      expect(rejected.status).toBe(409)
+      expect(await rejected.json()).toEqual({ message: 'The record already exists.' })
+      expect(await (await sendJson(endpoint, 'GET')).json()).toEqual(before)
+    },
+  )
+
+  it.each(commerceInputs)(
     'creates, updates, reads and deletes $endpoint through HTTP',
     async ({ endpoint, input, update }) => {
       const createdResponse = await sendJson(endpoint, 'POST', {

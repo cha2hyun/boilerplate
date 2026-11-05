@@ -34,7 +34,7 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 | 태블릿 `768–1279px` | 요약 2열, 읽을 수 있는 표 너비와 내부 스크롤을 유지하고 상세 Sheet는 제한된 폭을 사용합니다.                                                                                                |
 | PC `≥ 1280px`       | 요약 4열. 표는 주문 번호·고객·상태·결제·날짜·합계·작업 7열이며 최소 960px입니다. 주문 번호 첫 열과 작업 마지막 열을 고정합니다.                                                             |
 
-표 스크롤 영역에 이름·초점·설명을 제공하고 키보드 좌우 이동을 보존합니다. 상세를 닫으면 유효한 열기 버튼, 직접 링크 등 열기 버튼이 없으면 검색창으로 초점을 돌립니다. 상세에서 수정한 뒤에는 상세의 수정 버튼으로 초점을 돌립니다. 편집·삭제도 키보드로 연 행 작업 버튼으로 돌아가며 행이 사라지면 검색창을 사용합니다. 편집창의 본문은 화면 안에서 세로 스크롤하고 하단 취소·저장 버튼은 유지합니다. 긴 고객·상품 문구는 [긴 콘텐츠](../design/content-overflow.md)에 따라 표의 축약과 상세의 전문을 구분합니다.
+표 스크롤 영역에 이름·초점·설명을 제공하고 키보드 좌우 이동을 보존합니다. 상세를 닫으면 유효한 열기 버튼, 직접 링크 등 열기 버튼이 없으면 검색창으로 초점을 돌립니다. 상세에서 수정한 뒤에는 상세의 수정 버튼으로 초점을 돌립니다. 상세 편집 중 뒤로/앞으로 이동을 취소하면 초안을 유지하고, 폐기를 승인하면 이전 상세에 속한 편집창도 닫습니다. 같은 상세로 다시 돌아와도 폐기한 편집창이나 초안을 복원하지 않습니다. 편집·삭제도 키보드로 연 행 작업 버튼으로 돌아가며 행이 사라지면 검색창을 사용합니다. 편집창의 본문은 화면 안에서 세로 스크롤하고 하단 취소·저장 버튼은 유지합니다. 긴 고객·상품 문구는 [긴 콘텐츠](../design/content-overflow.md)에 따라 표의 축약과 상세의 전문을 구분합니다.
 
 ## 상태 소유권과 구현 근거
 
@@ -55,6 +55,6 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 - CRUD·초안 보호·새로고침 지속성·합계·초점: [상거래 E2E](../../e2e/commerce.spec.ts)의 `creates, edits and deletes an order with protected drafts and persisted totals`.
 - 데이터 검증: [주문 스키마](../../src/entities/order/model/schema.test.ts), [정확한 USD 변환](../../src/features/order-editor/model/form.test.ts), [데모 지속성·저장소 실패·취소](../../src/entities/order/api/demo.test.ts), [HTTP 계약](../../src/entities/order/api/http.test.ts), [성공/불확실 쓰기와 늦은 GET 경합](../../src/entities/order/api/queries.test.tsx).
 
-- 페이지 크기·상세 직접 링크·새로고침·history·없는 ID 회복·모바일 요약: [상거래 E2E](../../e2e/commerce.spec.ts)의 `orders restores shared details and page size through reload and history`.
+- 페이지 크기·상세 직접 링크·새로고침·history와 미저장 편집 폐기·없는 ID 회복·모바일 요약: [상거래 E2E](../../e2e/commerce.spec.ts)의 `orders restores shared details and page size through reload and history`.
 - 생성 → 상세에서 결제 상태 수정 → 기록 확인 → 새로고침 후 주문 상태 변경 기록 보존은 기존 CRUD E2E가 함께 검증합니다. 실제 삭제된 상세는 설명을 확인한 후 명시적으로 닫으며 나중에 같은 ID가 다시 나타나도 임의로 열리지 않습니다.
 - 대량 계산의 의미: [selector 테스트](../../src/pages/orders/model/selectors.test.ts)는 10,000개 주문의 합계 정렬·두 번째 페이지·원본 순서 보존을 확인합니다. 실행 시간 기준이나 실제 대량 렌더링 성능 보증으로 사용하지 않습니다.

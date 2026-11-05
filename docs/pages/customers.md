@@ -31,7 +31,7 @@ PageHeader의 새 고객 → 전체 고객 요약(모바일 기본 접힘) → �
 | 태블릿 `768–1279px` | 요약 2열, 상세 Sheet는 제한된 폭. 상세 요약은 실제 컨테이너 폭이 허용하면 2열입니다.                                                                                      |
 | PC `≥ 1280px`       | 요약 4열, 전체 폭 표와 오른쪽 상세를 사용합니다. 마지막 작업 열은 가로 스크롤 중에도 고정합니다.                                                                          |
 
-상세를 닫으면 유효한 고객 버튼(생성 상세는 새 고객 버튼) 또는 검색창으로 초점을 복구합니다. 상세에서 수정한 뒤에는 상세의 수정 버튼으로 돌아갑니다. 편집·삭제 후에는 원래 작업 버튼 또는 검색창으로 복구합니다. 짧은 화면에서 폼 전체와 오류·저장 버튼은 대화상자 안에서 세로 스크롤로 접근합니다. 긴 이름은 상세에서 줄바꿈하고 이메일은 긴 문자열도 화면 밖으로 밀지 않습니다. [긴 콘텐츠](../design/content-overflow.md)를 따릅니다.
+상세를 닫으면 유효한 고객 버튼(생성 상세는 새 고객 버튼) 또는 검색창으로 초점을 복구합니다. 상세에서 수정한 뒤에는 상세의 수정 버튼으로 돌아갑니다. 상세 편집 중 뒤로/앞으로 이동을 취소하면 초안을 유지하고, 폐기를 승인하면 이전 상세에 속한 편집창도 닫습니다. 같은 상세로 다시 돌아와도 폐기한 편집창이나 초안을 복원하지 않습니다. 편집·삭제 후에는 원래 작업 버튼 또는 검색창으로 복구합니다. 짧은 화면에서 폼 전체와 오류·저장 버튼은 대화상자 안에서 세로 스크롤로 접근합니다. 긴 이름은 상세에서 줄바꿈하고 이메일은 긴 문자열도 화면 밖으로 밀지 않습니다. [긴 콘텐츠](../design/content-overflow.md)를 따릅니다.
 
 ## 상태 소유권과 구현 근거
 
@@ -53,5 +53,5 @@ PageHeader의 새 고객 → 전체 고객 요약(모바일 기본 접힘) → �
 - HTTP 메서드·인코딩·body·서버 응답 캐시: [HTTP 계약 테스트](../../src/entities/customer/api/http-contract.test.tsx). 이전 GET 취소와 불확실한 변경의 재조회·자동 재시도 방지: [경합 테스트](../../src/entities/customer/api/queries-race.test.tsx).
 - clean·원복·폐기 후 재진입·저장 중 이동 차단·응답 손실 입력 보존: [편집창 테스트](../../src/features/customer-editor/ui/customer-editor-dialog.test.tsx).
 
-- 페이지 크기·상세 직접 링크·새로고침·history·없는 ID 회복·모바일 요약: [상거래 E2E](../../e2e/commerce.spec.ts)의 `customers restores shared details and page size through reload and history`.
+- 페이지 크기·상세 직접 링크·새로고침·history와 미저장 편집 폐기·없는 ID 회복·모바일 요약: [상거래 E2E](../../e2e/commerce.spec.ts)의 `customers restores shared details and page size through reload and history`.
 - [selector 테스트](../../src/pages/customers/model/selectors.test.ts)는 페이지 크기·줄어든 목록의 페이지 보정·입력 배열 보존을 검증합니다. 삭제된 상세는 오류 설명 뒤 명시적 목록 복귀로 종료합니다.

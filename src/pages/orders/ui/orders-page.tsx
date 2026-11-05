@@ -32,7 +32,17 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   )
   const isLoading = query.isPending && !query.data
   const [creatingOrder, setCreatingOrder] = useState(false)
-  const [editingOrder, setEditingOrder] = useState<SampleOrder | null>(null)
+  const [editSession, setEditSession] = useState<{
+    record: SampleOrder
+    detail: string
+  } | null>(null)
+  const editingOrder = editSession?.detail === search.detail ? editSession.record : null
+  // Approved history navigation must also dismiss the editor owned by the previous detail.
+  if (editSession && editSession.detail !== search.detail) setEditSession(null)
+
+  function setEditingOrder(record: SampleOrder | null) {
+    setEditSession(record ? { record, detail: search.detail } : null)
+  }
   const [deletingOrder, setDeletingOrder] = useState<SampleOrder | null>(null)
   const selected = query.data?.find((item) => item.id === search.detail)
   const detailTrigger = useRef<HTMLButtonElement | null>(null)

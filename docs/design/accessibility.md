@@ -32,4 +32,6 @@ Dialog/Sheet는 제목·설명·초점 진입과 모달 안의 순환을 유지�
 
 대표 대비와 시각 회귀는 `e2e/design-visual.spec.ts`, 기존 생성/수정/삭제 이후 초점 복귀는 `e2e/projects.spec.ts`도 함께 확인합니다. 실행 범위는 [테스트 정책](../testing.md)을 따릅니다. 자동 검사를 전체 WCAG 준수나 화면낭독기 검증으로 표현하지 않습니다. 화면낭독기·브라우저 확대·실제 모바일 보조기술 검증은 수행한 환경과 결과를 별도로 기록합니다.
 
-차트 축 글자는 실제 SVG `.recharts-cartesian-axis-tick-value`의 computed `fill`과 카드 배경으로 대비를 확인합니다. 공통 Chart가 `muted-foreground`를 적용하며 Recharts 내부 그룹 구조가 달라져도 텍스트 자체를 대상으로 합니다. `e2e/design-visual.spec.ts`의 `renders readable chart axis text in both themes`는 Overview·Analytics의 두 테마에서 토큰 적용과 4.5:1을 함께 확인합니다. 토큰 쌍만 통과한 결과로 실제 차트의 가독성을 대신 판단하지 않습니다.
+차트 축 글자는 실제 SVG `.recharts-cartesian-axis-tick-value`의 computed `fill`과 카드 배경으로 대비를 확인합니다. 공통 Chart가 `muted-foreground`를 적용하며 Recharts 내부 그룹 구조가 달라져도 텍스트 자체를 대상으로 합니다. `e2e/design-visual.spec.ts`의 `renders readable chart axes and avatar initials in both themes`는 Overview·Analytics의 두 테마에서 토큰 적용과 4.5:1을 함께 확인합니다. 토큰 쌍만 통과한 결과로 실제 차트의 가독성을 대신 판단하지 않습니다.
+
+Avatar의 이니셜과 그룹 인원 수는 `bg-muted` 위에 `text-foreground`를 사용합니다. 밝은 테마의 `muted-foreground` 조합은 12px 이니셜에서 4.34:1로 부족했으므로 사용하지 않습니다. 같은 브라우저 회귀가 Overview·Projects의 실제 Avatar 텍스트와 배경 대비도 두 테마에서 확인합니다.

@@ -1,5 +1,23 @@
 # Lighthouse 실측과 개선
 
+## 2026-11-05: 현재 CDN 구성의 Actions 재측정
+
+폰트 CDN 전환 이후 실제 production 번들을 표준 GitHub-hosted Ubuntu/Chrome 156 runner에서 Lighthouse 13.6.0의 기본 모바일 프로필로 측정했다. 기본 demo, 기본 light 테마, 실제 폰트 CDN 요청, 공개 origin 미설정이다. E2E의 외부 요청 fixture는 사용하지 않았다. 아래는 각 조합 1회의 실험실 측정이다.
+
+| 코드 / 화면                    | 성능 | 접근성 | Best Practices | SEO | FCP / LCP (ms) | TBT (ms) | CLS      |
+| ------------------------------ | ---- | ------ | -------------- | --- | -------------- | -------- | -------- |
+| 기존 main `8b2b6d8` / Overview | 72   | 96     | 100            | 63  | 1,638 / 1,638  | 1,622    | 0        |
+| 개선 `01716fb` / Overview      | 73   | 96     | 100            | 63  | 1,614 / 1,614  | 1,536    | 0.000138 |
+| 개선 `01716fb` / Projects      | 68   | 100    | 100            | 63  | 2,553 / 2,553  | 1,123    | 0        |
+
+실행 근거: [기존 main Overview](https://github.com/cha2hyun/boilerplate/actions/runs/42035431392), [개선 Overview](https://github.com/cha2hyun/boilerplate/actions/runs/42034735087), [개선 Projects](https://github.com/cha2hyun/boilerplate/actions/runs/42034963167). 세 보고서 모두 runtime error와 run warning이 없었다. 원본 HTML/JSON은 해당 Actions artifact에서 3일 동안 보관한다.
+
+과거 아래 macOS 수치와 실행 환경·테마·폰트 공급 방식이 다르므로 98→73을 코드 회귀로 단정하지 않는다. 같은 runner 종류의 main/PR 비교도 단일 실행이며 benchmark index가 1,800/2,084로 달라 1점 차이를 개선으로 주장하지 않는다. 현재 재현된 과제는 모바일 main-thread 작업량이다. 실제 사용자 지표나 모든 페이지의 성능 보증은 아니다. 기능 제거, 지연 시간 숨김, 테스트용 데이터 축소로 점수를 바꾸지 않았다.
+
+Overview 접근성 실패는 밝은 테마 Avatar 이니셜의 `muted-foreground` / `muted` 조합(12px, 4.34:1)이었다. 이 조합을 공통 Avatar의 `foreground` / `muted`로 바꾸고 실제 텍스트·배경의 두 테마 대비를 브라우저 회귀로 추가했다. 수정 후 측정 결과는 최종 검증에서 기록한다. SEO 63은 의도된 `noindex, nofollow` 정책이며 점수를 위해 색인을 허용하지 않는다.
+
+## 2026-11-03: 이전 로컬 측정 기록
+
 측정일: 2026-11-03. Chrome 156.0.8078.80 / Lighthouse 13.6.0 / macOS / production `pnpm preview` (`127.0.0.1:4173`). 기본 demo 데이터와 OS를 따르는 dark 테마에서 측정했다. `VITE_SITE_URL`은 설정하지 않았다.
 
 후속 변경(2026-11-05): 폰트 제공을 [jsDelivr CDN](../design/typography.md)으로 전환해 번들 폰트와 Vite font inlining 설정을 제거했다. 아래 폰트/CSS 용량과 성능 수치는 전환 전 기록이며 CDN 전환 후 재측정한 값이 아니다.
