@@ -248,8 +248,10 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
     const title = route === 'orders' ? 'Orders' : 'Customers'
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
     const region = page.getByRole('region', { name: `${title} table`, exact: true })
-    const table = route === 'orders' ? region : region.locator('[data-slot="table-container"]')
+    const table = region
     await expect(table).toBeVisible()
+    await expect(table).toHaveAttribute('data-slot', 'table-container')
+    await expect(table).toHaveAttribute('tabindex', '0')
     await expect(region).toHaveAttribute('aria-busy', 'false')
     const layout = await table.evaluate((element) => ({
       viewport: window.innerWidth,

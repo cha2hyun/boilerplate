@@ -68,9 +68,7 @@ test.describe('approved design compositions', () => {
     await ready(page)
     if (tablet) {
       await expect(
-        page
-          .getByRole('row')
-          .filter({ has: page.getByRole('button', { name: 'ORD-1042', exact: true }) }),
+        page.getByRole('row').filter({ has: page.getByRole('button', { name: /ORD-1042/ }) }),
       ).toContainText('₩166,050')
     }
 

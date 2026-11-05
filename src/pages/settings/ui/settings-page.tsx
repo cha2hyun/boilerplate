@@ -71,6 +71,7 @@ export function SettingsPage() {
                       value={workspaceName}
                       onChange={(event) => {
                         setWorkspaceName(event.target.value)
+                        setError(undefined)
                       }}
                       aria-invalid={!!error}
                       aria-describedby={error ? 'workspace-error' : 'workspace-hint'}

@@ -52,6 +52,16 @@ describe('workspace preference reset', () => {
     await user.click(save)
     expect(screen.getByRole('alert')).toHaveTextContent('Use at least 2 characters')
 
+    await user.type(name, 'y')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(name).toHaveAttribute('aria-invalid', 'false')
+    expect(name).toHaveAttribute('aria-describedby', 'workspace-hint')
+    expect(usePreferences.getState().workspaceName).toBe('Personal workspace')
+    await user.clear(name)
+    await user.type(name, 'x')
+    await user.click(save)
+    expect(screen.getByRole('alert')).toHaveTextContent('Use at least 2 characters')
+
     await user.click(screen.getByRole('button', { name: 'Reset preferences' }))
     expect(name).toHaveValue('Orbit Studio')
     expect(compact).toBeChecked()
