@@ -52,4 +52,4 @@ PageHeader의 새 프로젝트 → 전체 프로젝트 요약(모바일 기본 �
 - 닫기 경로별 폐기 확인과 초점: [입력 보호 E2E](../../e2e/unsaved-changes.spec.ts)의 `protects project drafts for Escape, cancel, outside click and close while retaining focus`. clean·원복·폐기 후 재진입·저장 중 이동 차단·성공 후 해제·응답 손실 오류 보존: [편집창 테스트](../../src/features/project-editor/ui/project-editor-dialog.test.tsx).
 - URL 페이지가 최초 응답으로 초기화되지 않음: [표 테스트](../../src/widgets/project-table/ui/project-table.test.tsx)의 `keeps a restored page while loading and after a successful response`. 초기화의 보존 값 전체는 변경 시 코드와 함께 확인합니다.
 
-- [접근성 E2E](../../e2e/accessibility.spec.ts)의 `keeps project summaries optional and management instructions complete at 200% text`는 모바일 요약의 기본 접힘·펼치기와 320px 한국어/412px 영어 200% 글꼴에서 목록 설명·결과 수 전체 표시를 확인합니다. 목록 안내와 페이지 도구는 최소 높이만 유지하고 필요한 만큼 줄바꿈합니다.
+- [접근성 E2E](../../e2e/accessibility.spec.ts)의 `keeps project summaries optional and management instructions complete at 200% text`는 모바일 요약의 기본 접힘·펼치기와 320px 한국어/412px 영어 200% 글꼴에서 목록 설명·결과 수 전체 표시를 확인합니다. 검색 필터와 행 선택 후에도 설명·검색·상태·내보내기·초기화·보기 컨트롤 전체가 카드 좌우 경계 안에 있어야 합니다. 목록 안내와 페이지 도구는 최소 높이만 유지하고 필요한 만큼 줄바꿈합니다.

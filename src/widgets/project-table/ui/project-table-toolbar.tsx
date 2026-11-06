@@ -63,9 +63,9 @@ export function ProjectTableToolbar({
   const filteredCount = table.getFilteredRowModel().rows.length
   const selectedRows = table.getFilteredSelectedRowModel().rows
   return (
-    <CardHeader className="border-b px-5 py-5 md:px-6">
+    <CardHeader className="min-w-0 grid-cols-1 border-b px-5 py-5 md:px-6">
       <HStack justify="between" wrap className="gap-3">
-        <VStack align="stretch" className="min-w-0 flex-1 gap-1">
+        <VStack align="stretch" className="min-w-0 flex-1 basis-48 gap-1">
           <HStack asChild wrap className="min-h-6 gap-2 text-base">
             <CardTitle asChild>
               <h2>
@@ -83,7 +83,7 @@ export function ProjectTableToolbar({
           </HStack>
           <HStack asChild wrap className="min-h-8 gap-2">
             <CardDescription aria-live="polite">
-              <span className="min-w-0 flex-1 wrap-anywhere">
+              <span className="min-w-0 flex-1 basis-32 wrap-anywhere">
                 {showRefreshError
                   ? t('table.refreshError')
                   : compact
@@ -91,7 +91,12 @@ export function ProjectTableToolbar({
                     : t('table.allDescription')}
               </span>
               {showRefreshError && onRetry && (
-                <Button variant="outline" size="sm" className="shrink-0" onClick={onRetry}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-auto min-h-8 max-w-full whitespace-normal"
+                  onClick={onRetry}
+                >
                   <RefreshCw aria-hidden="true" /> {t('common.retry')}
                 </Button>
               )}
@@ -102,6 +107,7 @@ export function ProjectTableToolbar({
           <Button
             variant="outline"
             size="sm"
+            className="h-auto min-h-8 max-w-full whitespace-normal"
             disabled={showLoading || showError || filteredCount === 0}
             onClick={() => {
               const exportedProjects = (
@@ -138,7 +144,7 @@ export function ProjectTableToolbar({
       </HStack>
       {!compact && (
         <HStack wrap className="mt-4 gap-2">
-          <div className="relative min-w-48 flex-1 md:max-w-80">
+          <div className="relative min-w-0 flex-1 basis-48 md:max-w-80">
             <Search
               className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground"
               aria-hidden="true"
@@ -164,8 +170,14 @@ export function ProjectTableToolbar({
               })
             }}
           >
-            <SelectTrigger className="w-36" aria-label={t('table.filterStatus')}>
-              <ListFilter className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            <SelectTrigger
+              className="min-h-9 w-36 max-w-full py-1.5 whitespace-normal data-[size=default]:h-auto *:data-[slot=select-value]:line-clamp-none"
+              aria-label={t('table.filterStatus')}
+            >
+              <ListFilter
+                className="hidden size-3.5 text-muted-foreground @xs/card-header:block"
+                aria-hidden="true"
+              />
               <SelectValue placeholder={t('table.allStatuses')} />
             </SelectTrigger>
             <SelectContent>

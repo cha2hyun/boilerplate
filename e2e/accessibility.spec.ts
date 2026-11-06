@@ -453,6 +453,50 @@ for (const [locale, width, show, hide, description, result] of [
       expect(bounds.contentWidth, label).toBeLessThanOrEqual(bounds.width + 1)
       expect(bounds.contentHeight, label).toBeLessThanOrEqual(bounds.height + 1)
     }
+    const card = page.locator('[data-slot="card"]').filter({ has: page.getByRole('table') })
+    const toolbar = card.locator('[data-slot="card-header"]')
+    // Active filters and a selection expose the reset and longer export actions.
+    await toolbar.getByRole('textbox').fill('Website')
+    const row = card
+      .getByRole('row')
+      .filter({ has: page.getByRole('button', { name: 'Website redesign', exact: true }) })
+    await row.getByRole('checkbox').check()
+    const clipped = await toolbar.evaluate((header) => {
+      const boundary = header.closest('[data-slot="card"]')!.getBoundingClientRect()
+      return [...header.querySelectorAll('button,input,h2,[data-slot="card-description"] > span')]
+        .filter(
+          (element) =>
+            getComputedStyle(element).visibility !== 'hidden' &&
+            element.getBoundingClientRect().width > 0,
+        )
+        .filter((element) => {
+          const bounds = element.getBoundingClientRect()
+          return bounds.left < boundary.left - 1 || bounds.right > boundary.right + 1
+        })
+        .map((element) => element.getAttribute('aria-label') ?? element.textContent)
+    })
+    expect(
+      clipped,
+      'The card must show the entire toolbar, including selected export and reset',
+    ).toEqual([])
+    const status = toolbar.getByRole('combobox')
+    const statusBounds = await status.evaluate((trigger) => {
+      const value = trigger.querySelector('[data-slot="select-value"]')!
+      const range = document.createRange()
+      range.selectNodeContents(value)
+      const label = range.getBoundingClientRect()
+      const control = trigger.getBoundingClientRect()
+      return Math.max(
+        control.left - label.left,
+        label.right - control.right,
+        control.top - label.top,
+        label.bottom - control.bottom,
+      )
+    })
+    expect(
+      statusBounds,
+      'The enlarged selected status fits inside its own control',
+    ).toBeLessThanOrEqual(1)
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       width,
     )

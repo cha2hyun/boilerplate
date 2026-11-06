@@ -36,6 +36,6 @@ Dialog/Sheet는 제목·설명·초점 진입과 모달 안의 순환을 유지�
 
 Avatar의 이니셜과 그룹 인원 수는 `bg-muted` 위에 `text-foreground`를 사용합니다. 밝은 테마의 `muted-foreground` 조합은 12px 이니셜에서 4.34:1로 부족했으므로 사용하지 않습니다. 같은 브라우저 회귀가 Overview·Projects의 실제 Avatar 텍스트와 배경 대비도 두 테마에서 확인합니다.
 
-`e2e/accessibility.spec.ts`의 `exposes page and section headings without promoting metric values to headings`는 주요 페이지의 H1/H2와 KPI 안의 heading 부재를 확인합니다. [workspace E2E](../../e2e/workspace.spec.ts)는 404 H1과 목록 귀환을 확인합니다. `keeps project summaries optional and management instructions complete at 200% text`는 한영 모바일 목록 설명과 결과 안내의 실제 넘침을 검사하고, `keeps compact customer identity and actions visible while scrolling a narrow table`는 320/412px에서 가로 스크롤 후 식별 열과 작업 열의 경계·상세 열기·초점 복귀를 확인합니다.
+`e2e/accessibility.spec.ts`의 `exposes page and section headings without promoting metric values to headings`는 주요 페이지의 H1/H2와 KPI 안의 heading 부재를 확인합니다. [workspace E2E](../../e2e/workspace.spec.ts)는 404 H1과 목록 귀환을 확인합니다. `keeps project summaries optional and management instructions complete at 200% text`는 한영 모바일 목록 설명과 결과 안내의 실제 넘침, 검색·선택 후 도구가 카드 바깥으로 잘리는지도 검사하고, `keeps compact customer identity and actions visible while scrolling a narrow table`는 320/412px에서 가로 스크롤 후 식별 열과 작업 열의 경계·상세 열기·초점 복귀를 확인합니다.
 
 `e2e/design-visual.spec.ts`의 `keeps rendered form boundaries and keyboard focus at three-to-one contrast`는 Input·Textarea·Select의 실제 조상 배경과 반투명 배경/포커스 링을 합성하여 light/dark의 3:1 기준을 검사합니다. 포커스는 실제 Tab으로 진입합니다. 장식적인 카드 구분선과 비활성 컨트롤은 이 입력 경계 계약과 구분합니다.
