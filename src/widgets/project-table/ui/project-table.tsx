@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   functionalUpdate,
   getCoreRowModel,
@@ -16,6 +16,7 @@ import { useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
 import { Card, CardContent } from '@/shared/ui/card'
 import { projectTableSearchSchema, type ProjectTableSearch } from '../model/search'
+import { ProjectDetailsSheet } from './project-details-sheet'
 import { useProjectColumns } from './use-project-columns'
 import { ProjectTableToolbar } from './project-table-toolbar'
 import { ProjectTableViewport } from './project-table-viewport'
@@ -62,11 +63,30 @@ export function ProjectTable({
   )
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
-  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [editSession, setEditSession] = useState<{ project: Project; detail: string } | null>(null)
+  // An approved history change also dismisses the editor belonging to the previous detail.
+  if (editSession && editSession.detail !== search.detail) setEditSession(null)
+  const editingProject = editSession?.detail === search.detail ? editSession.project : null
   const [deletingProject, setDeletingProject] = useState<Project | null>(null)
   const tableRef = useRef<HTMLDivElement | null>(null)
   const searchRef = useRef<HTMLInputElement | null>(null)
   const actionTriggerRef = useRef<HTMLElement | null>(null)
+  const detailTriggerId = useRef<string | null>(null)
+
+  const openEditor = useCallback(
+    (project: Project) => {
+      setEditSession({ project, detail: search.detail })
+    },
+    [search.detail],
+  )
+
+  const openDetails = useCallback(
+    (project: Project) => {
+      detailTriggerId.current = project.id
+      onSearchChange({ detail: project.id })
+    },
+    [onSearchChange],
+  )
 
   function restoreActionFocus(event: Event) {
     event.preventDefault()
@@ -79,7 +99,8 @@ export function ProjectTable({
   const columns = useProjectColumns({
     compact,
     actionTriggerRef,
-    onEdit: setEditingProject,
+    onView: openDetails,
+    onEdit: openEditor,
     onDelete: setDeletingProject,
   })
 
@@ -136,10 +157,28 @@ export function ProjectTable({
   const pageCount = Math.max(1, table.getPageCount())
 
   useEffect(() => {
-    if (hasData && !isLoading && !isFetching && !error && search.page > pageCount) {
+    if (
+      hasData &&
+      !isLoading &&
+      !isFetching &&
+      !error &&
+      !editingProject &&
+      !deletingProject &&
+      search.page > pageCount
+    ) {
       onSearchChange({ page: pageCount }, { replace: true })
     }
-  }, [hasData, isLoading, isFetching, error, search.page, pageCount, onSearchChange])
+  }, [
+    hasData,
+    isLoading,
+    isFetching,
+    error,
+    editingProject,
+    deletingProject,
+    search.page,
+    pageCount,
+    onSearchChange,
+  ])
 
   function clearFilters() {
     onSearchChange({ q: '', status: 'all', page: 1 })
@@ -189,12 +228,41 @@ export function ProjectTable({
           )}
         </CardContent>
       </Card>
+      <ProjectDetailsSheet
+        open={Boolean(search.detail)}
+        project={
+          search.detail ? projects.find((project) => project.id === search.detail) : undefined
+        }
+        search={search}
+        isLoading={showLoading}
+        error={error}
+        onRetry={onRetry}
+        onOpenChange={(open) => {
+          if (!open) onSearchChange({ detail: '' })
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          // Sorting or renaming can remount the initiating cell while the sheet is open.
+          const opener = Array.from(
+            tableRef.current?.querySelectorAll<HTMLButtonElement>(
+              'button[data-project-detail-id]',
+            ) ?? [],
+          ).find((button) => button.dataset.projectDetailId === detailTriggerId.current)
+          const target = opener ?? tableRef.current
+          target?.focus()
+          detailTriggerId.current = null
+        }}
+        onEdit={(project, trigger) => {
+          actionTriggerRef.current = trigger
+          openEditor(project)
+        }}
+      />
       <ProjectEditorDialog
         open={Boolean(editingProject)}
         project={editingProject ?? undefined}
         onCloseAutoFocus={restoreActionFocus}
         onOpenChange={(open) => {
-          if (!open) setEditingProject(null)
+          if (!open) setEditSession(null)
         }}
       />
       <ProjectDeleteDialog

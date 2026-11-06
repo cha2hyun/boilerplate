@@ -99,7 +99,7 @@ test('shows the public order preview only on desktop and keeps sign-in reachable
 test('restores a protected account in this tab and requires sign-in after logout', async ({
   page,
   context,
-}) => {
+}, testInfo) => {
   await page.goto('/account')
   await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
   await expect(page.locator('[data-slot="sidebar"]')).toHaveCount(0)
@@ -139,6 +139,25 @@ test('restores a protected account in this tab and requires sign-in after logout
       .filter({ hasText: /^Last name$/ })
       .locator('+ dd'),
   ).toHaveText('chae')
+  const viewport = page.viewportSize()
+  if (!viewport) throw new Error('A viewport is required for account layout coverage.')
+  const widths =
+    testInfo.project.name === 'desktop' ? [640, 767, 768, viewport.width] : [viewport.width]
+  const emailLabel = profile.getByText('Email', { exact: true })
+  const emailValue = profile.getByText('admin@example.com', { exact: true })
+  for (const width of widths) {
+    await page.setViewportSize({ width, height: viewport.height })
+    const label = await emailLabel.boundingBox()
+    const value = await emailValue.boundingBox()
+    if (!label || !value) throw new Error(`Expected visible account email at ${width}px.`)
+    if (width < 768) {
+      expect(value.x).toBeCloseTo(label.x, 1)
+      expect(value.y).toBeGreaterThanOrEqual(label.y + label.height)
+    } else {
+      expect(value.y).toBeCloseTo(label.y, 1)
+      expect(value.x).toBeGreaterThanOrEqual(label.x + label.width)
+    }
+  }
   const another = await context.newPage()
   await another.goto('/account')
   await expect(another.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()

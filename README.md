@@ -10,6 +10,8 @@ React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러
 
 Overview·Analytics·Orders·Customers·Users는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 300ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [숫자 표시 규칙](docs/number-formatting.md)·[로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
 
+다른 업무용 제품으로 포크할 때는 담당자가 할 일 한 가지를 먼저 정하고, 그 업무의 데이터 모델과 첫 화면을 만듭니다. 설비 점검 예시에서 `inspection`의 목록 조회·완료 처리, 라우트·목업·테스트 연결, 기본 샘플 제거 순서를 확인할 수 있습니다. [새 제품으로 시작하기](docs/new-project.md) · [도메인 교체 실습](docs/examples/minimal-admin.md)
+
 ## 미리보기
 
 2026-11-06에 커밋 `1ee7ddf`의 production 데모 번들에서 캡처했습니다. 기능·탐색·정보 구조가 바뀌면 해당 커밋의 번들에서 소개 이미지도 갱신합니다. Overview 미리보기는 밝은 테마와 어두운 테마에 맞춰 표시됩니다. [캡처에 사용한 Actions 실행](https://github.com/cha2hyun/boilerplate/actions/runs/42149542188)
@@ -123,7 +125,7 @@ boilerplate/
 
 | 메뉴                  | 제공하는 흐름                                                            |
 | --------------------- | ------------------------------------------------------------------------ |
-| Overview / Projects   | 기간별 요약, 프로젝트 생성·수정·삭제, 검색·필터                          |
+| Overview / Projects   | 기간별 요약, 프로젝트 상세→편집, 생성·삭제, 검색·필터                    |
 | Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지                       |
 | Orders                | 서버 조회 계약의 검색·정렬·페이지, 별도 상세·요약, 생성·수정·삭제        |
 | Customers             | 고객 생성·수정·삭제, 상태 필터·검색·정렬, 고객 상세 Sheet                |
@@ -153,7 +155,7 @@ Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이�
 | `pnpm check:e2e-categories`      | E2E 범주의 누락·중복·없는 스펙 경로 검사                     |
 | `pnpm check:page-specs`          | 페이지 기획 누락·중복·필수 항목·로컬 링크 검사               |
 | `pnpm check:browser-image`       | CI 브라우저 이미지와 설치된 Playwright 버전·고정 digest 검사 |
-| `pnpm check:docs`                | Markdown 로컬 링크 대상 검사                                 |
+| `pnpm check:docs`                | Markdown 로컬 파일과 절 링크 검사                            |
 | `pnpm check:bundle-budget`       | 빌드 후 초기 정적 JS의 raw/gzip 예산 검사                    |
 | `pnpm test:guardrails`           | 구조 검사기, 경로별 HTML, E2E 범주 회귀 테스트               |
 | `pnpm format` / `pnpm lint`      | 포맷 적용 / 린트 검사                                        |
@@ -169,7 +171,7 @@ CI는 production build를 한 번만 만들고 초기 JS 예산을 검사한 뒤
 
 - [작업별 문서 지도](docs/README.md) — 필요한 책임의 문서만 선택
 - [페이지별 현재 기획과 수정 방법](docs/pages/README.md) — 목적·동작·상태·수용 기준
-- [새 제품 도입·브랜드·데모 정리](docs/new-project.md) · [셸·주문·설정만 남기는 포크 예시](docs/examples/minimal-admin.md)
+- [새 제품 도입·브랜드·데모 정리](docs/new-project.md) · [다른 도메인으로 교체하는 포크 실습](docs/examples/minimal-admin.md)
 - [아키텍처와 경계](docs/architecture.md)
 - [폰트·색상·반응형 규칙](docs/design-system.md)
 - [공통 화면 조합](docs/design/compositions.md) · [시각 기준 검토](docs/design/visual-regression.md)

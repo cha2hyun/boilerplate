@@ -4,7 +4,7 @@
 
 | 작업                             | 시작 문서                                                               | 구현 소유 위치                                                                  |
 | -------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| 새 제품 초기화·브랜드·데모 정리  | [새 제품 도입](new-project.md) · [최소 포크](examples/minimal-admin.md) | 패키지 이름, 브랜드/메타, 저장 namespace, 환경, 샘플 코드                       |
+| 새 도메인 도입·브랜드 교체       | [새 제품 도입](new-project.md) · [포크 실습](examples/minimal-admin.md) | 첫 업무 모델·라우트·HTTP/목업·검증, 브랜드·저장 키, 기존 데모 정리              |
 | 레이어/새 기능 배치              | [아키텍처](architecture.md)                                             | `src/app`, `pages`, `widgets`, `features`, `entities`, `shared`                 |
 | 페이지 목적·행동·상태·수용 기준  | [페이지 기획 명세](pages/README.md)                                     | `docs/pages`, 해당 라우트·화면·기존 테스트                                      |
 | UI·레이아웃·폰트·문구            | [디자인 시스템](design-system.md) → 해당 주제                           | `src/shared/ui`, `src/app/styles/globals.css`, 해당 화면                        |
@@ -15,7 +15,7 @@
 | 로딩·skeleton·숫자 모션          | [로딩과 모션](loading-and-motion.md)                                    | 해당 Query 소비 화면과 모션 기능                                                |
 | 캐시·새로고침·mutation 반영      | [Query 캐시](query-cache.md)                                            | `src/entities/*/api`, QueryClient                                               |
 | 필터·정렬·기간·URL 복원          | [URL 조회 상태](url-state.md)                                           | `src/app/routes`, 해당 `pages/widgets`의 조회 스키마와 UI                       |
-| 폼 초안·이탈 확인·저장 중 보호   | [미저장 입력 보호](unsaved-changes.md)                                  | 공통 입력 보호 hook/확인 조합, Settings, 프로젝트·주문·고객 편집 feature        |
+| 폼 초안·이탈 확인·저장 중 보호   | [미저장 입력 보호](unsaved-changes.md)                                  | 공통 입력 보호 hook/확인 조합, Settings, 프로젝트·주문·고객·구성원 편집 feature |
 | 앱 오류 복구·보고·개인정보 경계  | [오류 처리](error-handling.md)                                          | `src/app/error-handling`, `src/shared/lib/error-reporting`, 앱 진입점           |
 | API·응답·데모 저장               | [API 계약](api-contract.md)                                             | `src/entities/*`, `src/shared/api`                                              |
 | 테스트·CI·최소 로컬 재현         | [테스트 정책](testing.md)                                               | `package.json`, `e2e`, `.github/workflows`                                      |

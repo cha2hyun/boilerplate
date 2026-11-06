@@ -57,6 +57,8 @@ export const orderInputSchema = z.object({
 
 export const orderSchema = orderInputSchema.extend({
   id: z.string().min(1),
+  // Legacy API data stays readable; edits require a server-issued revision.
+  revision: z.number().int().positive().optional(),
   // Existing API responses and browser records have no fabricated historical events.
   history: z.array(orderHistoryEntrySchema).max(orderLimits.history).default([]),
   // Server-owned content may be longer than the limits for a new editor submission.

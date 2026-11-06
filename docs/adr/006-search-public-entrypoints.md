@@ -17,7 +17,7 @@ Router는 전체 라우트의 `validateSearch`를 시작 시 준비하고, 페�
 - `pages/{overview,projects,analytics,orders,customers,inbox,users}/search.ts`
 - `widgets/{project-table,revenue-chart}/search.ts`
 
-`search.ts`는 기존 스키마·기본값·출력 타입의 named re-export만 한다. 스키마의 소유 모델, URL 값, 복원·탐색 동작은 바꾸지 않는다. 기존 `index.ts`도 같은 계약을 재공개하여 기존 소비자 API를 유지한다. 여섯 라우트는 조회 계약만 `search.ts`로 가져오고 Page는 계속 `index.ts`에서 가져온다. Overview의 조회 모델과 Projects의 공개 조회 계약도 위젯 `search.ts`를 참조한다.
+`search.ts`는 기존 스키마·기본값·출력 타입의 named re-export만 한다. 스키마의 소유 모델, URL 값, 복원·탐색 동작은 바꾸지 않는다. 기존 `index.ts`도 같은 계약을 재공개하여 기존 소비자 API를 유지한다. 위 페이지의 라우트는 조회 계약만 `search.ts`로 가져오고 Page는 계속 `index.ts`에서 가져온다. Overview의 조회 모델과 Projects의 공개 조회 계약도 위젯 `search.ts`를 참조한다.
 
 추가 공개 경로는 레이어 방향이나 같은 레이어의 슬라이스 격리를 우회하지 않는다. 허용 목록 밖의 `search.ts`, `model/search.ts` 등 내부 경로는 계속 거부한다. 전체 `moduleSideEffects: false`, 검사 ignore, 새로운 UI 프레임워크는 사용하지 않는다.
 

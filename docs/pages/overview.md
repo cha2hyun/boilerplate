@@ -10,7 +10,7 @@
 
 ## 정보 구조와 주요 행동
 
-PageHeader와 새 프로젝트 → KPI → 매출 차트와 최근 활동 → 프로젝트 요약 표 순서입니다. 새 프로젝트는 편집 대화상자를 열고, 활동 하단과 전체 보기 링크는 Projects로 이동합니다. 요약 표의 이름/행 메뉴로 편집·삭제를 이어갑니다. [화면 조합](../design/compositions.md)의 대시보드 구조를 사용합니다.
+PageHeader와 새 프로젝트 → KPI → 매출 차트와 최근 활동 → 프로젝트 요약 표 순서입니다. 새 프로젝트는 편집 대화상자를 열고, 활동 하단과 전체 보기 링크는 Projects로 이동합니다. 요약 표에서 프로젝트명을 누르면 현재 홈 화면 위에 상세가 열립니다. 상세의 수정 버튼은 편집 대화상자를 열고, 행 메뉴의 수정·삭제는 바로 해당 작업을 엽니다. [화면 조합](../design/compositions.md)의 대시보드 구조를 사용합니다.
 
 ## 조회·조작 계약
 
@@ -30,7 +30,7 @@ PageHeader와 새 프로젝트 → KPI → 매출 차트와 최근 활동 → �
 | 태블릿 `768–1279px` | KPI 2열, 차트 다음 활동. 표의 최소 열 너비를 보존합니다.                                             |
 | PC `≥ 1280px`       | KPI 4열, 매출과 활동 병렬, 요약 표는 아래 전체 너비입니다.                                           |
 
-활동은 이름 있는 키보드 접근 가능 스크롤 영역이며 긴 문구를 줄바꿈합니다. 프로젝트 전문은 편집 대화상자로 확인합니다. [긴 콘텐츠](../design/content-overflow.md)를 따릅니다.
+활동은 이름 있는 키보드 접근 가능 스크롤 영역이며 긴 문구를 줄바꿈합니다. 프로젝트 이름과 설명 전문은 읽기 전용 상세에서 확인합니다. [긴 콘텐츠](../design/content-overflow.md)를 따릅니다.
 
 매출 카드의 기간 선택은 640px 미만에서 제목·설명 아래 한 행의 전체 너비를 사용합니다. 설명을 좁은 옆 열에 밀어 넣지 않으며 로딩과 데이터 표시가 같은 헤더 배치를 공유합니다. 640px 이상에서는 기존 우측 배치를 유지합니다. 차트 툴팁의 항목 이름·금액은 공통 ChartTooltipContent에서 최소 12px 간격으로 분리합니다.
 
@@ -44,10 +44,12 @@ PC에서 나란히 놓인 매출·활동 카드는 상단·하단·푸터 구분
 
 ## 수용 기준
 
+- 프로젝트 상세를 열고 닫아도 홈의 기간과 요약 표 정렬을 보존합니다. `/?detail=<프로젝트 ID>`로 같은 상세를 복원하고, **새 탭에서 상세 열기**는 전체 프로젝트 목록의 해당 상세로 이동합니다. [프로젝트 브라우저 검사](../../e2e/projects.spec.ts)
+
 - [국제화 E2E](../../e2e/localization.spec.ts)의 기존 언어·통화 전환 흐름에서 320px 모바일 차트의 설명·기간 선택 배치와 한·영/USD·KRW 툴팁 간격을 실제 경계로 확인합니다.
 - 기간 변경 → 매출 구간 변경, URL·새로고침·뒤로/앞으로 복원: [workspace E2E](../../e2e/workspace.spec.ts)의 `loads the overview without browser errors and changes the revenue period`.
 - 같은 workspace E2E에서 PC의 두 카드 상·하단 정렬과 실제 그래프의 높이 확장, 모바일·태블릿의 세로 배치와 240px 그래프 높이를 확인합니다. 푸터 정렬 matrix는 en-US/ko-KR와 기본/간결한 레이아웃의 loading→loaded에서 구분선·내용 중심·여백·잘림을 확인하며, desktop의 확대된 푸터 문구에서도 공유 행이 함께 늘어나는지 검증합니다.
-- 기간과 요약 정렬은 독립적으로 유효성 검사: [스키마 테스트](../../src/pages/overview/model/search.test.ts)의 `composes revenue period and recent project sorting independently`.
+- 기간과 요약 정렬은 독립적으로 유효성 검사: [스키마 테스트](../../src/pages/overview/model/search.test.ts)의 `composes revenue period, recent project sorting, and an independently shareable detail`.
 - 최초 로딩·캐시 재방문·재조회 중 카드 공간과 기존 데이터를 유지: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Overview keeps card geometry and cached data through real demo requests`. 같은 파일의 `Overview recovers a cold read error and preserves cached content after a refresh failure`는 최초 오류→재시도와 재조회 실패 시 기존 숫자·내용 보존→복구를 확인합니다. `Overview distinguishes a successful empty response from loading and errors`는 빈 분석 응답과 빈 프로젝트 저장소에서 결측 KPI·빈 차트·활동·프로젝트를 확인합니다.
 - 기간 변경이 KPI·활동에 전파되지 않는 범위와 생성 뒤 두 페이지의 반영은 관련 소유 코드와 함께 검토합니다. 위 테스트 이름만으로 이 모든 의미가 자동 검증됐다고 보고하지 않습니다.
 

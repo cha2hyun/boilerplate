@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { orderInputSchema, orderListDefaults } from '../model/schema'
 import { createDemoOrderAdapter, ORDER_STORAGE_KEY } from './demo'
 import { sampleOrders } from './seed'
@@ -17,6 +17,10 @@ function memoryStorage(initial?: string) {
 }
 
 describe('persistent demo orders', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   it('retains a stored photo on edits to the same customer and drops it for a different email', async () => {
     const seed = sampleOrders[0]
     if (!seed) throw new Error('Order seed missing')
@@ -26,32 +30,44 @@ describe('persistent demo orders', () => {
     }
     const storage = memoryStorage(JSON.stringify({ version: 1, orders: [order] }))
     const adapter = createDemoOrderAdapter({ storage, delayMs: 0 })
-    const kept = await adapter.update(order.id, { ...input, city: 'Seoul' })
+    const kept = await adapter.update(order.id, { ...input, city: 'Seoul' }, order.revision)
     expect(kept.customer.avatarUrl).toBe(order.customer.avatarUrl)
-    await adapter.update(order.id, {
-      ...input,
-      customer: { name: 'New customer', email: 'new@example.com' },
-    })
+    await adapter.update(
+      order.id,
+      {
+        ...input,
+        customer: { name: 'New customer', email: 'new@example.com' },
+      },
+      kept.revision,
+    )
     expect(
       (await createDemoOrderAdapter({ storage, delayMs: 0 }).detail(order.id)).customer.avatarUrl,
     ).toBeUndefined()
   })
 
-  it('persists CRUD across instances and derives initials from the edited snapshot', async () => {
+  it('persists CRUD across instances on LAN HTTP and derives initials from the edited snapshot', async () => {
+    vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
     const storage = memoryStorage()
-    const first = createDemoOrderAdapter({ storage, delayMs: 0, createId: () => 'ORD-test' })
+    const first = createDemoOrderAdapter({ storage, delayMs: 0 })
     const created = await first.create({
       ...input,
       customer: { name: 'Sam Lee', email: 'sam@example.com' },
     })
     expect(created.customer.initials).toBe('SL')
+    expect(created.id).toMatch(/^ORD-/)
     const second = createDemoOrderAdapter({ storage, delayMs: 0 })
     expect((await second.list(all)).total).toBe(sampleOrders.length + 1)
-    const updated = await second.update(created.id, {
-      ...input,
-      status: 'Cancelled',
-      customer: { name: 'Anna Park', email: 'anna@example.com' },
-    })
+    const secondOrder = await second.create(input)
+    expect(secondOrder.id).not.toBe(created.id)
+    const updated = await second.update(
+      created.id,
+      {
+        ...input,
+        status: 'Cancelled',
+        customer: { name: 'Anna Park', email: 'anna@example.com' },
+      },
+      created.revision,
+    )
     expect(updated.customer).toEqual({
       name: 'Anna Park',
       email: 'anna@example.com',
@@ -59,6 +75,7 @@ describe('persistent demo orders', () => {
     })
     expect(await first.detail(created.id)).toEqual(updated)
     await first.delete(created.id)
+    await first.delete(secondOrder.id)
     expect((await second.list(all)).items).toEqual(sampleOrders)
   })
 
@@ -120,7 +137,7 @@ describe('persistent demo orders', () => {
     const adapter = createDemoOrderAdapter({ storage, delayMs: 0 })
     await expect(adapter.create({ ...input, items: [] })).rejects.toThrow()
     expect(storage.getItem(ORDER_STORAGE_KEY)).toBeNull()
-    await expect(adapter.update('missing', input)).rejects.toMatchObject({ status: 404 })
+    await expect(adapter.update('missing', input, 1)).rejects.toMatchObject({ status: 404 })
     await expect(adapter.delete('missing')).rejects.toMatchObject({ status: 404 })
   })
 
@@ -158,7 +175,7 @@ it('reports an unavailable persistence boundary once while retaining the session
     onStorageUnavailable,
   })
   await adapter.create(input)
-  await adapter.update('ORD-session-notice', { ...input, city: 'Busan' })
+  await adapter.update('ORD-session-notice', { ...input, city: 'Busan' }, 1)
   expect(onStorageUnavailable).toHaveBeenCalledTimes(1)
   expect((await adapter.detail('ORD-session-notice')).city).toBe('Busan')
 })

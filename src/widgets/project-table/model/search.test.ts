@@ -6,6 +6,7 @@ describe('project table URL search', () => {
     expect(
       projectTableSearchSchema.parse({
         q: 'Phoenix',
+        detail: '  prj-phoenix  ',
         status: 'paused',
         sort: 'progress',
         order: 'asc',
@@ -14,6 +15,7 @@ describe('project table URL search', () => {
       }),
     ).toEqual({
       q: 'Phoenix',
+      detail: 'prj-phoenix',
       status: 'paused',
       sort: 'progress',
       order: 'asc',
@@ -35,6 +37,11 @@ describe('project table URL search', () => {
     ).toEqual(projectTableSearchDefaults)
     expect(projectTableSearchSchema.parse({ q: 'a'.repeat(201) }).q).toBe('')
     expect(projectTableSearchSchema.parse({ q: 1001 }).q).toBe('1001')
+    expect(projectTableSearchSchema.parse({ detail: 10 }).detail).toBe('10')
+    expect(projectTableSearchSchema.parse({ detail: '0'.repeat(201), status: 'active' })).toEqual({
+      ...projectTableSearchDefaults,
+      status: 'active',
+    })
     expect(projectTableSearchSchema.parse({ status: 'paused', page: 1.5 })).toEqual({
       ...projectTableSearchDefaults,
       status: 'paused',

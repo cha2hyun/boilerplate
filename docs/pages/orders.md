@@ -19,6 +19,7 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 - 생성·수정은 고객 이름/이메일, 날짜, 주문/결제 상태, 도시/국가, 배송비, 상품을 편집합니다. 상품은 1–50개, 수량은 1–10,000의 정수이며 이름과 주소는 길이를 검증합니다. 금액 입력은 표시 통화와 관계없이 USD이고 소수점 둘째 자리까지 허용합니다. 빈 값·음수·소수 수량·범위 초과는 오류로 안내하고 USD 정수 cents로 변환해 전송합니다. 항목 단가·배송비는 각각 최대 USD 1,000,000이며 가능한 전체 합계도 안전한 정수 범위 안입니다.
 - 생성 성공 후 현재 필터·정렬·페이지를 유지한 채 새 주문 상세를 엽니다. 수정으로 행이 필터 밖으로 이동해도 조회 조건은 보존합니다. 삭제 등으로 페이지 범위를 벗어나면 대화상자를 닫은 뒤 페이지를 보정합니다.
 - 주문의 고객 정보는 저장 시점의 스냅샷입니다. Customers의 프로필·구매 이력과 독립적이며 주문 생성·삭제나 고객 수정·삭제로 연쇄 변경하지 않습니다.
+- 주문 수정은 폼을 열었을 때의 버전으로 요청합니다. 다른 탭이 먼저 저장하면 초안은 남고 바로 재저장할 수 없습니다. **최신 주문 확인**으로 새 레코드를 읽으면 손대지 않은 필드는 최신 값으로 바뀌고, 내가 바꾼 값은 유지됩니다. 양쪽에서 같은 필드를 서로 다르게 수정한 경우 저장된 값과 내 값을 비교해 선택하고 다시 저장합니다. 상품 목록은 하나의 필드로 비교합니다. 최신값 확인 자체는 저장을 실행하지 않습니다. 버전을 제공하지 않는 API에서는 기존 주문을 읽을 수 있고 수정 저장은 차단됩니다.
 - 변경 기록은 실제 데모 생성 시 주문/결제의 초기 값과 수정 시 달라진 상태만 기록하며 최근 100개를 최신순으로 보여줍니다. 기존 샘플의 과거 이력을 꾸며내지 않고 비어 있으면 기록 없음으로 안내합니다. UTC 절대 시각을 표시하며 변경자 인증·불변성을 보장하는 운영 감사 로그로 표현하지 않습니다.
 - 삭제는 별도 AlertDialog에서 확인합니다. 미저장 편집의 취소·Escape·바깥 클릭·닫기·페이지 이동은 공통 폐기 확인을 거치며 저장 중에는 닫기를 차단합니다. 실패하면 입력과 오류를 유지하고, 결과가 불확실한 쓰기는 자동 재전송 없이 재조회와 확인 안내를 제공합니다.
 
@@ -53,6 +54,7 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 - 잘못된 URL과 로드 뒤 페이지 보정: 같은 파일의 `recovers invalid commerce URL filters and clamps pages after data loads`. 상세 최신성: `/orders keeps open details current and contains long customer text`.
 - 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Orders keeps card geometry and cached data through real demo requests`. 목록 실패·재시도는 상거래 E2E의 상태/검색 시나리오에서 별도로 확인합니다. 조회 값 복구는 [스키마 테스트](../../src/pages/orders/model/search.test.ts)에서 확인합니다.
 - CRUD·초안 보호·새로고침 지속성·합계·초점: [상거래 E2E](../../e2e/commerce.spec.ts)의 `creates, edits and deletes an order with protected drafts and persisted totals`.
+- 두 탭에서 각각 배송 상태와 도시를 수정해도 앞선 상태 변경과 두 번째 탭의 도시가 함께 보존돼야 합니다. 같은 버전으로 동시에 PATCH한 두 요청 중 하나만 성공해야 하며 거절된 쓰기로 이력을 추가하지 않습니다. [상거래 브라우저 검사](../../e2e/commerce.spec.ts)
 - 데이터 검증: [주문 스키마](../../src/entities/order/model/schema.test.ts), [정확한 USD 변환](../../src/features/order-editor/model/form.test.ts), [데모 지속성·저장소 실패·취소](../../src/entities/order/api/demo.test.ts), [HTTP 계약](../../src/entities/order/api/http.test.ts), [성공/불확실 쓰기와 늦은 GET 경합](../../src/entities/order/api/queries.test.tsx).
 
 - 페이지 크기·상세 직접 링크·새로고침·history와 미저장 편집 폐기·없는 ID 회복·모바일 요약: [상거래 E2E](../../e2e/commerce.spec.ts)의 `orders restores shared details and page size through reload and history`.

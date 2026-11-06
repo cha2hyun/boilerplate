@@ -44,6 +44,7 @@ describe('order mutation cache reconciliation', () => {
         ...existing,
         ...input,
         customer: existing.customer,
+        revision: operation === 'update' ? 2 : 1,
         id: operation === 'create' ? 'ORD-created' : existing.id,
       })
       const saved =
@@ -111,7 +112,11 @@ describe('order mutation cache reconciliation', () => {
             operation === 'create'
               ? result.current.create.mutateAsync(input)
               : operation === 'update'
-                ? result.current.update.mutateAsync({ id: existing.id, input })
+                ? result.current.update.mutateAsync({
+                    id: existing.id,
+                    input,
+                    revision: existing.revision,
+                  })
                 : result.current.delete.mutateAsync(existing.id)
           const outcome = mutation.catch((error: unknown) => error)
           await invalidated.promise
@@ -146,7 +151,7 @@ describe('order mutation cache reconciliation', () => {
 
   it('keeps the confirmed detail and last known page when its follow-up GET fails', async () => {
     const existing = orderSchema.parse(sampleOrders[0])
-    const updated = orderSchema.parse({ ...existing, status: 'Shipped' })
+    const updated = orderSchema.parse({ ...existing, revision: 2, status: 'Shipped' })
     vi.stubGlobal(
       'fetch',
       vi.fn<typeof fetch>((_url, options) =>
@@ -172,6 +177,7 @@ describe('order mutation cache reconciliation', () => {
         await result.current.update.mutateAsync({
           id: existing.id,
           input: orderInputSchema.parse(updated),
+          revision: existing.revision,
         })
       })
       await waitFor(() => {

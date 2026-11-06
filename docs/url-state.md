@@ -4,22 +4,25 @@
 
 ## 화면별 계약
 
-| 경로         | 저장하는 값                                         |
-| ------------ | --------------------------------------------------- |
-| `/`          | 매출 `period`, 프로젝트 요약 표의 `sort`, `order`   |
-| `/projects`  | `q`, `status`, `sort`, `order`, `page`, `pageSize`  |
-| `/analytics` | 지표·차트·유입 표가 공유하는 `period`               |
-| `/orders`    | `q`, `status`, `sort`, `page`, `pageSize`, `detail` |
-| `/customers` | `q`, `status`, `sort`, `page`, `pageSize`, `detail` |
-| `/inbox`     | `q`, `view`                                         |
+| 경로         | 저장하는 값                                                      |
+| ------------ | ---------------------------------------------------------------- |
+| `/`          | 매출 `period`, 프로젝트 요약 표의 `sort`, `order`, 상세 `detail` |
+| `/projects`  | `q`, `status`, `sort`, `order`, `page`, `pageSize`, `detail`     |
+| `/analytics` | 지표·차트·유입 표가 공유하는 `period`                            |
+| `/orders`    | `q`, `status`, `sort`, `page`, `pageSize`, `detail`              |
+| `/customers` | `q`, `status`, `sort`, `page`, `pageSize`, `detail`              |
+| `/users`     | `q`, `status`, 구성원 상세 `id`                                  |
+| `/inbox`     | `q`, `view`                                                      |
 
 페이지 번호는 URL에서 1부터 시작합니다. Orders/Customers는 6/12/24, Projects는 해당 모델의 선택 가능한 페이지 크기를 URL에 저장합니다. 필터·정렬·페이지 크기를 바꾸면 페이지를 1로 되돌립니다. 차트 기간은 기존 화면의 7/14/30일을 사용합니다.
 
-Orders/Customers의 상세 패널은 URL `detail` ID가 소유합니다. 상세 링크·새로고침·뒤로/앞으로에서 같은 레코드를 복원하며 조회 조건은 유지합니다. 존재하지 않거나 삭제된 ID는 조회 성공 후 설명과 목록 복귀로 처리하고 조용히 닫지 않습니다. 열 표시, 행 선택, 생성/편집/삭제 대화상자·모바일 요약 펼침은 임시 UI 상태입니다. Inbox의 읽음/보관 변경은 기존 메모리 샘플이며 URL에 저장하지 않습니다. 언어·통화·테마는 기존 환경 설정 계약을 유지합니다. 컴포넌트·디자인 기준 페이지의 체험용 컨트롤은 목록 조회 조건이 아닙니다.
+홈의 프로젝트 요약 표와 Projects·Orders·Customers의 상세 패널은 URL `detail` ID가 소유합니다. 프로젝트는 필터·페이지 적용 전 전체 프로젝트 Query에서 ID를 찾습니다. 상세 링크·새로고침·뒤로/앞으로에서 같은 레코드를 복원하며 조회 조건은 유지합니다. 존재하지 않거나 삭제된 ID는 조회 성공 후 설명과 목록 복귀로 처리하고 조용히 닫지 않습니다. 열 표시, 행 선택, 생성/편집/삭제 대화상자·모바일 요약 펼침은 임시 UI 상태입니다. Inbox의 읽음/보관 변경은 기존 메모리 샘플이며 URL에 저장하지 않습니다. 언어·통화·테마는 기존 환경 설정 계약을 유지합니다. 컴포넌트·디자인 기준 페이지의 체험용 컨트롤은 목록 조회 조건이 아닙니다.
+
+[Users](pages/users.md)는 목록을 `q`·`status`로 거르고, 필터 밖의 구성원도 URL의 `id`로 상세를 조회합니다. 상세를 닫으면 `id`만 비우고 목록 조건을 유지합니다.
 
 ## 검증과 소유 위치
 
-- 화면의 `model/search.ts`에서 Zod 스키마·출력 타입·기본값을 정의합니다. 여러 화면이 쓰는 프로젝트 표·매출 기간 계약은 해당 위젯 모델이 소유합니다. 기존 `index.ts` 공개 API는 유지하고, 여섯 조회 페이지와 두 위젯은 같은 계약을 루트 `search.ts`에서도 named re-export합니다. 스키마·기본값을 복제하지 않습니다. 허용 목록과 런타임 UI 의존 차단은 [아키텍처](architecture.md)와 [ADR 006](adr/006-search-public-entrypoints.md)을 따릅니다.
+- 화면의 `model/search.ts`에서 Zod 스키마·출력 타입·기본값을 정의합니다. 여러 화면이 쓰는 프로젝트 표·매출 기간 계약은 해당 위젯 모델이 소유합니다. 기존 `index.ts` 공개 API는 유지하고, 위 표의 조회 페이지와 두 위젯은 같은 계약을 루트 `search.ts`에서도 named re-export합니다. 스키마·기본값을 복제하지 않습니다. 허용 목록과 런타임 UI 의존 차단은 [아키텍처](architecture.md)와 [ADR 006](adr/006-search-public-entrypoints.md)을 따릅니다.
 - `app/routes`가 Zod 4 스키마를 `validateSearch`에 직접 전달합니다. 추가 어댑터는 필요하지 않습니다. 검증된 search와 탐색 콜백을 페이지·위젯에 props로 전달합니다.
 - 라우트는 Page 컴포넌트를 `index.ts`에서, 조회 계약을 `search.ts`에서 각각 가져옵니다. Router의 자동 코드 분리와 intent preload는 유지하며 수동 lazy wrapper, 추가 Suspense, 조회 지연을 넣지 않습니다. Overview 모델이 프로젝트 표와 매출 기간을 조합할 때도 위젯의 `search.ts`를 사용하여 UI로 이어지는 정적 연결을 만들지 않습니다.
 - 기본값은 스키마와 탐색에서 공유하고 `stripSearchParams`로 기본값인 필드를 URL에서 생략합니다. 앱의 `search.strict`로 스키마에 없는 필드가 탐색 상태에 전파되지 않게 합니다.
@@ -33,7 +36,7 @@ Orders/Customers의 상세 패널은 URL `detail` ID가 소유합니다. 상세 
 
 선택 필터·정렬·탭·페이지 이동·상세 열기/닫기·초기화는 history push를 사용합니다. 텍스트 입력은 현재 항목을 replace하여 글자마다 방문 기록을 만들지 않습니다. 따라서 뒤로 가기는 선택 단계나 이전 페이지로 돌아가며 글자 단위 실행 취소가 아닙니다. 조회 조건 변경은 `resetScroll: false`로 화면 위치를 유지합니다.
 
-여러 조건을 한 번에 바꿀 때 한 search updater로 원자적으로 갱신하고, 다른 조건은 보존합니다. URL을 읽은 뒤 별도 effect로 로컬 필터와 양방향 동기화하지 않습니다. Query 키에는 실제 요청을 바꾸는 검증된 조건만 포함합니다. Analytics는 기간별 Query 키를 사용합니다. Orders는 검증한 검색·상태·정렬·페이지·페이지 크기를 목록 Query 키와 HTTP 요청에 넣으며 상세 ID와 전체 요약은 별도 Query입니다. 클라이언트에서 거르는 Projects/Customers 표는 원본 목록 캐시를 재사용합니다. URL에 비밀이나 인증 토큰을 넣지 않습니다.
+여러 조건을 한 번에 바꿀 때 한 search updater로 원자적으로 갱신하고, 다른 조건은 보존합니다. URL을 읽은 뒤 별도 effect로 로컬 필터와 양방향 동기화하지 않습니다. Query 키에는 실제 요청을 바꾸는 검증된 조건만 포함합니다. Analytics는 기간별 Query 키를 사용합니다. Orders는 검증한 검색·상태·정렬·페이지·페이지 크기를 목록 Query 키와 HTTP 요청에 넣으며 상세 ID와 전체 요약은 별도 Query입니다. 클라이언트에서 거르는 Projects/Customers/Users 목록은 원본 목록 캐시를 재사용합니다. URL에 비밀이나 인증 토큰을 넣지 않습니다.
 
 ## 검증
 

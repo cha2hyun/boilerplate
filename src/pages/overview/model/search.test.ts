@@ -2,11 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { overviewSearchDefaults, overviewSearchSchema } from './search'
 
 describe('overview URL search', () => {
-  it('composes revenue period and recent project sorting independently', () => {
-    expect(overviewSearchSchema.parse({ period: 14, sort: 'progress', order: 'asc' })).toEqual({
+  it('composes revenue period, recent project sorting, and an independently shareable detail', () => {
+    expect(
+      overviewSearchSchema.parse({ period: 14, sort: 'progress', order: 'asc', detail: ' abc ' }),
+    ).toEqual({
       period: '14',
       sort: 'progress',
       order: 'asc',
+      detail: 'abc',
     })
     for (const period of ['7', '14', '30', 7, 14, 30]) {
       expect(overviewSearchSchema.parse({ period }).period).toBe(String(period))

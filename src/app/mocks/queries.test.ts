@@ -235,10 +235,10 @@ const commerceInputs = [
   },
 ] as const
 
-async function sendJson(path: string, method: string, body?: unknown) {
+async function sendJson(path: string, method: string, body?: unknown, ifMatch?: string) {
   return fetch(`http://localhost/api/${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(ifMatch && { 'If-Match': ifMatch }) },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   })
 }
@@ -271,6 +271,26 @@ describe('demo commerce HTTP mutations', () => {
     },
   )
 
+  it('rejects missing, invalid, and stale order preconditions without changing data or history', async () => {
+    const path = 'orders/ORD-1042'
+    const old = (await (await sendJson(path, 'GET')).json()) as { revision: number }
+    const input = { ...commerceInputs[0].input, status: 'Shipped' }
+    expect(old.revision).toBe(1)
+    expect((await sendJson(path, 'PATCH', input)).status).toBe(428)
+    for (const tag of ['*', '1', 'W/"1"', '"00"', '"9007199254740992"']) {
+      expect((await sendJson(path, 'PATCH', input, tag)).status).toBe(400)
+    }
+    const updated = await sendJson(path, 'PATCH', input, '"1"')
+    expect(updated.status).toBe(200)
+    const saved: unknown = await updated.json()
+    expect(saved).toMatchObject({ status: 'Shipped', revision: 2 })
+    expect(
+      (await sendJson(path, 'PATCH', { ...input, status: 'Processing', city: 'Busan' }, '"1"'))
+        .status,
+    ).toBe(412)
+    expect(await (await sendJson(path, 'GET')).json()).toEqual(saved)
+  })
+
   it.each(commerceInputs)(
     'creates, updates, reads and deletes $endpoint through HTTP',
     async ({ endpoint, input, update }) => {
@@ -282,17 +302,22 @@ describe('demo commerce HTTP mutations', () => {
       })
       expect(createdResponse.status).toBe(201)
       expect(createdResponse.headers.get('cache-control')).toBe('no-store')
-      const created = (await createdResponse.json()) as { id: string }
+      const created = (await createdResponse.json()) as { id: string; revision?: number }
       expect(created).toMatchObject(input)
       expect(created.id).not.toBe('untrusted-id')
       if (endpoint === 'customers') {
         expect(created).toMatchObject({ orders: 0, spent: 0, lastOrder: null })
       }
 
-      const updatedResponse = await sendJson(`${endpoint}/${created.id}`, 'PATCH', {
-        ...input,
-        ...update,
-      })
+      const updatedResponse = await sendJson(
+        `${endpoint}/${created.id}`,
+        'PATCH',
+        {
+          ...input,
+          ...update,
+        },
+        endpoint === 'orders' ? `"${String(created.revision)}"` : undefined,
+      )
       expect(updatedResponse.status).toBe(200)
       expect(await updatedResponse.json()).toMatchObject({ id: created.id, ...update })
       const payload: unknown = await (

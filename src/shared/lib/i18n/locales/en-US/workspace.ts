@@ -15,6 +15,9 @@ const workspace = {
     deleteProject: 'Delete project',
   },
   projects: {
+    details: 'Project details',
+    updatedOn: 'Last updated {{date}}',
+    missing: 'This project could not be found.',
     showSummary: 'Show summary',
     hideSummary: 'Hide summary',
     total: 'Total projects',

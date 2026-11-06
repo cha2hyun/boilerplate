@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDemoCustomerAdapter, CUSTOMER_STORAGE_KEY } from './demo'
 import { sampleCustomers } from './seed'
 
@@ -23,25 +23,31 @@ const input = {
 }
 
 describe('persistent demo adapter', () => {
-  it('persists create, edit and delete across independent adapter instances', async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('persists create, edit and delete across instances without secure-context UUIDs', async () => {
+    vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
     const storage = memoryStorage()
     const firstSession = createDemoCustomerAdapter({
       storage,
       delayMs: 0,
-      createId: () => 'cus_test',
     })
     const created = await firstSession.create(input)
     expect(created).toMatchObject({
       ...input,
-      id: 'cus_test',
       orders: 0,
       spent: 0,
       lastOrder: null,
     })
+    expect(created.id).toMatch(/^cus_/)
     expect(created.initials).toBe('LC')
 
     const secondSession = createDemoCustomerAdapter({ storage, delayMs: 0 })
     expect(await secondSession.list()).toHaveLength(sampleCustomers.length + 1)
+    const secondCustomer = await secondSession.create({ ...input, email: 'kim@example.test' })
+    expect(secondCustomer.id).not.toBe(created.id)
     await secondSession.update(created.id, {
       ...input,
       name: 'Ready to launch',
@@ -59,6 +65,7 @@ describe('persistent demo adapter', () => {
       lastOrder: null,
     })
     await thirdSession.delete(created.id)
+    await thirdSession.delete(secondCustomer.id)
     expect(await firstSession.list()).toHaveLength(sampleCustomers.length)
     expect((await firstSession.list()).some((customer) => customer.id === created.id)).toBe(false)
   })

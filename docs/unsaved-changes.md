@@ -1,6 +1,6 @@
 # 미저장 입력 보호
 
-Settings의 일반 설정 초안과 프로젝트·주문·고객 편집창의 생성·수정 입력을 보호합니다. 임시 폼 상태는 해당 화면이 소유하고, 공통 이동 판정은 [`useUnsavedChanges`](../src/shared/hooks/use-unsaved-changes.ts), 확인 UI는 기존 shadcn AlertDialog를 조합한 [`UnsavedChangesDialog`](../src/shared/ui/unsaved-changes-dialog.tsx)가 소유합니다. feature 간 import나 별도 UI 라이브러리는 추가하지 않습니다.
+Settings의 일반 설정 초안, 프로젝트·주문·고객의 생성·수정 입력, 워크스페이스 구성원의 초대·역할·상태 편집을 보호합니다. 임시 폼 상태는 해당 화면이 소유하고, 공통 이동 판정은 [`useUnsavedChanges`](../src/shared/hooks/use-unsaved-changes.ts), 확인 UI는 기존 shadcn AlertDialog를 조합한 [`UnsavedChangesDialog`](../src/shared/ui/unsaved-changes-dialog.tsx)가 소유합니다. feature 간 import나 별도 UI 라이브러리는 추가하지 않습니다.
 
 ## 보호 범위
 
@@ -18,6 +18,8 @@ ProjectEditor는 창을 연 시점의 이름·설명·상태와 입력을 비교
 
 주문·고객 편집창도 같은 보호 계약을 적용합니다. 주문은 고객 정보·날짜·상태·배송지·상품·금액 입력, 고객은 프로필 입력의 변경을 비교합니다. 유효하지 않은 입력도 버리지 않으며 저장 성공만 보호를 해제합니다. 삭제 확인창은 입력 초안이 없지만 요청 중 중복 삭제와 닫기를 막습니다.
 
+[구성원 편집창](../src/features/workspace-user-editor/ui/workspace-user-editor-dialog.tsx)은 초대나 역할·상태 변경이 저장되는 동안 닫기와 이동을 차단합니다. 폐기 확인에서 계속 편집하면 초대 폼은 이름 입력으로, 기존 구성원 편집은 역할 선택으로 초점을 돌립니다.
+
 ## 공통 구현 계약
 
 `useUnsavedChanges({ dirty, pending, focusRef, fallbackFocusRef })`는 안정적인 `requestLeave(): Promise<boolean>`와 `dialogProps`, 성공 시 동기 해제용 `markSaved()`를 제공합니다. `pending`과 `fallbackFocusRef`는 선택 사항입니다. `requestLeave`가 `true`인 경우에만 호출자가 로컬 닫기 동작을 실행합니다. 저장 성공 경로는 `markSaved()` 후 닫아서 다음 React 커밋 이전의 오래된 dirty 값으로 확인창이 열리지 않도록 합니다.
@@ -33,6 +35,7 @@ ProjectEditor는 창을 연 시점의 이름·설명·상태와 입력을 비교
 - [공통 hook 테스트](../src/shared/hooks/use-unsaved-changes.test.tsx): 실제 memory router의 이동, 중복 요청, 확인 Promise 정리, 여러 blocker 보존.
 - [Settings 테스트](../src/pages/settings/ui/settings-page.test.tsx): 초안 유지/폐기, compact 변경과 원복, clean·저장·초기화 이후 이동, 숨겨진 일반 탭의 초점 복구.
 - [ProjectEditor 테스트](../src/features/project-editor/ui/project-editor-dialog.test.tsx): clean/dirty 닫기, 재진입 초기화, 원복, 실제 Query/HTTP 경계의 대기·성공·응답 손실. 저장 중 clean 폼도 이동을 막습니다.
+- [구성원 편집창 테스트](../src/features/workspace-user-editor/ui/workspace-user-editor-dialog.test.tsx)는 필수값·중복 이메일 오류 뒤의 초안 유지와 폐기, 초대가 저장되는 동안 닫기·이동·중복 제출 차단을 확인합니다.
 - [입력 보호 E2E](../e2e/unsaved-changes.spec.ts): `keeps settings drafts when navigation is cancelled and discards only on confirmation`, `protects settings against browser history and reload without trapping a saved form`, `protects project drafts for Escape, cancel, outside click and close while retaining focus`, `handles Escape as soon as the discard prompt receives focus`.
 
 [주문·고객 E2E](../e2e/commerce.spec.ts)는 주문 편집의 폐기 취소, 고객 저장 거부와 응답 손실에서 입력 보존, 실제 HTTP 저장 후 새로고침 지속성을 검증합니다.

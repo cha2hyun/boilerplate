@@ -67,7 +67,7 @@ export function AccountPage({ userId }: { userId: string }) {
               </Alert>
             )}
             {user && (
-              <dl className="grid min-w-0 gap-3 text-sm sm:grid-cols-[max-content_minmax(0,1fr)] sm:gap-x-6">
+              <dl className="grid min-w-0 gap-3 text-sm md:grid-cols-[max-content_minmax(0,1fr)] md:gap-x-6">
                 {(
                   [
                     ...(user.givenName ? [[users('fields.givenName'), user.givenName]] : []),
@@ -79,7 +79,7 @@ export function AccountPage({ userId }: { userId: string }) {
                 ).map(([label, value]) => (
                   <div
                     key={label}
-                    className="grid min-w-0 gap-1 sm:col-span-2 sm:grid-cols-subgrid"
+                    className="grid min-w-0 gap-1 md:col-span-2 md:grid-cols-subgrid"
                   >
                     <dt className="text-muted-foreground">{label}</dt>
                     <dd className="min-w-0 font-medium wrap-anywhere">{value}</dd>

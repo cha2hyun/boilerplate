@@ -3,6 +3,7 @@ import { searchPageSchema, searchTextSchema } from '@/shared/lib/search-params'
 
 export const projectTableSearchSchema = z.object({
   q: searchTextSchema,
+  detail: searchTextSchema.transform((value) => value.trim()),
   status: z.enum(['all', 'active', 'paused', 'archived']).default('all').catch('all'),
   sort: z.enum(['name', 'progress', 'updatedAt']).default('updatedAt').catch('updatedAt'),
   order: z.enum(['asc', 'desc']).default('desc').catch('desc'),
