@@ -3,7 +3,7 @@ import { CircleUserRound, LogIn, LogOut } from 'lucide-react'
 import { useDemoSession } from '@/features/demo-session'
 import { env } from '@/shared/config'
 import { useTranslation } from '@/shared/lib/i18n'
-import { Button } from '@/shared/ui/button'
+import { HeaderActionButton } from './header-action-button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import {
   DropdownMenu,
@@ -21,11 +21,11 @@ export function AccountMenu() {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button asChild variant="ghost" size="icon-sm">
-            <Link to="/login" aria-label={t('account.signIn')}>
+          <HeaderActionButton asChild aria-label={t('account.signIn')}>
+            <Link to="/login">
               <LogIn aria-hidden="true" />
             </Link>
-          </Button>
+          </HeaderActionButton>
         </TooltipTrigger>
         <TooltipContent>{t('account.signIn')}</TooltipContent>
       </Tooltip>
@@ -36,9 +36,9 @@ export function AccountMenu() {
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon-sm" aria-label={t('account.menu')}>
+            <HeaderActionButton aria-label={t('account.menu')}>
               <CircleUserRound aria-hidden="true" />
-            </Button>
+            </HeaderActionButton>
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent>{t('account.menu')}</TooltipContent>

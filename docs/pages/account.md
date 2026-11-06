@@ -24,7 +24,7 @@
 
 ## 상태 소유권과 구현 근거
 
-[라우트](../../src/app/routes/account.tsx)는 데모 세션을 확인하고, [내 계정 화면](../../src/pages/account/ui/account-page.tsx)은 Query의 상세 결과를 읽는다. 계정 메뉴는 [앱 셸](../../src/widgets/app-shell/ui/account-menu.tsx)이 소유한다.
+[라우트](../../src/app/routes/account.tsx)는 데모 세션을 확인하고, [내 계정 화면](../../src/pages/account/ui/account-page.tsx)은 Query의 상세 결과를 읽는다. 계정 메뉴는 [앱 셸](../../src/widgets/app-shell/ui/header-actions/account-menu.tsx)이 소유한다.
 
 ## 수용 기준
 

@@ -77,6 +77,7 @@ Analytics, Orders, Customers의 조회 데이터는 각각 `entities/traffic`, `
 - `scripts/check-architecture.mjs`는 TypeScript AST로 FSD import와 JSX 컨트롤/style을 검사합니다. 파일 내부 `const` 별칭, 정적 객체·중첩 spread·문자열 키를 따라가며 매개변수·블록·함수의 이름 가림과 순환을 구분합니다. JSX에 나중에 명시한 prop과 정적 spread의 덮어쓰기 순서를 유지합니다. CSS 파일 위치/선택자와 고정 팔레트 유틸리티도 확인합니다. 숫자 포맷 소유 파일과 테스트 밖의 직접 `Intl.NumberFormat`·`toFixed`·`toPrecision` 호출을 거부합니다. 숫자 `toLocaleString`과 수량을 포함한 문자열 등의 전체 사용 규칙은 리뷰로 확인합니다.
 - 색상·두께 유틸리티는 실제 `className`, 클래스 조합 함수와 `cva`의 클래스 입력에서 검사합니다. 번역·설명·variant 이름 같은 일반 문자열은 클래스가 아닙니다. JSX 색상 prop, ChartConfig 및 차트 config/style의 색상도 검사합니다. 다른 파일의 값, 함수 호출 결과, mutable binding, 보이는 쓰기로 변경된 객체와 해석할 수 없는 spread는 안전하다고 증명하지 않습니다. 객체를 외부 함수에 넘긴 뒤의 변경 등 전체 데이터 흐름도 분석하지 않으므로 해당 경계는 리뷰가 담당합니다.
 - 가드레일 회귀 테스트는 허용/금지 import, 상대 경로, 동적 import, UI/색상 규칙을 고정합니다.
+- 앱 셸 우측 헤더의 버튼·링크 트리거는 위젯 안의 공통 조합을 사용합니다. 정적 검사와 브라우저 검사 범위, 데스크톱 검색 예외는 [헤더 아이콘 규칙](design/layout.md#앱-헤더-오른쪽-아이콘)에 있습니다.
 - 공개 `search.ts` 예외는 정확한 아홉 파일만 허용합니다. AST로 named re-export 형식을 검사하고, 소스의 런타임 import/re-export 그래프를 따라 `.tsx`/`.jsx`, `ui`/`components` 경로, 알려진 컴포넌트 라이브러리, 스타일, side-effect-only import의 연결을 거부합니다. 데이터 API/helper가 들어 있는 entity의 root barrel은 허용하되 그 barrel이 UI를 추가 공개하면 실패합니다. 타입 전용 연결은 번들에 남지 않으므로 이 런타임 검사에서 제외하며 기존 FSD 검사는 적용합니다. 계산된 import와 해석할 수 없는 내부 경로도 허용하지 않습니다. 외부 패키지 내부 전체나 함수의 부작용을 증명하는 검사는 아니며, 실제 번들 분리와 탐색 동작은 production 산출물·브라우저로 확인합니다.
 - 정적 검사는 shadcn 코드의 출처, 실제 접근성, 런타임 환경, 브라우저 동작을 보증하지 않습니다. 코드 리뷰와 브라우저 검증을 함께 수행합니다.
 
