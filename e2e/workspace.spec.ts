@@ -1125,7 +1125,8 @@ test('matches direct directory URLs to the same sidebar item and breadcrumb', as
     await page.goto(path)
     await expect(page.locator('#main-content h1')).toHaveText('Orders')
     await expect(page.locator('[data-slot="breadcrumb-page"]')).toHaveText('Orders')
-    await expect(page.getByRole('link', { name: 'Orders', exact: true })).toHaveAttribute(
+    const sidebar = page.locator('[data-slot="sidebar-content"]')
+    await expect(sidebar.getByRole('link', { name: 'Orders', exact: true })).toHaveAttribute(
       'data-active',
       'true',
     )
