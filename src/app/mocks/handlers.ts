@@ -5,6 +5,11 @@ import { demoAnalytics } from '@/entities/analytics'
 import { createDemoCustomerAdapter, customerInputSchema } from '@/entities/customer'
 import { createDemoOrderAdapter, orderInputSchema, orderListParamsSchema } from '@/entities/order'
 import { getSampleTraffic, trafficPeriodSchema } from '@/entities/traffic'
+import {
+  createDemoWorkspaceUserAdapter,
+  workspaceUserInviteSchema,
+  workspaceUserUpdateSchema,
+} from '@/entities/workspace-user'
 import { ApiError } from '@/shared/api'
 import { env } from '@/shared/config'
 
@@ -24,7 +29,7 @@ function invalidInput() {
   return HttpResponse.json({ message: 'Invalid input.' }, { ...responseOptions, status: 400 })
 }
 
-async function mutationResponse(action: () => Promise<unknown>, status = 200) {
+async function adapterResponse(action: () => Promise<unknown>, status = 200) {
   try {
     const value = await action()
     return status === 204
@@ -32,18 +37,17 @@ async function mutationResponse(action: () => Promise<unknown>, status = 200) {
       : Response.json(value, { ...responseOptions, status })
   } catch (error) {
     const status =
-      error instanceof ApiError && (error.status === 404 || error.status === 409)
+      error instanceof ApiError &&
+      (error.status === 403 || error.status === 404 || error.status === 409)
         ? error.status
         : 500
+    const messages: Record<number, string> = {
+      403: 'This record cannot be changed.',
+      404: 'Record not found.',
+      409: 'The record already exists.',
+    }
     return HttpResponse.json(
-      {
-        message:
-          status === 404
-            ? 'Record not found.'
-            : status === 409
-              ? 'The record already exists.'
-              : 'The change could not be saved.',
-      },
+      { message: messages[status] ?? 'The change could not be saved.' },
       { ...responseOptions, status },
     )
   }
@@ -53,9 +57,33 @@ async function mutationResponse(action: () => Promise<unknown>, status = 200) {
 export function createDemoHandlers({
   orders = createDemoOrderAdapter({ delayMs: 0 }),
   customers = createDemoCustomerAdapter({ delayMs: 0 }),
+  workspaceUsers = createDemoWorkspaceUserAdapter(),
   delayMs = 450,
 } = {}) {
   return [
+    http.get(`${apiBaseUrl}/workspace-users`, async ({ request }) => {
+      await delay(delayMs)
+      return adapterResponse(() => workspaceUsers.list(request.signal))
+    }),
+    http.get(`${apiBaseUrl}/workspace-users/:id`, async ({ request, params }) => {
+      const id = params.id
+      if (typeof id !== 'string') return invalidInput()
+      await delay(delayMs)
+      return adapterResponse(() => workspaceUsers.detail(id, request.signal))
+    }),
+    http.post(`${apiBaseUrl}/workspace-users`, async ({ request }) => {
+      const input = await readInput(request, workspaceUserInviteSchema)
+      if (!input) return invalidInput()
+      await delay(delayMs)
+      return adapterResponse(() => workspaceUsers.invite(input, request.signal), 201)
+    }),
+    http.patch(`${apiBaseUrl}/workspace-users/:id`, async ({ request, params }) => {
+      const input = await readInput(request, workspaceUserUpdateSchema)
+      const id = params.id
+      if (!input || typeof id !== 'string') return invalidInput()
+      await delay(delayMs)
+      return adapterResponse(() => workspaceUsers.update(id, input, request.signal))
+    }),
     http.get(`${apiBaseUrl}/analytics`, async () => {
       await delay(delayMs)
       return HttpResponse.json(demoAnalytics, responseOptions)
@@ -94,26 +122,26 @@ export function createDemoHandlers({
       if (typeof params.id !== 'string') return invalidInput()
       const id = params.id
       await delay(delayMs)
-      return mutationResponse(() => orders.detail(id, request.signal))
+      return adapterResponse(() => orders.detail(id, request.signal))
     }),
     http.post(`${apiBaseUrl}/orders`, async ({ request }) => {
       const input = await readInput(request, orderInputSchema)
       if (!input) return invalidInput()
       await delay(delayMs)
-      return mutationResponse(() => orders.create(input, request.signal), 201)
+      return adapterResponse(() => orders.create(input, request.signal), 201)
     }),
     http.patch(`${apiBaseUrl}/orders/:id`, async ({ request, params }) => {
       const input = await readInput(request, orderInputSchema)
       if (!input || typeof params.id !== 'string') return invalidInput()
       const id = params.id
       await delay(delayMs)
-      return mutationResponse(() => orders.update(id, input, request.signal))
+      return adapterResponse(() => orders.update(id, input, request.signal))
     }),
     http.delete(`${apiBaseUrl}/orders/:id`, async ({ request, params }) => {
       if (typeof params.id !== 'string') return invalidInput()
       const id = params.id
       await delay(delayMs)
-      return mutationResponse(() => orders.delete(id, request.signal), 204)
+      return adapterResponse(() => orders.delete(id, request.signal), 204)
     }),
     http.get(`${apiBaseUrl}/customers`, async ({ request }) => {
       await delay(delayMs)
@@ -123,20 +151,20 @@ export function createDemoHandlers({
       const input = await readInput(request, customerInputSchema)
       if (!input) return invalidInput()
       await delay(delayMs)
-      return mutationResponse(() => customers.create(input, request.signal), 201)
+      return adapterResponse(() => customers.create(input, request.signal), 201)
     }),
     http.patch(`${apiBaseUrl}/customers/:id`, async ({ request, params }) => {
       const input = await readInput(request, customerInputSchema)
       if (!input || typeof params.id !== 'string') return invalidInput()
       const id = params.id
       await delay(delayMs)
-      return mutationResponse(() => customers.update(id, input, request.signal))
+      return adapterResponse(() => customers.update(id, input, request.signal))
     }),
     http.delete(`${apiBaseUrl}/customers/:id`, async ({ request, params }) => {
       if (typeof params.id !== 'string') return invalidInput()
       const id = params.id
       await delay(delayMs)
-      return mutationResponse(() => customers.delete(id, request.signal), 204)
+      return adapterResponse(() => customers.delete(id, request.signal), 204)
     }),
   ]
 }

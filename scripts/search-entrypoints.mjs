@@ -9,6 +9,7 @@ export const searchEntrypoints = new Set([
   'pages/orders/search.ts',
   'pages/customers/search.ts',
   'pages/inbox/search.ts',
+  'pages/users/search.ts',
   'widgets/project-table/search.ts',
   'widgets/revenue-chart/search.ts',
 ])

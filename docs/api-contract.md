@@ -1,29 +1,33 @@
 # API 계약과 데이터 모드
 
-`src/shared/config/parse-env.ts`가 환경 변수 계약을 소유합니다. Vite가 mode·envDir·process 우선순위를 적용한 값은 `scripts/application-env.ts`에서 dev/build 설정 확정 시 검증하고, 브라우저의 `env.ts`도 같은 parser를 사용합니다. 잘못된 값은 앱 번들을 만들거나 서버를 시작하기 전에 실패합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. 실제 백엔드 서버는 포함하지 않으며 demo의 주문·고객 조회/쓰기 HTTP와 분석 조회는 MSW가 브라우저에서 처리합니다.
+`src/shared/config/parse-env.ts`가 환경 변수 계약을 소유합니다. Vite가 mode·envDir·process 우선순위를 적용한 값은 `scripts/application-env.ts`에서 dev/build 설정 확정 시 검증하고, 브라우저의 `env.ts`도 같은 parser를 사용합니다. 잘못된 값은 앱 번들을 만들거나 서버를 시작하기 전에 실패합니다. `VITE_DATA_SOURCE=demo`가 기본이며 API 모드는 `VITE_DATA_SOURCE=api`로 선택합니다. `VITE_API_BASE_URL` 기본값은 `/api`입니다. 루트 상대 경로 또는 자격증명/query/hash 없는 `http://`·`https://` 절대 URL을 허용합니다. 역슬래시, 내부 공백, 빈 query/hash 구분자와 `https:host` 같은 모호한 주소는 거부합니다. 실제 백엔드 서버는 포함하지 않으며 demo의 주문·고객·워크스페이스 사용자 조회/쓰기 HTTP와 분석 조회는 MSW가 브라우저에서 처리합니다.
 
 ## HTTP 계약
 
 JSON 요청/응답을 사용합니다. 주문은 목록 페이지, ID별 상세, 필터와 독립된 전체 요약을 별도 HTTP 계약으로 조회합니다. 프로젝트·고객 목록은 기존 전체 배열 계약과 클라이언트 검색/정렬/페이지 나누기를 유지합니다.
 
-| 요청                                                | 요청 body       | 성공 응답                    |
-| --------------------------------------------------- | --------------- | ---------------------------- |
-| `GET /projects`                                     | 없음            | `200 Project[]`              |
-| `POST /projects`                                    | `ProjectInput`  | `200/201 Project`            |
-| `PATCH /projects/:id`                               | `ProjectInput`  | `200 Project`                |
-| `DELETE /projects/:id`                              | 없음            | `204` (body 없음)            |
-| `GET /analytics`                                    | 없음            | `200 Analytics`              |
-| `GET /traffic?period=7\|14\|30`                     | 없음            | `200 Traffic`                |
-| `GET /orders?q=…&status=…&sort=…&page=…&pageSize=…` | 없음            | `200 OrderPage`              |
-| `GET /orders/:id`                                   | 없음            | `200 SampleOrder` 또는 `404` |
-| `GET /orders/summary/counts`                        | 없음            | `200 OrderSummary`           |
-| `GET /customers`                                    | 없음            | `200 SampleCustomer[]`       |
-| `POST /orders`                                      | `OrderInput`    | `201 SampleOrder`            |
-| `PATCH /orders/:id`                                 | `OrderInput`    | `200 SampleOrder`            |
-| `DELETE /orders/:id`                                | 없음            | `204` (body 없음)            |
-| `POST /customers`                                   | `CustomerInput` | `201 SampleCustomer`         |
-| `PATCH /customers/:id`                              | `CustomerInput` | `200 SampleCustomer`         |
-| `DELETE /customers/:id`                             | 없음            | `204` (body 없음)            |
+| 요청                                                | 요청 body             | 성공 응답                      |
+| --------------------------------------------------- | --------------------- | ------------------------------ |
+| `GET /projects`                                     | 없음                  | `200 Project[]`                |
+| `POST /projects`                                    | `ProjectInput`        | `200/201 Project`              |
+| `PATCH /projects/:id`                               | `ProjectInput`        | `200 Project`                  |
+| `DELETE /projects/:id`                              | 없음                  | `204` (body 없음)              |
+| `GET /analytics`                                    | 없음                  | `200 Analytics`                |
+| `GET /traffic?period=7\|14\|30`                     | 없음                  | `200 Traffic`                  |
+| `GET /orders?q=…&status=…&sort=…&page=…&pageSize=…` | 없음                  | `200 OrderPage`                |
+| `GET /orders/:id`                                   | 없음                  | `200 SampleOrder` 또는 `404`   |
+| `GET /orders/summary/counts`                        | 없음                  | `200 OrderSummary`             |
+| `GET /customers`                                    | 없음                  | `200 SampleCustomer[]`         |
+| `POST /orders`                                      | `OrderInput`          | `201 SampleOrder`              |
+| `PATCH /orders/:id`                                 | `OrderInput`          | `200 SampleOrder`              |
+| `DELETE /orders/:id`                                | 없음                  | `204` (body 없음)              |
+| `POST /customers`                                   | `CustomerInput`       | `201 SampleCustomer`           |
+| `PATCH /customers/:id`                              | `CustomerInput`       | `200 SampleCustomer`           |
+| `DELETE /customers/:id`                             | 없음                  | `204` (body 없음)              |
+| `GET /workspace-users`                              | 없음                  | `200 WorkspaceUser[]`          |
+| `GET /workspace-users/:id`                          | 없음                  | `200 WorkspaceUser` 또는 `404` |
+| `POST /workspace-users`                             | `WorkspaceUserInvite` | `201 WorkspaceUser`            |
+| `PATCH /workspace-users/:id`                        | `WorkspaceUserUpdate` | `200 WorkspaceUser`            |
 
 경로는 `VITE_API_BASE_URL` 뒤에 연결됩니다. `PATCH`에는 현재 계약상 수정 가능한 모든 필드를 보냅니다.
 
@@ -99,11 +103,22 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 금액의 원본 통화는 USD입니다. Analytics KPI/수익 차트는 달러 단위, Order 상품 가격·배송비와 Customer 누적 금액은 cents입니다. 선택 통화로 변환하기 전에 cents 호출부는 `/ 100`을 적용합니다. 외부 `https://api.frankfurter.dev/v2/rate/USD/KRW` 요청은 `VITE_API_BASE_URL`이나 demo 데이터 모드와 별개이며 `entities/exchange-rate`가 응답을 검증합니다. 공급자·변환·캐시 계약은 [언어와 표시 통화](i18n.md)를 따릅니다.
 
+### 워크스페이스 사용자와 내 계정
+
+`entities/workspace-user`가 내부 구성원의 목록·상세·초대 대기 기록·역할/상태 변경을 소유합니다. 거래 고객과 독립된 목록입니다. 각 레코드는 `id`, `name`, `email`, `role`, `status`를 가지며 역할은 `admin | member | viewer`, 상태는 `active | invited | suspended`입니다. 목록은 전체 배열을 반환합니다.
+
+- 데모 로그인 계정은 `usr_demo`, Alex Morgan, `admin@example.com`, `admin`, `active`입니다. 데모의 내 계정은 이 ID의 상세를 읽습니다. 본인 역할·상태 변경은 데모 HTTP가 **403**으로 거부합니다. 다른 구성원은 세 가지 역할과 세 가지 상태 중 하나로 갱신할 수 있습니다.
+- 초대 `POST`는 `{ name, email, role }`를 검증하고 상태 `invited`인 로컬 구성원을 만듭니다. 실제 이메일은 발송하지 않습니다. 이름은 양끝 공백 제거 후 1–80자, 이메일은 양끝 공백 제거·소문자 변환 후 유효한 주소이며 최대 254자입니다. 기존 이메일과 대소문자만 다른 입력도 **409**로 거부합니다. 요청에 덧붙인 ID나 상태는 채택하지 않습니다. 생성 ID는 데모 목록에서 사용하지 않는 순번을 선택해 LAN HTTP에서도 동작합니다.
+- `PATCH`는 `{ role, status }`를 모두 받습니다. 입력 오류는 **400**, 없는 대상은 **404**입니다. 상세 404는 화면에서 조회된 부재로 표시합니다. 상세와 변경 응답의 ID가 요청과 달라지거나 목록 안의 ID/정규화한 이메일이 중복되면 응답 검증이 실패합니다.
+- 목록 Query 키는 `['workspace-users', 'list']`, 상세는 `['workspace-users', 'detail', id]`입니다. 성공한 쓰기는 기존 조회를 취소하고 확정한 레코드로 목록·상세 캐시를 갱신한 뒤 이 도메인만 재조회합니다. 적용 여부가 불확실한 쓰기는 자동으로 다시 보내지 않고 같은 범위를 재조회합니다.
+- 데모는 `orbit.demo.workspace-users.v1`에 `{ version: 1, users }`를 저장합니다. 손상된 형식·중복 ID/이메일·고정 데모 계정이 사라지거나 바뀐 저장 데이터는 최초 시드로 복구합니다. 읽기 거부·용량 초과 시 현재 세션의 메모리로 전환하고 공통 셸에 지속성 안내를 표시합니다.
+- API 모드의 로그인·사용자·내 계정 경로는 데모 계정으로 권한을 부여하지 않습니다. 실제 서비스에 연결할 때는 서버에서 로그인 주체·워크스페이스를 결정하고 리소스별 읽기·쓰기 권한과 본인 변경 정책을 검사해야 합니다. 프런트엔드가 가진 역할 값은 이 검사를 대신할 수 없습니다.
+
 ## 목업 HTTP와 시작 경계
 
-`app/mocks/start.ts`는 demo에서만 MSW를 동적으로 가져와 worker 준비를 기다린 뒤 React 앱을 시작합니다. 운영 API 모드에서는 해당 import/worker 시작을 수행하지 않습니다. 실패하면 shadcn 오류 화면과 Reload 버튼을 제공하며 가짜 성공 데이터로 바꾸지 않습니다. worker에는 secure context(HTTPS 또는 localhost)가 필요합니다.
+`app/mocks/start.ts`는 demo에서만 MSW를 동적으로 가져와 worker 준비를 기다린 뒤 React 앱을 시작합니다. 운영 API 모드에서는 해당 import/worker 시작을 수행하지 않습니다. 실패하면 shadcn 오류 화면과 Reload 버튼을 제공하며 가짜 성공 데이터로 바꾸지 않습니다. Service Worker를 쓰려면 secure context(HTTPS 또는 localhost)가 필요합니다. 설치된 MSW는 LAN HTTP처럼 `navigator.serviceWorker`가 없는 브라우저 환경에서 Fetch/XHR fallback으로 같은 핸들러를 사용합니다.
 
-핸들러는 분석·방문·주문·고객 조회와 주문·고객 POST/PATCH/DELETE만 처리합니다. 주문·고객은 도메인별 데모 저장 어댑터를 공유하며, 테스트에서는 새 어댑터를 주입해 저장 상태를 격리합니다. 프로젝트는 기존 직접 호출 demo 저장 어댑터를 유지하고, 그 외 요청은 통과시킵니다. 따라서 외부 환율은 demo에서도 실제 API를 사용하며 런타임 샘플 환율을 주입하지 않습니다. 고정된 450ms 지연과 `Cache-Control: no-store`로 Query 캐시의 동작을 구분할 수 있습니다. HTTP 목업은 dev와 production demo preview에서 동일하게 동작합니다. 실제 API의 인증/권한/백엔드를 제공하는 기능은 아닙니다.
+핸들러는 분석·방문·주문·고객 조회와 주문·고객 POST/PATCH/DELETE, 워크스페이스 사용자 목록·상세·초대·변경 요청을 처리합니다. 주문·고객은 도메인별 데모 저장 어댑터를 공유하며, 테스트에서는 새 어댑터를 주입해 저장 상태를 격리합니다. 프로젝트는 기존 직접 호출 demo 저장 어댑터를 유지하고, 그 외 요청은 통과시킵니다. 따라서 외부 환율은 demo에서도 실제 API를 사용하며 런타임 샘플 환율을 주입하지 않습니다. 고정된 450ms 지연과 `Cache-Control: no-store`로 Query 캐시의 동작을 구분할 수 있습니다. HTTP 목업은 dev와 production demo preview에서 동일하게 동작합니다. 실제 API의 인증/권한/백엔드를 제공하는 기능은 아닙니다.
 
 `public/mockServiceWorker.js`는 MSW CLI가 생성하는 자산이며 내용/무결성 코드를 직접 편집하지 않습니다. MSW 버전을 바꾸면 `pnpm exec msw init public --save`로 재생성합니다. formatter/ESLint는 이 생성 파일 하나만 제외합니다. 정적 호스트는 이 파일을 SPA fallback보다 먼저 JavaScript로 제공해야 합니다. Query 키/캐시 수명·검증 방법은 [Query 캐시](query-cache.md)가 소유합니다.
 

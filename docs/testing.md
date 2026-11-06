@@ -136,3 +136,5 @@ Sidebar 공간 전환은 `workspace.spec.ts`의 desktop/tablet 회귀가 실제 
 GitHub는 각 job의 부분 분을 올림하고 실행한 job별 사용량을 합산합니다. 병렬화는 대기 시간을 줄이지만 총 사용 시간을 무료로 만들지는 않습니다. 현재 표준 Linux 2-core 요율 $0.006/분을 단독으로 사용한다면 $12는 약 2,000분에 해당하는 계산이며, 고정 분 쿼터 보장은 아닙니다. [Runner 요율과 반올림](https://docs.github.com/en/billing/reference/actions-runner-pricing).
 
 코드 변경의 changes/gate 두 경량 job은 설치·빌드 없이 분류와 결과만 검증합니다. 브라우저 구성을 작은 job 12개로 분리하지 않은 이유는 checkout/설치/브라우저 준비와 job 단위 반올림 비용을 줄이기 위해서입니다. production bundle은 1일, 실패 진단은 3일만 보관하고 성공 브라우저 보고서는 업로드하지 않습니다. pnpm 캐시는 공유하지만 Chromium 바이너리 캐시나 매 실행 coverage를 추가하지 않습니다. 실제 Actions 시간/실패 빈도를 본 뒤 필요한 범위만 조정하세요.
+
+`samples`의 `e2e/workspace-users.spec.ts`는 샘플 로그인 복귀·새로고침·종료와 사용자 초대 기록·역할 수정을 실제 데모 HTTP 경로에서 확인합니다.

@@ -16,4 +16,6 @@ export const storageKeys = {
   demoProjects: 'orbit.demo.projects.v1',
   demoOrders: 'orbit.demo.orders.v1',
   demoCustomers: 'orbit.demo.customers.v1',
+  demoWorkspaceUsers: 'orbit.demo.workspace-users.v1',
+  demoSession: 'blueprint.demo.session.v1',
 } as const

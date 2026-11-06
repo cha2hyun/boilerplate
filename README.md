@@ -1,10 +1,12 @@
 # Blueprint
 
-React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러플레이트입니다. 대시보드, 프로젝트 관리, 분석, 주문, 고객, 받은편지함, 설정, Foundations 화면과 함께 FSD 구조, 서버/클라이언트 상태 분리, 디자인 토큰, 테스트, CI, AI 작업 가드레일을 제공합니다.
+React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러플레이트입니다. 대시보드, 프로젝트 관리, 분석, 주문, 고객, 샘플 로그인, 워크스페이스 사용자·내 계정, 받은편지함, 설정, Foundations 화면과 함께 FSD 구조, 서버/클라이언트 상태 분리, 디자인 토큰, 테스트, CI, AI 작업 가드레일을 제공합니다.
 
 기본 실행은 **브라우저에 저장되는 데모 모드**입니다. 대시보드 수치는 샘플이며 실제 계정, 결제, 인증, 서버 권한 검사는 포함하지 않습니다. 운영 연결은 [API 계약](docs/api-contract.md)과 [운영 전환 체크리스트](docs/production-readiness.md)를 기준으로 진행하세요.
 
-Overview·Analytics·Orders·Customers는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 300ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [숫자 표시 규칙](docs/number-formatting.md)·[로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
+상단 **로그인**에서 공개된 데모 계정을 채우면 [내 계정](docs/pages/account.md)을 열 수 있습니다. [사용자](docs/pages/users.md)는 구매 고객과 별도로 워크스페이스 구성원의 역할·상태·초대 대기를 관리합니다. [로그인](docs/pages/login.md)은 현재 탭에서 체험하며 실제 이메일이나 암호를 사용하지 않습니다.
+
+Overview·Analytics·Orders·Customers·Users는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 300ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [숫자 표시 규칙](docs/number-formatting.md)·[로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
 
 ## 미리보기
 
@@ -86,6 +88,8 @@ VITE_API_BASE_URL=/api
 | Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지                |
 | Orders                | 서버 조회 계약의 검색·정렬·페이지, 별도 상세·요약, 생성·수정·삭제 |
 | Customers             | 고객 생성·수정·삭제, 상태 필터·검색·정렬, 고객 상세 Sheet         |
+| Login / My account    | 공개 계정 로그인, 탭 세션 복원·종료, 내 역할·상태 확인            |
+| Users                 | 내부 구성원 조회·검색·상세, 초대 대기 생성·역할/상태 수정         |
 | Inbox                 | 검색, 읽음/읽지 않음, 보관·복원, 메시지 상세                      |
 | Components / Settings | shadcn 구성 요소·토큰·폰트, 테마와 워크스페이스 설정              |
 | Foundations           | 디자인 규칙, HStack/VStack 조합, 문구·국제화·피드백 예시          |

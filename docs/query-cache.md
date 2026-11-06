@@ -58,3 +58,5 @@ demo 모드에서 MSW가 `/api/analytics`, `/api/traffic?period=…`, `/api/orde
 4. 통합 TanStack Devtools의 Query 패널에서 키·dataUpdatedAt·fetch 상태를 확인합니다. 강제 invalidate 시에는 기존 데이터가 유지되면서 요청이 다시 발생해야 합니다.
 
 업무 샘플의 네트워크 요청 수/중복 제거/키 분리/무효화/취소는 `src/app/mocks/queries.test.ts`, 외부 환율 응답 검증과 별도 캐시 수명은 `src/entities/exchange-rate/api/queries.test.ts`, 실제 production 화면의 cold/warm 탐색과 카드 치수는 `e2e/query-cache.spec.ts`가 검증합니다. 전체 실행 위치는 [테스트 정책](testing.md)을 따릅니다.
+
+워크스페이스 사용자 샘플은 `[workspace-users, list]`와 `[workspace-users, detail, id]`를 분리하며 두 조회 모두 stale 60초·GC 5분을 사용합니다. 목록 필터는 검증된 URL 조건으로 이미 조회한 구성원을 좁힙니다. 내 계정과 사용자 상세는 같은 ID 상세 키를 공유합니다. [사용자 Query](../src/entities/workspace-user/api/queries.ts).

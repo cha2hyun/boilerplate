@@ -4,7 +4,7 @@
 
 ## 경로별 동작
 
-현재 `/`, `/projects`, `/analytics`, `/orders`, `/customers`, `/inbox`, `/components`, `/settings`, `/foundations`에 고유한 제목과 설명이 있습니다. 기본 공유 이미지는 `/og/blueprint.png`이며 각 항목에 `image`와 `imageAlt`를 추가하면 페이지별 이미지로 바꿀 수 있습니다. 설명에는 샘플/데모 범위만 적으며 프로젝트 이름, 고객 이메일 등 사용자 데이터는 넣지 않습니다.
+현재 `/`, `/login`, `/users`, `/account`, `/projects`, `/analytics`, `/orders`, `/customers`, `/inbox`, `/components`, `/settings`, `/foundations`에 고유한 제목과 설명이 있습니다. 기본 공유 이미지는 `/og/blueprint.png`이며 각 항목에 `image`와 `imageAlt`를 추가하면 페이지별 이미지로 바꿀 수 있습니다. 설명에는 샘플/데모 범위만 적으며 프로젝트 이름, 고객 이메일 등 사용자 데이터는 넣지 않습니다.
 
 `DocumentHead`가 Router의 경로와 언어 설정을 구독하여 `data-page-meta` 태그를 교체합니다. 서버가 내보낸 정적 태그와 CSR 태그가 중복되지 않으며 favicon이나 번들 관련 태그는 보존합니다. 제목 변경은 이 모듈이 소유합니다.
 

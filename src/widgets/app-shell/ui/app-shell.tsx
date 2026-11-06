@@ -7,6 +7,7 @@ import { useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
 import { usePreferences } from '@/features/workspace-preferences'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
 import { navigation, navigationGroups } from '../model/navigation'
+import { AccountMenu } from './account-menu'
 import { CurrencyMenu } from './currency-menu'
 import { DemoStorageNotice } from './demo-storage-notice'
 import { useTheme } from '@/shared/lib/theme'
@@ -182,7 +183,9 @@ export function AppShell({ children }: AppShellProps) {
   const compact = usePreferences((state) => state.compactMode)
   const pathname = useNavigationPath()
   const currentPage = navigation.find((item) => item.to === pathname)
-  const title = t(currentPage?.labelKey ?? 'shell.notFound')
+  const title = t(
+    pathname === '/account' ? 'account.title' : (currentPage?.labelKey ?? 'shell.notFound'),
+  )
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -300,6 +303,7 @@ export function AppShell({ children }: AppShellProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
               <CurrencyMenu />
+              <AccountMenu />
             </HStack>
           </HStack>
         </header>

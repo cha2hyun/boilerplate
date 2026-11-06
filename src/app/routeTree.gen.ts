@@ -10,18 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as CustomersRouteImport } from './routes/customers'
 import { Route as FoundationsRouteImport } from './routes/foundations'
 import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as OrdersRouteImport } from './routes/orders'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as UsersRouteImport } from './routes/users'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalyticsRoute = AnalyticsRouteImport.update({
@@ -49,6 +57,11 @@ const InboxRoute = InboxRouteImport.update({
   path: '/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrdersRoute = OrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -64,87 +77,113 @@ const SettingsRoute = SettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/analytics': typeof AnalyticsRoute
   '/components': typeof ComponentsRoute
   '/customers': typeof CustomersRoute
   '/foundations': typeof FoundationsRoute
   '/inbox': typeof InboxRoute
+  '/login': typeof LoginRoute
   '/orders': typeof OrdersRoute
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/analytics': typeof AnalyticsRoute
   '/components': typeof ComponentsRoute
   '/customers': typeof CustomersRoute
   '/foundations': typeof FoundationsRoute
   '/inbox': typeof InboxRoute
+  '/login': typeof LoginRoute
   '/orders': typeof OrdersRoute
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/analytics': typeof AnalyticsRoute
   '/components': typeof ComponentsRoute
   '/customers': typeof CustomersRoute
   '/foundations': typeof FoundationsRoute
   '/inbox': typeof InboxRoute
+  '/login': typeof LoginRoute
   '/orders': typeof OrdersRoute
   '/projects': typeof ProjectsRoute
   '/settings': typeof SettingsRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/analytics'
     | '/components'
     | '/customers'
     | '/foundations'
     | '/inbox'
+    | '/login'
     | '/orders'
     | '/projects'
     | '/settings'
+    | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/analytics'
     | '/components'
     | '/customers'
     | '/foundations'
     | '/inbox'
+    | '/login'
     | '/orders'
     | '/projects'
     | '/settings'
+    | '/users'
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/analytics'
     | '/components'
     | '/customers'
     | '/foundations'
     | '/inbox'
+    | '/login'
     | '/orders'
     | '/projects'
     | '/settings'
+    | '/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   AnalyticsRoute: typeof AnalyticsRoute
   ComponentsRoute: typeof ComponentsRoute
   CustomersRoute: typeof CustomersRoute
   FoundationsRoute: typeof FoundationsRoute
   InboxRoute: typeof InboxRoute
+  LoginRoute: typeof LoginRoute
   OrdersRoute: typeof OrdersRoute
   ProjectsRoute: typeof ProjectsRoute
   SettingsRoute: typeof SettingsRoute
+  UsersRoute: typeof UsersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -154,6 +193,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analytics': {
@@ -191,6 +237,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InboxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orders': {
       id: '/orders'
       path: '/orders'
@@ -212,19 +265,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   AnalyticsRoute: AnalyticsRoute,
   ComponentsRoute: ComponentsRoute,
   CustomersRoute: CustomersRoute,
   FoundationsRoute: FoundationsRoute,
   InboxRoute: InboxRoute,
+  LoginRoute: LoginRoute,
   OrdersRoute: OrdersRoute,
   ProjectsRoute: ProjectsRoute,
   SettingsRoute: SettingsRoute,
+  UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -1,0 +1,15 @@
+export default {
+  title: 'Sign in',
+  description: 'Open the demo workspace in this tab using the public account below.',
+  browseDashboard: 'Browse dashboard',
+  demoAccount: 'Public demo account',
+  fill: 'Fill demo credentials',
+  email: 'Email',
+  password: 'Password',
+  submit: 'Sign in',
+  language: 'Language',
+  emailRequired: 'Enter the public demo email shown above.',
+  passwordRequired: 'Enter the public demo password shown above.',
+  useDemoEmail: 'Use the email shown under Public demo account.',
+  useDemoPassword: 'Use the password shown under Public demo account.',
+} as const

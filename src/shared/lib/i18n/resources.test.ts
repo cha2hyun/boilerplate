@@ -29,9 +29,11 @@ describe('bundled locale resource completeness', () => {
       'admin',
       'common',
       'customerEditor',
+      'demoLogin',
       'examples',
       'orderEditor',
       'workspace',
+      'workspaceUsers',
     ])
     expect(Object.keys(resources['ko-KR']).sort()).toEqual(Object.keys(resources['en-US']).sort())
   })

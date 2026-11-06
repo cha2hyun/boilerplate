@@ -182,7 +182,22 @@ const workspace = {
     count_other: '{{formattedCount}} projects',
     page: 'Page {{page}} of {{total}}',
   },
+  account: {
+    title: 'My account',
+    description: 'Your profile and access in this demo workspace.',
+    profile: 'Workspace profile',
+    menu: 'Account menu',
+    signIn: 'Sign in',
+    signOut: 'Sign out',
+    directory: 'View workspace users',
+    loading: 'Loading your profile',
+    error: 'Could not load the account profile.',
+    missing: 'This workspace account could not be found.',
+    apiMode:
+      'Sample sign-in is available in demo mode. Configure server authentication for your API workspace.',
+  },
   navigation: {
+    users: 'Users',
     overview: 'Overview',
     projects: 'Projects',
     analytics: 'Analytics',

@@ -10,6 +10,18 @@ export interface PageMetadata {
 
 /** Shared by the client head and the static HTML build; never include private user data. */
 export const pageMetadata = {
+  '/login': {
+    title: 'Sign in',
+    description: 'Sign in with the sample account to explore workspace user management.',
+  },
+  '/users': {
+    title: 'Users',
+    description: 'Find workspace users, review access, and manage sample invitations.',
+  },
+  '/account': {
+    title: 'My account',
+    description: 'View the profile and workspace membership of the signed-in demo account.',
+  },
   '/': {
     title: 'Overview',
     description: `A clear view of your workspace, with sample metrics, recent activity, and projects in ${product.name}.`,
@@ -53,6 +65,18 @@ export type PagePath = keyof typeof pageMetadata
 export const publicIndexablePaths: readonly PagePath[] = []
 
 const koreanPageMetadata: Record<PagePath, PageMetadata> = {
+  '/login': {
+    title: '로그인',
+    description: '샘플 계정으로 로그인해 워크스페이스 사용자 관리를 체험하세요.',
+  },
+  '/users': {
+    title: '사용자',
+    description: '워크스페이스 사용자를 찾고 역할·상태와 초대 기록을 관리하세요.',
+  },
+  '/account': {
+    title: '내 계정',
+    description: '로그인한 데모 사용자의 프로필과 워크스페이스 소속 정보를 확인하세요.',
+  },
   '/': {
     title: '개요',
     description: `${product.name}의 샘플 지표, 최근 활동과 프로젝트를 한눈에 확인하세요.`,
