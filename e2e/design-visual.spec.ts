@@ -51,6 +51,17 @@ async function ready(page: Page) {
   await page.mouse.move(0, 0)
 }
 
+function resolveTokenColor(page: Page, token: string) {
+  return page.evaluate((token) => {
+    const probe = document.createElement('span')
+    probe.style.color = `var(${token})`
+    document.body.append(probe)
+    const value = getComputedStyle(probe).color
+    probe.remove()
+    return value
+  }, token)
+}
+
 test.describe('approved design compositions', () => {
   test.use({ reducedMotion: 'reduce', timezoneId: 'UTC', deviceScaleFactor: 1 })
 
@@ -149,6 +160,7 @@ test.describe('approved design compositions', () => {
           ['primary', 'primary-foreground'],
           ['secondary', 'secondary-foreground'],
           ['brand', 'brand-foreground'],
+          ['chip', 'chip-foreground'],
         ].map(([background, foreground]) => {
           const first = luminance(rgb(background!))
           const second = luminance(rgb(foreground!))
@@ -190,14 +202,7 @@ test.describe('approved design compositions', () => {
           const tooltip = page.locator('[data-slot="chart-tooltip-content"]')
           await expect(tooltip).toBeVisible()
           for (const [key, token] of Object.entries(series)) {
-            const expected = await page.evaluate((token) => {
-              const probe = document.createElement('span')
-              probe.style.color = `var(${token})`
-              document.body.append(probe)
-              const value = getComputedStyle(probe).color
-              probe.remove()
-              return value
-            }, token)
+            const expected = await resolveTokenColor(page, token)
             const curve = page.locator(`.recharts-area-curve[stroke="var(--color-${key})"]`)
             const marker = page.locator(`.recharts-legend-wrapper [style*="var(--color-${key})"]`)
             const indicator = tooltip.locator(`[style*="var(--color-${key})"]`)
@@ -257,6 +262,78 @@ test.describe('approved design compositions', () => {
             4.5,
           )
         }
+      }
+    }
+  })
+
+  test('highlights only a unique positive device leader and matches its bar and tooltip colors', async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== 'desktop', 'The chart palette is shared across viewports.')
+    await preparePage(page, { theme: 'dark', locale: 'ko-KR', currency: 'USD' })
+    const periods = [
+      {
+        period: '30',
+        rows: [
+          ['Mobile', 2, '--chart-2'],
+          ['Tablet', 8, '--chart-bar-highlight'],
+          ['Desktop', 4, '--chart-1'],
+        ],
+      },
+      {
+        period: '14',
+        rows: [
+          ['Tablet', 7, '--chart-3'],
+          ['Desktop', 2, '--chart-1'],
+          ['Mobile', 7, '--chart-2'],
+        ],
+      },
+      { period: '7', rows: [['Desktop', 0, '--chart-1']] },
+    ] as const
+    await page.addInitScript((periods) => {
+      const originalFetch = window.fetch.bind(window)
+      window.fetch = async (input, init) => {
+        const response = await originalFetch(input, init)
+        const url = new URL(input instanceof Request ? input.url : String(input), location.origin)
+        if (url.pathname !== '/api/traffic' || !response.ok) return response
+        const fixture = periods.find(({ period }) => period === url.searchParams.get('period'))
+        if (!fixture) throw new Error('The requested device fixture is missing')
+        const payload = (await response.json()) as Record<string, unknown>
+        return Response.json({
+          ...payload,
+          devices: fixture.rows.map(([device, sessions]) => ({ device, sessions })),
+        })
+      }
+    }, periods)
+
+    for (const { period, rows } of periods) {
+      await page.goto(`/analytics?period=${period}`)
+      await ready(page)
+      const chart = page
+        .locator('[data-slot="chart"]')
+        .filter({ has: page.locator('.recharts-bar') })
+      const bars = chart.locator('.recharts-bar-rectangle path.recharts-rectangle')
+      const tooltip = chart.locator('[data-slot="chart-tooltip-content"]')
+      const deviceLabels = page.locator('[data-slot="card"]').filter({ has: chart }).locator('dt')
+      for (const [index, [, sessions, token]] of rows.entries()) {
+        const expected = await resolveTokenColor(page, token)
+        const label = deviceLabels.nth(index)
+        await expect(label.locator('svg')).toHaveCSS('fill', expected)
+        if (sessions > 0) {
+          await expect(bars.nth(index)).toHaveCSS('fill', expected)
+          await bars.nth(index).hover()
+        } else {
+          await chart.getByRole('application').focus()
+          await page.keyboard.press('ArrowRight')
+        }
+        await expect(tooltip).toContainText(await label.innerText())
+        await expect(tooltip.locator('[data-slot="chart-tooltip-value"]')).toHaveText(
+          String(sessions),
+        )
+        await expect(tooltip.locator('[style*="--color-bg"]')).toHaveCSS(
+          'background-color',
+          expected,
+        )
       }
     }
   })

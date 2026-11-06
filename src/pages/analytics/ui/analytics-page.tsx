@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Activity, Eye, MousePointer2, Users } from 'lucide-react'
+import { Activity, Circle, Eye, MousePointer2, Users } from 'lucide-react'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { trafficQueryOptions } from '@/entities/traffic'
 import { NumberDisplay } from '@/features/number-motion'
@@ -28,8 +28,6 @@ import type { AnalyticsSearch } from '../model/search'
 const countFormat = { maximumFractionDigits: 0 }
 const percentFormat = { style: 'percent', maximumFractionDigits: 1 } satisfies NumberFormatOptions
 
-const deviceColors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)'] as const
-
 interface AnalyticsPageProps {
   search: AnalyticsSearch
   onSearchChange: SearchChange<AnalyticsSearch>
@@ -44,13 +42,13 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
     sessions: { label: t('analytics.sessions'), color: 'var(--chart-3)' },
   } satisfies ChartConfig
   const deviceConfig = {
-    sessions: { label: t('analytics.sessions'), color: 'var(--chart-1)' },
+    sessions: { label: t('analytics.sessions') },
   } satisfies ChartConfig
-  const deviceLabels: Record<string, string> = {
-    Desktop: t('analytics.devices.Desktop'),
-    Mobile: t('analytics.devices.Mobile'),
-    Tablet: t('analytics.devices.Tablet'),
-  }
+  const deviceStyles = new Map([
+    ['Desktop', { label: t('analytics.devices.Desktop'), color: 'var(--chart-1)' }],
+    ['Mobile', { label: t('analytics.devices.Mobile'), color: 'var(--chart-2)' }],
+    ['Tablet', { label: t('analytics.devices.Tablet'), color: 'var(--chart-3)' }],
+  ])
   const sourceLabels: Record<string, string> = {
     'Organic search': t('analytics.sources.organic'),
     Direct: t('analytics.sources.direct'),
@@ -61,6 +59,22 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
   const { period } = search
   const traffic = useQuery(trafficQueryOptions(period))
   const data = traffic.data
+  const devices = data?.devices ?? []
+  const maxSessions = devices.reduce((highest, device) => Math.max(highest, device.sessions), 0)
+  const hasLeader =
+    maxSessions > 0 && devices.filter(({ sessions }) => sessions === maxSessions).length === 1
+  const deviceRows = devices.map(({ device, sessions }) => {
+    const style = deviceStyles.get(device)
+    return {
+      device,
+      label: style?.label ?? device,
+      sessions,
+      fill:
+        hasLeader && sessions === maxSessions
+          ? 'var(--chart-bar-highlight)'
+          : (style?.color ?? 'var(--chart-2)'),
+    }
+  })
   const isLoading = traffic.isPending && !data
   const firstDate = data?.days[0]?.date
   const lastDate = data?.days.at(-1)?.date
@@ -258,29 +272,25 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
           <CardContent>
             {isLoading ? (
               <Skeleton className="h-48 w-full" aria-label={t('analytics.loadingDevices')} />
-            ) : data?.devices.length ? (
+            ) : deviceRows.length ? (
               <ChartContainer config={deviceConfig} className="aspect-auto h-48 w-full">
                 <BarChart
                   accessibilityLayer
                   aria-label={t('analytics.deviceChart')}
-                  data={data.devices.map(({ device, sessions }, index) => ({
-                    device: deviceLabels[device] ?? device,
-                    sessions,
-                    fill: deviceColors[index % deviceColors.length],
-                  }))}
+                  data={deviceRows}
                   layout="vertical"
                   margin={{ left: 0, right: 8 }}
                 >
                   <CartesianGrid horizontal={false} />
                   <YAxis
-                    dataKey="device"
+                    dataKey="label"
                     type="category"
                     tickLine={false}
                     axisLine={false}
                     width="auto"
                   />
                   <XAxis type="number" hide />
-                  <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+                  <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                   <Bar dataKey="sessions" radius={4} maxBarSize={32} />
                 </BarChart>
               </ChartContainer>
@@ -291,8 +301,8 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
             )}
             <VStack asChild align="stretch" className="mt-3 gap-3 text-sm">
               <dl>
-                {Array.from({ length: 3 }, (_, index) => {
-                  const device = data?.devices[index]
+                {Array.from({ length: deviceRows.length || 3 }, (_, index) => {
+                  const device = deviceRows[index]
                   return (
                     <HStack
                       wrap
@@ -300,15 +310,25 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                       key={device?.device ?? index}
                       className="min-h-5 min-w-0 gap-x-3 gap-y-1"
                     >
-                      <dt className="min-w-0 wrap-anywhere text-muted-foreground">
-                        {device ? (
-                          (deviceLabels[device.device] ?? device.device)
-                        ) : isLoading ? (
-                          <Skeleton className="h-4 w-16" />
-                        ) : (
-                          '—'
-                        )}
-                      </dt>
+                      <HStack asChild className="min-w-0 gap-1.5 text-muted-foreground">
+                        <dt>
+                          {device ? (
+                            <>
+                              <Circle
+                                aria-hidden="true"
+                                className="size-2 shrink-0"
+                                fill={device.fill}
+                                stroke="none"
+                              />
+                              <span className="min-w-0 wrap-anywhere">{device.label}</span>
+                            </>
+                          ) : isLoading ? (
+                            <Skeleton className="h-4 w-16" />
+                          ) : (
+                            '—'
+                          )}
+                        </dt>
+                      </HStack>
                       <HStack
                         asChild
                         wrap
@@ -327,7 +347,9 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                               />
                               <span className="text-xs font-normal text-muted-foreground">
                                 {formatNumber(
-                                  data.sessions > 0 ? (device.sessions / data.sessions) * 100 : 0,
+                                  data && data.sessions > 0
+                                    ? (device.sessions / data.sessions) * 100
+                                    : 0,
                                   { style: 'percent', maximumFractionDigits: 0 },
                                 )}
                               </span>

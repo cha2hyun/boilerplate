@@ -25,7 +25,11 @@
   --border: oklch(0.922 0 0);
   --input: oklch(0.62 0 0);
   --ring: oklch(0.205 0 0);
-  --chart-highlight: color-mix(in oklab, var(--brand) 42%, var(--muted-foreground));
+  --brand-muted: color-mix(in oklab, var(--brand) 42%, var(--muted-foreground));
+  --chart-highlight: var(--brand-muted);
+  --chart-bar-highlight: color-mix(in oklab, var(--brand-muted) 75%, var(--muted-foreground));
+  --chip: color-mix(in oklab, var(--brand-muted) 8%, var(--card));
+  --chip-foreground: color-mix(in oklab, var(--brand-muted) 75%, var(--foreground));
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -63,7 +67,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(0.64 0 0);
   --ring: oklch(0.922 0 0);
-  --chart-highlight: color-mix(in oklab, var(--brand) 42%, var(--muted-foreground));
+  --brand-muted: color-mix(in oklab, var(--brand) 42%, var(--muted-foreground));
+  --chart-highlight: var(--brand-muted);
+  --chart-bar-highlight: color-mix(in oklab, var(--brand-muted) 75%, var(--muted-foreground));
+  --chip: color-mix(in oklab, var(--brand-muted) 8%, var(--card));
+  --chip-foreground: color-mix(in oklab, var(--brand-muted) 75%, var(--foreground));
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -96,6 +104,9 @@
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-brand: var(--brand);
+  --color-brand-muted: var(--brand-muted);
+  --color-chip: var(--chip);
+  --color-chip-foreground: var(--chip-foreground);
   --color-brand-foreground: var(--brand-foreground);
   --background-image-login-preview:
     linear-gradient(

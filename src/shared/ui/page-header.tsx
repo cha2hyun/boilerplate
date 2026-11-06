@@ -27,11 +27,7 @@ export function PageHeader({ title, description, badgeLabel, actions }: PageHead
               {title}
             </h1>
             {badgeLabel && (
-              <Badge
-                data-slot="page-header-badge"
-                variant="outline"
-                className="text-muted-foreground"
-              >
+              <Badge data-slot="page-header-badge" variant="context">
                 {badgeLabel}
               </Badge>
             )}

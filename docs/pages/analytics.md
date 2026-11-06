@@ -14,7 +14,7 @@ PageHeader의 기간 선택 → 조회 날짜 안내 → KPI → 방문 추이�
 
 기간을 바꾸면 **KPI·차트·기기·유입·페이지 표 전체**를 같은 기간의 Query로 조회합니다. Overview의 매출 위젯과 영향 범위가 다릅니다. 캐시는 기간별로 구분하며 날짜 안내는 받은 데이터에 근거합니다. 별도 초기화·행 선택·정렬·내보내기는 없습니다. 기간의 허용 값과 기본값은 스키마를 기준으로 합니다.
 
-방문 추이에서 방문자 곡선에만 브랜드색을 사용하고, 세션 곡선과 기기 분포 막대는 무채색으로 표시합니다. 범례와 툴팁은 각 계열의 색을 따릅니다. [색상 규칙](../design/color.md)
+방문 추이에서는 방문자 곡선을 옅은 브랜드색으로 강조합니다. 기기 분포에서는 선택 기간에 세션 수가 가장 많은 기기의 막대 하나에 곡선보다 채도를 조금 낮춘 브랜드색을 씁니다. 공동 1위이거나 모든 값이 0이면 모든 막대를 무채색으로 표시합니다. 축과 툴팁에는 기기 이름을 표시하고, 요약과 툴팁의 표식은 해당 막대의 색을 따릅니다. 요약에서 기기별 세션 수와 비율을 함께 읽을 수 있습니다. [색상 규칙](../design/color.md)
 
 ## 상태별 화면
 
@@ -40,8 +40,9 @@ PageHeader의 기간 선택 → 조회 날짜 안내 → KPI → 방문 추이�
 
 ## 수용 기준
 
-- 같은 분석 E2E의 `keeps device labels, values, and tooltips readable at 200% text on narrow mobile screens`에서 412px 영어·320px 한국어의 Y축 경계, 기기 요약의 줄바꿈·행 비겹침과 키보드로 연 툴팁의 전체 수치를 확인합니다.
 - 기간 변경 → 모든 지표/차트/표 갱신과 URL 복원: [분석 E2E](../../e2e/analytics-inbox.spec.ts)의 `analytics period updates the metrics, charts, and traffic tables together`.
+- 같은 분석 E2E의 `keeps device labels, values, and tooltips readable at 200% text on narrow mobile screens`에서 412px 영어·320px 한국어의 Y축 경계, 기기 요약의 줄바꿈·행 비겹침과 키보드로 연 툴팁의 전체 수치를 확인합니다.
+- [디자인 E2E](../../e2e/design-visual.spec.ts)의 `highlights only a unique positive device leader and matches its bar and tooltip colors`는 응답 순서가 바뀌어도 세션이 1회 이상인 단독 1위만 강조하고 공동 1위·모두 0인 경우에는 모든 막대를 무채색으로 표시하는지 확인합니다. 툴팁 표식도 해당 막대와 대조합니다.
 - 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Analytics keeps card geometry and cached data through real demo requests`. 같은 파일의 `Analytics recovers a cold read error and preserves cached content after a refresh failure`는 최초 오류→재시도와 재조회 실패 시 기존 숫자·내용 보존→복구를 확인합니다. `Analytics distinguishes a successful empty response from loading and errors`는 0 집계·빈 audience/device/source/page를 오류·로딩과 구분합니다.
 - 무관한 URL 필드가 페이지 상태에 남지 않음: [조회 테스트](../../src/pages/analytics/model/search.test.ts)의 `defaults omitted parameters and excludes unrelated URL state`.
 

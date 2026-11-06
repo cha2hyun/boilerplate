@@ -8,7 +8,7 @@
 | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | 제목         | 페이지당 h1 하나. `text-2xl leading-8 font-semibold tracking-tight`: 기본 글꼴 크기 16px에서 **24px / 600 / 줄 높이 32px** |
 | 설명         | 필요한 경우 제목 아래 `text-sm leading-6 text-muted-foreground`, 읽기 너비 `max-w-2xl`                                     |
-| 제목 옆 배지 | 기존 Badge의 `outline`, 기본 `text-xs font-medium`, `text-muted-foreground`                                                |
+| 제목 옆 배지 | 기존 Badge의 `context`, 기본 `text-xs font-medium`. 옅은 브랜드색 바탕과 작은 글자용 전경색                                |
 | 제목과 배지  | HStack의 `align="center"` 기본값으로 세로 중심 정렬, `gap-2.5`, 필요한 경우 줄바꿈                                         |
 | 작업 컨트롤  | `actions`에 기존 Button·Select 등을 전달. 좁은 화면에서는 제목 아래, 태블릿부터 제목 영역 옆에 배치                        |
 
