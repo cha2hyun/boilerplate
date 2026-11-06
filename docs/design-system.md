@@ -4,25 +4,25 @@ Blueprint는 **기존 shadcn UI → Tailwind 의미 토큰 → Pretendard 400/50
 
 작업에 해당하는 문서만 읽으세요. 문서 전체를 AGENTS.md나 프롬프트에 붙이지 않습니다.
 
-| 작업                                      | 읽을 계약                                 |
-| ----------------------------------------- | ----------------------------------------- |
-| 컴포넌트 선택, 아이콘, 표면, 접근성, 상태 | [기본 원칙](design/principles.md)         |
-| 텍스트 링크·모달 열기·새 탭·Router        | [텍스트 링크](design/text-links.md)       |
-| 글꼴·제목·본문·숫자                       | [타이포그래피](design/typography.md)      |
-| 페이지 제목·설명·Sample 배지·작업 컨트롤  | [페이지 헤더](design/page-headers.md)     |
-| neutral/brand, 상태 색상, light/dark      | [색상](design/color.md)                   |
-| HStack/VStack, 중앙 정렬, 간격, 반응형    | [레이아웃](design/layout.md)              |
-| KPI·카드·목록·폼의 공통 조합              | [화면 조합](design/compositions.md)       |
-| 긴 제목·금액·본문·표 셀                   | [긴 콘텐츠](design/content-overflow.md)   |
-| 키보드·확대·대비·오류 연결                | [접근성](design/accessibility.md)         |
-| 기준 이미지·시각 차이 검토                | [시각 회귀](design/visual-regression.md)  |
-| 스크롤바, 문서 너비, 기본 스크롤 입력     | [스크롤](design/scrolling.md)             |
-| 날짜·숫자·통화, 긴 번역, 방향성           | [국제화](design/international-design.md)  |
-| 서비스의 말투와 상황별 표현               | [보이스와 톤](design/voice-and-tone.md)   |
-| 버튼·폼·오류·빈 결과 문구                 | [라이팅](design/writing.md)               |
-| 전환·피드백의 목적, reduced motion        | [모션](design/motion.md)                  |
-| 수량·통화·백분율·축약 표시                | [숫자 표시](number-formatting.md)         |
-| 실제 로딩·skeleton·숫자 전환 구현         | [로딩과 모션 계약](loading-and-motion.md) |
+| 작업                                      | 읽을 계약                                                      |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| 컴포넌트 선택, 아이콘, 표면, 접근성, 상태 | [기본 원칙](design/principles.md)                              |
+| 텍스트 링크·모달 열기·새 탭·Router        | [텍스트 링크](design/text-links.md)                            |
+| 글꼴·제목·본문·숫자                       | [타이포그래피](design/typography.md)                           |
+| 페이지 제목·설명·Sample 배지·작업 컨트롤  | [페이지 헤더](design/page-headers.md)                          |
+| 브랜드 컬러, 차트·칩 강조, 상태 색상      | [브랜드 컬러 사용 규칙](design/color.md#브랜드-컬러-사용-규칙) |
+| HStack/VStack, 중앙 정렬, 간격, 반응형    | [레이아웃](design/layout.md)                                   |
+| KPI·카드·목록·폼의 공통 조합              | [화면 조합](design/compositions.md)                            |
+| 긴 제목·금액·본문·표 셀                   | [긴 콘텐츠](design/content-overflow.md)                        |
+| 키보드·확대·대비·오류 연결                | [접근성](design/accessibility.md)                              |
+| 기준 이미지·시각 차이 검토                | [시각 회귀](design/visual-regression.md)                       |
+| 스크롤바, 문서 너비, 기본 스크롤 입력     | [스크롤](design/scrolling.md)                                  |
+| 날짜·숫자·통화, 긴 번역, 방향성           | [국제화](design/international-design.md)                       |
+| 서비스의 말투와 상황별 표현               | [보이스와 톤](design/voice-and-tone.md)                        |
+| 버튼·폼·오류·빈 결과 문구                 | [라이팅](design/writing.md)                                    |
+| 전환·피드백의 목적, reduced motion        | [모션](design/motion.md)                                       |
+| 수량·통화·백분율·축약 표시                | [숫자 표시](number-formatting.md)                              |
+| 실제 로딩·skeleton·숫자 전환 구현         | [로딩과 모션 계약](loading-and-motion.md)                      |
 
 실제 조합은 앱의 **Foundations**, 개별 shadcn 컴포넌트·폰트·색상은 **Components**에서 확인합니다. Foundations는 화면에 적용할 규칙을 보여주는 예시입니다. 앱의 한국어/영어와 USD/KRW 지원 범위는 [언어와 표시 통화](i18n.md)를 따르며 RTL은 포함하지 않습니다.
 
