@@ -52,18 +52,18 @@ describe('public demo login', () => {
     await renderLogin(signedIn)
     const email = screen.getByRole('textbox', { name: 'Email' })
     const password = screen.getByLabelText('Password', { exact: true })
+    await user.clear(email)
+    await user.clear(password)
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
     await waitFor(() => expect(email).toHaveFocus())
-    expect(email).toHaveAccessibleDescription('Enter the public demo email shown above.')
+    expect(email).toHaveAccessibleDescription(i18n.t('demoLogin:emailRequired'))
     expect(password).toHaveAttribute('aria-invalid', 'true')
     await user.type(email, demoCredentials.email)
     expect(email).not.toHaveAttribute('aria-describedby')
     await user.type(password, 'a-different-value')
     await user.keyboard('{Enter}')
     await waitFor(() => expect(password).toHaveFocus())
-    expect(password).toHaveAccessibleDescription(
-      'Use the password shown under Public demo account.',
-    )
+    expect(password).toHaveAccessibleDescription(i18n.t('demoLogin:useDemoPassword'))
     expect(signedIn).not.toHaveBeenCalled()
     expect(getDemoSession()).toBeNull()
     const browse = screen.getByRole('link', { name: 'Browse dashboard' })
@@ -73,29 +73,60 @@ describe('public demo login', () => {
     expect(getDemoSession()).toBeNull()
   })
 
-  it('fills the displayed demo values and signs in by keyboard without sending them', async () => {
+  it('starts with usable demo credentials and submits the masked password by keyboard', async () => {
     await i18n.changeLanguage('ko-KR')
-    const request = vi.spyOn(globalThis, 'fetch')
+    const request = vi
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('Unexpected login request'))
     const signedIn = vi.fn()
     const user = userEvent.setup()
     await renderLogin(signedIn)
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content')
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('로그인')
-    expect(screen.getByText(demoCredentials.email, { exact: true })).toBeVisible()
-    expect(screen.getByText(demoCredentials.password, { exact: true })).toBeVisible()
-    expect(screen.getByLabelText('비밀번호', { exact: true })).toHaveValue('')
-    await user.tab()
-    expect(screen.getByRole('button', { name: '언어 선택' })).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('button', { name: '데모 계정 채우기' })).toHaveFocus()
-    await user.keyboard('{Enter}')
     expect(screen.getByRole('textbox', { name: '이메일' })).toHaveValue(demoCredentials.email)
-    expect(screen.getByLabelText('비밀번호', { exact: true })).toHaveValue(demoCredentials.password)
-    expect(screen.getByRole('button', { name: '로그인' })).toHaveFocus()
+    const password = screen.getByLabelText('비밀번호', { exact: true })
+    expect(password).toHaveValue(demoCredentials.password)
+    expect(password).toHaveAttribute('type', 'password')
+    expect(screen.queryByText(demoCredentials.password, { exact: true })).not.toBeInTheDocument()
+    await user.click(password)
     await user.keyboard('{Enter}')
     expect(signedIn).toHaveBeenCalledTimes(1)
     expect(sessionStorage.getItem(storageKeys.demoSession)).toBe('usr_demo')
     expect(screen.getByLabelText('비밀번호', { exact: true })).toHaveValue('')
     expect(request).not.toHaveBeenCalled()
   })
+
+  it.each([
+    { locale: 'en-US', email: '', password: '', button: 'Sign in with Microsoft', separator: 'or' },
+    {
+      locale: 'ko-KR',
+      email: 'wrong@example.com',
+      password: 'unrelated-value',
+      button: 'Microsoft로 로그인',
+      separator: '또는',
+    },
+  ])(
+    'opens the same local demo session through the $locale Microsoft action independently of the form',
+    async ({ locale, email, password, button, separator }) => {
+      await i18n.changeLanguage(locale)
+      const request = vi
+        .spyOn(globalThis, 'fetch')
+        .mockRejectedValue(new Error('Unexpected login request'))
+      const signedIn = vi.fn()
+      const user = userEvent.setup()
+      await renderLogin(signedIn)
+      const emailInput = screen.getByRole('textbox', { name: i18n.t('demoLogin:email') })
+      const passwordInput = screen.getByLabelText(i18n.t('demoLogin:password'), { exact: true })
+      await user.clear(emailInput)
+      await user.clear(passwordInput)
+      if (email) await user.type(emailInput, email)
+      if (password) await user.type(passwordInput, password)
+      expect(screen.getByText(separator, { exact: true })).toBeVisible()
+      await user.click(screen.getByRole('button', { name: button }))
+      expect(getDemoSession()).toEqual({ id: 'usr_demo' })
+      expect(sessionStorage.getItem(storageKeys.demoSession)).toBe('usr_demo')
+      expect(signedIn).toHaveBeenCalledTimes(1)
+      expect(request).not.toHaveBeenCalled()
+    },
+  )
 })

@@ -3,6 +3,7 @@ import { Boxes, Globe } from 'lucide-react'
 import {
   demoCredentials,
   signInDemoAccount,
+  signInWithMicrosoftDemo,
   type DemoCredentialErrors,
 } from '@/features/demo-session'
 import { product } from '@/shared/config/product'
@@ -21,8 +22,10 @@ import {
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
 import { PageHeader } from '@/shared/ui/page-header'
+import { Separator } from '@/shared/ui/separator'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { RouterTextLink } from '@/shared/ui/text-link'
+import microsoftSymbol from '../assets/microsoft-symbol.svg'
 
 const noErrors: DemoCredentialErrors = { email: null, password: null }
 
@@ -33,17 +36,9 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
   const formId = useId()
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
-  const submitRef = useRef<HTMLButtonElement>(null)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+  const [email, setEmail] = useState<string>(demoCredentials.email)
+  const [password, setPassword] = useState<string>(demoCredentials.password)
   const [errors, setErrors] = useState(noErrors)
-
-  function fillDemoCredentials() {
-    setEmail(demoCredentials.email)
-    setPassword(demoCredentials.password)
-    setErrors(noErrors)
-    submitRef.current?.focus()
-  }
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -112,36 +107,6 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
           </CardHeader>
           <VStack asChild align="stretch" className="min-w-0 gap-6 px-4 sm:px-6">
             <CardContent>
-              <VStack
-                asChild
-                align="stretch"
-                className="min-w-0 gap-3 rounded-lg border bg-muted/40 p-3"
-              >
-                <section aria-labelledby={`${formId}-demo`}>
-                  <h2 id={`${formId}-demo`} className="text-sm font-semibold wrap-anywhere">
-                    {t('demoAccount')}
-                  </h2>
-                  <dl className="grid min-w-0 gap-2 text-sm">
-                    <div>
-                      <dt className="text-xs text-muted-foreground">{t('email')}</dt>
-                      <dd className="wrap-anywhere">{demoCredentials.email}</dd>
-                    </div>
-                    <div>
-                      <dt className="text-xs text-muted-foreground">{t('password')}</dt>
-                      <dd className="wrap-anywhere">{demoCredentials.password}</dd>
-                    </div>
-                  </dl>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-auto min-h-8 max-w-full self-start whitespace-normal"
-                    onClick={fillDemoCredentials}
-                  >
-                    {t('fill')}
-                  </Button>
-                </section>
-              </VStack>
               <VStack asChild align="stretch" className="min-w-0 gap-4">
                 <form onSubmit={handleSubmit} autoComplete="off" noValidate>
                   <VStack align="stretch" className="min-w-0 gap-2">
@@ -198,15 +163,29 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
                       </p>
                     )}
                   </VStack>
-                  <Button
-                    ref={submitRef}
-                    type="submit"
-                    className="h-auto min-h-9 w-full whitespace-normal"
-                  >
+                  <Button type="submit" className="h-auto min-h-9 w-full whitespace-normal">
                     {t('submit')}
                   </Button>
                 </form>
               </VStack>
+              <HStack className="gap-3 text-xs text-muted-foreground">
+                <Separator className="min-w-0 flex-1" />
+                <span>{t('or')}</span>
+                <Separator className="min-w-0 flex-1" />
+              </HStack>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-auto min-h-9 w-full whitespace-normal"
+                onClick={() => {
+                  signInWithMicrosoftDemo()
+                  setPassword('')
+                  onSignedIn()
+                }}
+              >
+                <img src={microsoftSymbol} className="size-5 shrink-0" alt="" />
+                {t('microsoft')}
+              </Button>
             </CardContent>
           </VStack>
         </Card>

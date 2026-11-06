@@ -1,7 +1,14 @@
-import { expect, test, type Locator, type Page } from './fixtures.js'
+import type { Request } from '@playwright/test'
+import {
+  exchangeRateUrl,
+  expect,
+  fontCdnBaseUrl,
+  test,
+  type Locator,
+  type Page,
+} from './fixtures.js'
 
 async function signIn(page: Page) {
-  await page.getByRole('button', { name: 'Fill demo credentials', exact: true }).click()
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 }
 
@@ -12,10 +19,17 @@ test('restores a protected account in this tab and requires sign-in after logout
   await page.goto('/account')
   await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
   await expect(page.locator('[data-slot="sidebar"]')).toHaveCount(0)
-  await page.getByLabel('Email', { exact: true }).fill('someone@example.com')
-  await page.getByLabel('Password', { exact: true }).fill('invalid-demo-value')
+  const email = page.getByLabel('Email', { exact: true })
+  const password = page.getByLabel('Password', { exact: true })
+  await expect(email).toHaveValue('admin@example.com')
+  await expect(password).toHaveAttribute('type', 'password')
+  await expect(password).toHaveValue('Blueprint123!')
+  await email.fill('someone@example.com')
+  await password.fill('invalid-demo-value')
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
   await expect(page.getByRole('alert')).toBeVisible()
+  await email.fill('admin@example.com')
+  await password.fill('Blueprint123!')
   await signIn(page)
   await expect(page).toHaveURL('/account')
   await expect(page.getByText('admin@example.com', { exact: true })).toBeVisible()
@@ -38,12 +52,47 @@ test('restores a protected account in this tab and requires sign-in after logout
 
 test('restores a user deep link and keeps demo invitations and access changes on reload', async ({
   page,
+  context,
 }) => {
   await page.goto('/users?q=Alex&id=usr_demo')
-  await signIn(page)
-  await expect(page).toHaveURL(/\/users\?/)
+  const loginOrigin = new URL(page.url()).origin
+  const attemptedEmail = 'unused@example.invalid'
+  const attemptedPassword = 'unused-private-input'
+  const unexpectedRequests: string[] = []
+  const observeLogin = (request: Request) => {
+    const url = new URL(request.url())
+    const expectedExternalAsset =
+      !request.isNavigationRequest() &&
+      (url.href.startsWith(fontCdnBaseUrl) || url.href === exchangeRateUrl)
+    if (
+      (url.origin !== loginOrigin && !expectedExternalAsset) ||
+      !['GET', 'HEAD'].includes(request.method())
+    ) {
+      unexpectedRequests.push(`${request.method()} ${url.origin}`)
+    }
+    if (
+      [...url.searchParams.values()].some(
+        (value) => value.includes(attemptedEmail) || value.includes(attemptedPassword),
+      )
+    ) {
+      unexpectedRequests.push('login input in request URL')
+    }
+  }
+  context.on('request', observeLogin)
+  await page.getByLabel('Email', { exact: true }).fill(attemptedEmail)
+  await page.getByLabel('Password', { exact: true }).fill(attemptedPassword)
+  await page.getByRole('button', { name: 'Sign in with Microsoft', exact: true }).click()
+  await expect(page).toHaveURL(
+    (url) =>
+      url.origin === loginOrigin &&
+      url.pathname === '/users' &&
+      url.searchParams.get('q') === 'Alex' &&
+      url.searchParams.get('id') === 'usr_demo',
+  )
   const self = page.getByRole('dialog', { name: 'Alex Morgan' })
   await expect(self).toBeVisible()
+  context.off('request', observeLogin)
+  expect(unexpectedRequests).toEqual([])
   await expect(self.getByRole('button', { name: 'Edit access' })).toHaveCount(0)
   await self.press('Escape')
   const search = page.getByRole('searchbox', { name: 'Search users' })

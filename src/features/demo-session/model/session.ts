@@ -1,7 +1,7 @@
 import { currentDemoUser } from '@/entities/workspace-user'
 import { storageKeys } from '@/shared/config/product'
 
-/** Public sample values shown on the login page. They are never sent to a server. */
+/** Public sample values used to prefill the login form. */
 export const demoCredentials = {
   email: currentDemoUser.email,
   password: 'Blueprint123!',
@@ -85,6 +85,9 @@ export function createDemoSessionStore(resolveStorage: () => SessionStorage | nu
     getSnapshot,
     subscribe,
     signIn,
+    signInWithMicrosoftDemo: () => {
+      publish(demoSession)
+    },
     end: () => {
       publish(null)
     },
