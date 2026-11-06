@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { orderSchema, sampleOrders } from '@/entities/order'
-import { initialOrderForm, parseOrderForm } from './form'
+import { initialOrderForm, parseOrderForm, rebaseOrderForm } from './form'
 
 const order = orderSchema.parse(sampleOrders[0])
 const input = initialOrderForm(order)
@@ -47,5 +47,24 @@ describe('order form money conversion', () => {
       items: [{ name: 'Item', quantity: '1', unitPrice: '.50' }],
     })
     expect(parsed.success && parsed.data.items[0]?.unitPrice).toBe(50)
+  })
+})
+
+describe('reviewing a stale order draft', () => {
+  it('preserves a new remote status alongside a local address edit and excludes identical edits', () => {
+    const mine = { ...input, city: 'Busan', country: 'Korea' }
+    const latest = { ...input, status: 'Shipped' as const, country: 'Korea' }
+    expect(rebaseOrderForm(input, mine, latest)).toEqual({
+      draft: { ...mine, status: 'Shipped' },
+      conflicts: [],
+    })
+  })
+  it('keeps the draft and identifies overlapping changes, treating ordered items as one field', () => {
+    const mine = { ...input, city: 'Busan', items: [...input.items].reverse() }
+    const latest = { ...input, city: 'Seoul', items: input.items.slice(1) }
+    expect(rebaseOrderForm(input, mine, latest)).toEqual({
+      draft: mine,
+      conflicts: ['city', 'items'],
+    })
   })
 })

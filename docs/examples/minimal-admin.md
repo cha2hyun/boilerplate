@@ -1,56 +1,70 @@
-# 주문 기록만 남기는 최소 어드민 포크
+# 다른 업무 도메인으로 포크하기
 
-새 제품에 데모 화면를 모두 가져갈 필요는 없습니다. 이 예시의 사용자는 주문 기록을 찾아 내용을 고치는 담당자입니다. 첫 화면은 주문 목록, 다른 메뉴는 브라우저 환경 설정 하나뿐입니다. **아래 경로는 포크에서 선택할 변경이며 이 저장소의 화면을 삭제하는 지시가 아닙니다.** 주문 상태 변경은 기록 편집입니다. 실제 결제·배송, 사용자 인증·권한, 운영 백엔드는 제공되지 않습니다.
+포크한 팀의 업무에서 첫 화면을 고르세요. 물류팀이면 ‘배송 지연 건을 찾는다’, 시설팀이면 ‘예정된 설비 점검을 완료한다’처럼 **사용자 한 명이 끝내야 할 일 하나**가 기준입니다. 이 실습은 시설팀의 일을 예로 듭니다. 아래의 점검 화면·API·파일은 포크에서 만들 예시입니다.
 
-## 1. 라우트·메뉴·명세를 같은 단위로 줄이기
+## 1. 화면보다 먼저 업무 계약을 정한다
 
-| 경로                                                                                                             | 포크에서의 역할           | 직접 바꿀 소유 파일과 확인 사항                                                                                                                                                                                                                                                           |
-| ---------------------------------------------------------------------------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                                                                                                              | `/orders`로 보내는 진입점 | [index 라우트](../../src/app/routes/index.tsx)의 Overview 조회/화면 조합을 `beforeLoad` 리다이렉트로 대체합니다. `/` 라우트는 남으므로 [Overview 명세](../pages/overview.md)도 삭제하지 않고 진입·리다이렉트 동작을 적습니다.                                                             |
-| `/orders`                                                                                                        | 시작 업무 화면            | [라우트](../../src/app/routes/orders.tsx)·[페이지](../../src/pages/orders)·[편집 feature](../../src/features/order-editor)·[entity](../../src/entities/order)와 [주문 명세](../pages/orders.md)를 함께 유지합니다. 목록 조건/상세 ID는 URL, 데이터는 Query, 폼 초안은 feature 소유입니다. |
-| `/settings`                                                                                                      | 브라우저의 이름·밀도·테마 | [라우트](../../src/app/routes/settings.tsx)·[설정 페이지](../../src/pages/settings)·[워크스페이스 설정](../../src/features/workspace-preferences)과 [설정 명세](../pages/settings.md)를 유지합니다. 계정·조직 설정으로 이름을 바꾸지 않습니다.                                            |
-| `/projects`, `/analytics`, `/customers`, `/inbox`, `/components`, `/foundations`, `/login`, `/users`, `/account` | 운영 메뉴에 없는 예제     | [라우트 폴더](../../src/app/routes)와 대응 [페이지 명세 목록](../pages/README.md)에서 같은 경로를 정리합니다. Overview 페이지와 프로젝트 표/매출 위젯도 소비자가 없을 때만 제거합니다. 공유 Input·Card·ThemeProvider처럼 남은 화면이 쓰는 코드는 유지합니다.                              |
+| 결정할 질문               | 설비 점검 앱의 예시 답                                                                              |
+| ------------------------- | --------------------------------------------------------------------------------------------------- |
+| 누가 무엇을 하나?         | 시설 담당자가 점검 예정 설비를 찾고 한 건을 완료 처리한다.                                          |
+| 한 행은 무엇인가?         | 설비에서 수행할 **점검 한 건**이다. 같은 설비에 다음 달 점검을 별도로 등록할 수 있다.               |
+| 어떤 값이 필요한가?       | 점검 ID, 설비명, 예정일(날짜), 상태(`scheduled` / `completed`). 예정일은 업무 달력의 날짜로 다룬다. |
+| 어떤 변경이 가능한가?     | 예정 → 완료. 같은 완료 요청을 다시 보내도 결과는 한 건이다.                                         |
+| 성공은 무엇으로 확인하나? | 완료 후 목록을 다시 조회했을 때 같은 ID가 완료로 표시된다. 요청 실패 시에는 재시도할 수 있다.       |
+| 첫 배포 범위는?           | `/`에서 `/inspections`로 이동하고, 브라우저 환경 설정이 필요하면 `/settings`를 유지한다.            |
 
-예를 들어 포크의 `src/app/routes/index.tsx`는 아래처럼 시작할 수 있습니다.
+다른 업무라면 이 표의 명사·동사·상태를 먼저 바꾸세요. 점검 앱에는 고객, 결제 상태, 매출 KPI가 필요하지 않습니다. 여러 역할이 참여하는 업무라면 누가 어떤 상태를 변경할 권한이 있는지도 계약에 추가합니다.
 
-```tsx
-import { createFileRoute, redirect } from '@tanstack/react-router'
+## 2. 새 도메인의 한 가지 동작을 끝까지 연결한다
 
-export const Route = createFileRoute('/')({
-  beforeLoad: () => {
-    redirect({ throw: true, to: '/orders' })
-  },
-})
+포크의 기존 화면이 실행되는 상태에서 새로운 경로를 먼저 추가합니다. 아래 트리는 예시에서 **새로 만들거나 바꿀** 파일들입니다.
+
+```text
+src/
+├── entities/inspection/             # 점검 타입, 입력·응답 스키마, HTTP 요청과 Query 옵션
+├── features/complete-inspection/    # 완료 버튼, 요청 중 중복 제출 차단, 실패 후 재시도
+├── pages/inspections/               # PageHeader, 점검 목록, 로딩·오류·빈 상태
+├── app/routes/inspections.tsx       # /inspections 라우트
+├── app/mocks/                       # demo 모드의 설비 점검 핸들러와 샘플 데이터
+└── shared/lib/i18n/locales/         # ko-KR·en-US의 업무 이름, 상태, 오류 문구
+docs/pages/inspections.md            # 목적, 상태, 구현 파일, 수용 기준
+e2e/inspections.spec.ts              # 목록 → 완료 → 재조회
 ```
 
-- [탐색 레지스트리](../../src/widgets/app-shell/model/navigation.ts)에는 Orders/Settings와 실제로 사용하는 그룹만 남깁니다. [셸](../../src/widgets/app-shell/ui/app-shell.tsx)의 로고·검색 팔레트·모바일 drawer·문서 링크, [404 복구](../../src/app/routes/__root.tsx)의 귀환 링크와 문구도 첫 업무를 가리키게 합니다. `/`만 남기고 화면의 “Overview로 돌아가기”를 놓치지 마세요.
-- [메타 레지스트리](../../src/app/seo/metadata.ts)의 두 언어에 `/`, `/orders`, `/settings`만 둡니다. `/`의 소개도 주문 시작점에 맞춥니다. [라우트/메타 타입 계약](../../src/app/seo/route-contract.ts)과 [정적 HTML 생성](../../scripts/route-metadata.ts)을 유지합니다. 공개 origin을 지정해도 관리자 경로는 비색인 상태로 둡니다.
-- 라우트 정리 후 `pnpm routes:generate`로 생성 트리를 갱신합니다. `routeTree.gen.ts`를 손으로 편집하지 않습니다. [페이지 명세 인덱스](../pages/README.md)는 유지한 세 경로의 목적과 소유 코드·테스트로 다시 연결합니다.
+1. **모델과 HTTP.** `entities/inspection/model`에 Zod 스키마를 두고 `entities/inspection/api`에서 공통 [HTTP 클라이언트](../../src/shared/api/client.ts)로 응답을 검증합니다. 예시 레코드는 `{ id: 'INSP-17', equipmentName: '냉각 펌프 2호', dueDate: '2026-11-12', status: 'scheduled' }`입니다. 날짜에는 `z.iso.date()`, 상태에는 두 값의 enum을 적용합니다. 외부에서 쓰는 API와 타입은 슬라이스의 `index.ts`로 공개합니다.
+2. **조회와 변경.** `GET /inspections`는 점검 배열을, `PATCH /inspections/:id`는 `{ status: 'completed' }`를 받아 갱신된 한 건을 반환합니다. 두 경로에는 `VITE_API_BASE_URL`이 붙습니다(기본 `/api`). 예시의 목록 Query 키는 `['inspections', 'list']`입니다. 성공 시 이 목록을 갱신하거나 무효화합니다. 읽기 오류·재시도는 목록에, 완료 실패·재시도는 해당 동작에 표시합니다. 업무 레코드를 Zustand에 한 번 더 저장하지 않습니다.
+3. **데모와 서버.** [MSW 핸들러](../../src/app/mocks/handlers.ts)와 [브라우저 등록](../../src/app/mocks/browser.ts)에 같은 두 경로를 연결합니다. 잘못된 입력은 400, 없는 점검은 404로 처리하고 이미 완료된 건을 다시 완료하면 같은 결과를 돌려줍니다. 메모리 시드를 쓰면 새로고침 시 초기화된다는 점을 페이지 명세에 적습니다. 지속성이 필요하면 제품 전용 저장 키·버전과 복구 정책을 먼저 정합니다. `api` 모드에서는 실제 서버가 점검 데이터와 권한을 검증합니다.
+4. **라우트와 화면.** `src/app/routes/inspections.tsx`의 `createFileRoute('/inspections')`가 `pages/inspections`에서 공개한 화면을 렌더링하도록 하고, `src/app/routes/index.tsx`의 `beforeLoad`는 `redirect({ throw: true, to: '/inspections' })`로 교체합니다. `pnpm routes:generate`로 라우트 트리를 갱신합니다. 필터나 상세 ID를 도입할 때는 URL로 새로고침·뒤로 가기를 복원합니다. [URL 조회 상태 규칙](../url-state.md)
+5. **문구와 탐색.** 한·영 번역을 [리소스 목록](../../src/shared/lib/i18n/resources.ts)에 등록합니다. [내비게이션](../../src/widgets/app-shell/model/navigation.ts)에 `/inspections`와 점검 메뉴 키를 추가합니다. 사이드바와 명령 검색이 이 목록을 함께 사용합니다. 로고와 404의 홈 링크는 `/`를 통해 점검 목록으로 돌아가도록 하고 접근 가능한 이름도 새 업무에 맞춥니다.
+6. **메타와 명세.** [메타 레지스트리](../../src/app/seo/metadata.ts)에 두 언어의 경로·제목을 등록하고 관리자 페이지의 기본 비색인 정책을 유지합니다. [페이지 명세 템플릿](../pages/_template.md)으로 `docs/pages/inspections.md`를 작성합니다. `<!-- page-route: /inspections -->`, 소유 `src` 파일과 실제 검증할 테스트 링크가 필요합니다. `/`의 명세 파일명은 `overview.md`이므로 그 문서의 내용을 새 진입 동작에 맞게 바꿉니다. [명세 목록](../pages/README.md)
 
-## 2. 남은 참조를 소비자부터 따라가기
+## 3. 남길 기반과 제거할 샘플을 나눈다
 
-| 대상                    | 이 예시에서 유지할 것                                                                                                                                                                                               | 줄일 때 함께 볼 것                                                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 번역                    | [common·workspace·admin·orderEditor](../../src/shared/lib/i18n/resources.ts)에서 실제 셸/설정/주문/오류/도움말 키                                                                                                   | `admin` 전체를 삭제하면 주문도 깨집니다. `examples`·`customerEditor`와 샘플 키는 두 언어에서 함께 정리하고 [키·변수 대칭 검사](../../src/shared/lib/i18n/resources.test.ts)의 namespace 기대값도 바꿉니다.                                                                                                                                                                                          |
-| 데이터·표시 환경        | [Orders HTTP](../../src/entities/order/api/http.ts), [Query](../../src/entities/order/api/queries.ts), [MSW 시작](../../src/app/mocks/start.ts), [데모 handlers](../../src/app/mocks/handlers.ts)의 주문 엔드포인트 | `handlers.ts`의 다른 도메인 import/초기화가 남으면 번들에 샘플이 계속 들어갑니다. USD/KRW 표시를 유지한다면 [CurrencyProvider](../../src/app/providers/currency-provider.tsx)와 환율 entity도 남깁니다.                                                                                                                                                                                             |
-| 제품 이름·브라우저 저장 | [제품 구성](../../src/shared/config/product.ts)의 제품명·링크·고유 저장 namespace                                                                                                                                   | 제거한 seed/키의 import까지 찾아 정리합니다. 원본 사이트나 다른 제품의 localStorage 전체를 지우지 않습니다.                                                                                                                                                                                                                                                                                         |
-| 검증                    | 주문 목록→상세→편집, 저장 실패·입력 보호, 설정 저장·초점·키보드, 샘플 표시와 404                                                                                                                                    | [workspace](../../e2e/workspace.spec.ts)·[commerce](../../e2e/commerce.spec.ts)·[query-cache](../../e2e/query-cache.spec.ts) 등 여러 경로를 한 파일에서 검증하므로 파일째 삭제하지 않습니다. 제거한 경로의 시나리오만 정리하고 유지한 기능을 대체 시나리오에 연결합니다. [E2E 범주](../../package.json), [search 공개 경로 예외](../../scripts/search-entrypoints.mjs)와 시각 기준도 다시 맞춥니다. |
+| 대상                 | 무엇을 할지                                                                                                                                                                                                                                                                      |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **유지할 기반**      | 라우팅·Query·번역·테마, `shared/ui`의 shadcn 조합과 디자인 토큰, 공통 API 오류 처리, 정적 검사와 테스트 분류를 유지합니다.                                                                                                                                                       |
+| **선택할 기능**      | 브라우저의 워크스페이스 이름·테마를 바꿀 필요가 있으면 설정 화면을 유지합니다. 통화가 없는 서비스는 헤더의 통화 메뉴와 `CurrencyProvider`의 환율 조회를 함께 정리합니다. 프로필이 필요하면 회사의 인증 정책을 정하고 샘플 로그인·사용자 역할·초대 흐름의 대체 범위를 결정합니다. |
+| **제거할 업무 샘플** | 예시에서 쓸 최종 경로는 `/`, `/inspections`, 선택한 `/settings`입니다. 주문·고객·프로젝트·매출·받은편지함과 예시 로그인/계정 등을 제거할 때는 **소비자부터** 정리합니다. 메뉴·라우트·전용 레이아웃 분기 → 페이지·위젯·feature → entity·목업·시드 순서로 남은 참조를 확인합니다.  |
+| **제품 소유 정보**   | 워드마크·로고·작성자·도움말 링크·저장 키는 [제품 구성](../../src/shared/config/product.ts), 메타와 manifest에서 바꿉니다. 기존 제품 데이터와 같은 origin을 사용할 수 있으므로 새 제품의 저장 키만 읽고 씁니다. [브랜드·환경 체크리스트](../new-project.md)                       |
 
-포크에서 `rg -n '/(projects|analytics|customers|inbox|components|foundations|login|users|account)' src e2e scripts docs/pages`로 남은 경로 참조를 검토하세요. 라이브러리 패키지명·설명용 예시 같은 검색 결과까지 일괄 삭제하지 않습니다.
+메뉴만 숨기면 기존 주소, 동적 번들, 목업 요청과 샘플 번역이 남을 수 있습니다. 다음을 함께 확인합니다.
 
-## 3. 다음 도메인을 넣는 순서: 반품 요청 기록
+- **앱 조립.** [공통 레이아웃](../../src/app/providers/root-layout.tsx)과 헤더의 전용 메뉴, MSW의 `browser.ts`와 `handlers.ts` 양쪽의 import, [번역 검사](../../src/shared/lib/i18n/resources.test.ts)의 namespace 목록, 두 언어의 메타 경로와 오래된 페이지 명세를 정리합니다. `pnpm routes:generate` 후 새 트리와 [라우트/메타 일치 검사](../../src/app/seo/route-contract.ts)를 확인합니다.
+- **하네스.** 삭제한 앱 경로의 E2E는 제품 첫 업무를 검증하는 시나리오로 대체합니다. [단위 테스트 분류](../../scripts/unit-test-categories.ts)와 `package.json`의 `test:e2e:core`·`test:e2e:samples`가 각 파일을 정확히 한 번 소유하도록 합니다. 제품 흐름 테스트를 samples 범주에 둘 수 있습니다. [조회 전용 진입점 목록](../../scripts/search-entrypoints.mjs)에서 삭제한 슬라이스를 정리하고 Lighthouse의 측정 경로도 바꿉니다. 새 화면을 넣기 위해 기존 import·검사 규칙을 일괄 해제하지 않습니다. 브랜드·경로를 바꾸면 [정적 HTML 검사](../../scripts/route-metadata.test.mjs)의 경로·제목과 설정·테마·언어 테스트의 저장 키 기대값도 바꿉니다.
+- **공통 코드의 테스트 라우트.** 실제 설치에서는 [설정 폼](../../src/pages/settings/ui/settings-page.test.tsx), [미저장 입력 보호](../../src/shared/hooks/use-unsaved-changes.test.tsx), [TextLink](../../src/shared/ui/text-link.test.tsx)의 테스트 라우터도 `/projects`를 목적지로 사용합니다. 포크에서 그 경로를 제거하면 테스트의 목적지를 `/inspections`로 옮기고 탐색·취소·링크 검증은 유지합니다.
+- **문서와 자산.** 없앤 화면의 README 이미지·제품 문서·회귀 기준 이미지를 정리합니다. 새 페이지 명세가 실제 코드·테스트를 가리키는지, 다른 문서나 작업 기록에 삭제한 파일·제목을 가리키는 링크가 남았는지 양쪽에서 확인합니다. 원본 코드와 자산의 라이선스 고지는 보존합니다. 삭제 후보를 찾을 때는 아래 검색 결과에서 실제 import·링크를 살펴봅니다.
 
-예를 들어 `/returns`를 추가한다면 첫 완료 조건을 “담당자가 `접수` 상태만 찾아 상세를 열고, 사유를 수정해 저장한 뒤 같은 목록 위치로 돌아간다”로 적습니다. 실제 환불 실행은 이 기능에 포함하지 않습니다.
+```sh
+rg -n 'pages/(orders|customers|projects)|entities/(order|customer|project)|/orders|/customers|/projects' src e2e package.json .github
+rg -n 'Blueprint|blueprint|orbit\.demo|Acme Studio' src public scripts package.json README.md
+```
 
-1. [페이지 템플릿](../pages/_template.md)에 조회 조건의 URL 복원, 성공/빈 결과/실패/재시도, 저장 중·불확실한 저장과 폐기 확인을 먼저 씁니다. `entities/return-request`에는 ID·상태·사유와 입력/응답 Zod 스키마를 둡니다. API 응답과 편집 제한은 필요에 따라 분리합니다.
-2. [Orders HTTP adapter](../../src/entities/order/api/http.ts)처럼 목록·상세·수정에 공통 transport와 `AbortSignal`을 사용합니다. 예시 경로는 `GET /api/return-requests?status=received&page=1`, `GET/PATCH /api/return-requests/:id`입니다. 목록 계약에는 항목·유효 페이지·페이지 크기·전체 건수를 명시합니다. [MSW handlers](../../src/app/mocks/handlers.ts)에 같은 경로·스키마를 연결해 **데모에서도 UI → fetch → MSW → 검증된 응답**을 지나게 합니다. 페이지에 fixture 배열을 직접 넣지 않습니다.
-3. [Orders Query](../../src/entities/order/api/queries.ts)처럼 검증된 조회 조건별 키를 만들고 상세 ID와 목록 키를 분리합니다. 수정 후 목록/상세가 함께 맞아야 하며, 결과 불확실 시 쓰기를 자동 재전송하지 않습니다. `features/return-request-editor`는 입력·저장·폐기, `pages/returns`는 화면 조합만 소유합니다. URL 조회 검증을 UI 없는 별도 `search.ts`로 공개해야 한다면 [공개 경로 예외와 검사](../../scripts/search-entrypoints.mjs)를 해당 파일 하나에 한해 검토합니다.
-4. `/returns` 라우트·메뉴·메타·명세·양쪽 언어를 같은 변경으로 추가합니다. 목록/상세 응답 검증, 검색 중 취소, 저장 실패·복구 단위 검사와 URL→상세→수정→목록/초점 브라우저 시나리오를 추가합니다. 실제 API 제공 전에는 데모임을 표시합니다.
+## 4. 다른 팀이 실습을 완료했는지 확인한다
 
-## 포크의 완료 증거
+포크 담당자가 자신의 클론에서 다음을 재현하고 결과를 PR에 남깁니다.
 
-- `/`로 직접 들어오면 `/orders`가 열리고 새로고침한 상세 링크도 복원됩니다. 셸·검색·모바일 탐색에는 Orders/Settings만 나오며 제거한 경로는 404에서 주문으로 돌아갈 수 있습니다.
-- 데모 주문을 만들고 수정한 뒤 새로고침하면 같은 브라우저에서 결과를 확인할 수 있습니다. 저장소 차단 시 세션 한계가 표시되고, 미저장 편집의 취소/이탈에는 초안 보호가 작동합니다. 기록 변경을 결제·배송 성공으로 표시하지 않습니다.
-- `pnpm check`와 포크 최종 SHA의 Actions에서 남은 라우트·명세·메타 대응, 두 언어, 단위/E2E 범주, 빌드를 확인합니다. 대표 테스트를 제거해 통과시키지 않고 [테스트 정책](../testing.md)과 [운영 전환](../production-readiness.md)의 미구현 경계를 유지합니다.
+- `/`를 열면 점검 목록이 보이고, `/inspections` 직접 접속·새로고침도 같은 화면을 엽니다. PC와 모바일 탐색·명령 검색에는 새 업무가 표시됩니다. 제거한 `/orders`로 직접 들어가면 404 화면에서 새 홈으로 돌아갈 수 있습니다.
+- 샘플 한 건을 완료하면 두 번 눌러도 중복 변경이 발생하지 않고 재조회한 같은 ID가 완료 상태입니다. 빈 목록, 404, 실패 후 재시도도 실제 응답으로 확인합니다. 새로고침 결과가 선택한 데모 저장 정책과 일치해야 합니다. 점검 화면에서 제거한 주문·고객·환율 요청이 발생하는지도 확인합니다.
+- `pnpm check`로 경로·메타·명세·문서 링크·검사 범주를 확인하고 포크의 PR 검사에서 프로덕션 빌드와 브라우저 시나리오를 검증합니다. 릴리스 증거는 포크의 실제 화면으로 기록합니다. API 모드 전환 시에는 인증·서버 권한과 배포 경로를 포함한 [운영 전환 기준](../production-readiness.md)을 따릅니다.
 
-주문·설정만 남기면 셸의 계정 메뉴와 로그인 전용 레이아웃 분기도 함께 제거한다. 샘플 로그인을 유지하는 포크는 구성원 상세와 내 계정 라우트를 보존하고 운영 전환 때 서버 세션으로 교체한다.
+이 절차는 원본 `938f27b`의 별도 클론에서 확인했습니다. 주문·고객·프로젝트 샘플을 제거하고 설비 점검과 설정을 남겼습니다. 프로덕션 빌드에서 점검 완료 후 새로고침해도 상태가 유지됐고, 없는 점검 ID는 404를 반환했습니다. 제거한 `/orders`는 앱의 404 화면으로 연결됐습니다. 포크의 정적 검사와 PC·태블릿·모바일 Chromium 및 모바일 WebKit 브라우저 검사 13건이 통과했습니다.

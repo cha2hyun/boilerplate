@@ -81,8 +81,15 @@ export function useCreateOrder() {
 export function useUpdateOrder() {
   const client = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, input }: { id: string; input: OrderInput }) =>
-      httpOrderAdapter.update(id, input),
+    mutationFn: ({
+      id,
+      input,
+      revision,
+    }: {
+      id: string
+      input: OrderInput
+      revision: number | undefined
+    }) => httpOrderAdapter.update(id, input, revision),
     retry: false,
     onError: (error) => reconcileUncertainMutation(error, client),
     onSuccess: (order) => reconcileConfirmedMutation(client, order.id, order),

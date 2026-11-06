@@ -51,12 +51,25 @@ export const httpOrderAdapter: OrderAdapter = {
       body: orderInputSchema.parse(input),
       signal,
     }),
-  async update(id, input, signal) {
-    return apiClient(orderPath(id), matchingOrder(id), {
-      method: 'PATCH',
-      body: orderInputSchema.parse(input),
-      signal,
-    })
+  async update(id, input, revision, signal) {
+    const path = orderPath(id)
+    if (revision === undefined || !Number.isSafeInteger(revision) || revision < 1)
+      throw new ApiError('A valid order revision is required.', 'HTTP_ERROR', 428)
+    return apiClient(
+      path,
+      matchingOrder(id).refine(
+        (order) => order.revision !== undefined && order.revision > revision,
+        {
+          message: 'The conditional update must return a newer revision.',
+        },
+      ),
+      {
+        headers: { 'If-Match': `"${String(revision)}"` },
+        method: 'PATCH',
+        body: orderInputSchema.parse(input),
+        signal,
+      },
+    )
   },
   async delete(id, signal) {
     await apiClient(orderPath(id), z.null(), { method: 'DELETE', signal })

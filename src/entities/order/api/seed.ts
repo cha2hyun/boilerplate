@@ -142,4 +142,8 @@ const seedOrders: Omit<SampleOrder, 'history'>[] = [
 ]
 
 // These fixtures provide current values only; no past activity is known.
-export const sampleOrders: SampleOrder[] = seedOrders.map((order) => ({ ...order, history: [] }))
+export const sampleOrders: SampleOrder[] = seedOrders.map((order) => ({
+  ...order,
+  revision: 1,
+  history: [],
+}))

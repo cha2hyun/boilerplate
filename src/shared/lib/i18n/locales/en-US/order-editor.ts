@@ -29,6 +29,17 @@ export default {
   created: 'Order created',
   updated: 'Order updated',
   ready: '{{id}} has been saved.',
+  missingRevision: 'This server has not supplied an order revision. Editing is unavailable.',
+  changed: 'This order changed after you opened it. Your edits are still here.',
+  reviewLatest: 'Review latest order',
+  reviewLoading: 'Loading latest order…',
+  reviewed:
+    'The form includes the latest saved values and your edits. Resolve any differences, review the form, then save.',
+  savedValue: 'Saved: {{value}}',
+  mineValue: 'Your draft: {{value}}',
+  useSaved: 'Use saved value',
+  keepMine: 'Keep my value',
+  conflictItem: '{{name}} · {{quantity}} × USD {{unitPrice}}',
   saveError: 'The order could not be saved. Your input is still here. Try again.',
   notFound: 'This order no longer exists. Close this dialog and refresh the list.',
   errors: {

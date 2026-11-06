@@ -11,6 +11,11 @@ export interface OrderAdapter {
   detail(id: string, signal?: AbortSignal): Promise<SampleOrder>
   summary(signal?: AbortSignal): Promise<OrderSummary>
   create(input: OrderInput, signal?: AbortSignal): Promise<SampleOrder>
-  update(id: string, input: OrderInput, signal?: AbortSignal): Promise<SampleOrder>
+  update(
+    id: string,
+    input: OrderInput,
+    revision: number | undefined,
+    signal?: AbortSignal,
+  ): Promise<SampleOrder>
   delete(id: string, signal?: AbortSignal): Promise<void>
 }

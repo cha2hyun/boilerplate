@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ApiError, delay } from '@/shared/api'
 import { storageKeys } from '@/shared/config/product'
+import { createDemoRecordId } from '@/shared/lib/demo-record-id'
 import { customerInputSchema, customerSchema, customersSchema } from '../model/schema'
 import type { SampleCustomer } from '../model/schema'
 import { sampleCustomers } from './seed'
@@ -38,7 +39,7 @@ function initials(name: string) {
 export function createDemoCustomerAdapter(options: DemoOptions = {}): CustomerAdapter {
   let storage = options.storage === undefined ? browserStorage() : options.storage
   let memory = customersSchema.parse(sampleCustomers)
-  const createId = options.createId ?? (() => `cus_${crypto.randomUUID()}`)
+  const createId = options.createId ?? (() => createDemoRecordId('cus_'))
   const latency = options.delayMs ?? 280
 
   let reportedUnavailable = false

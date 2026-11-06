@@ -1,7 +1,9 @@
 import { useId, useLayoutEffect, useRef, useState, type RefObject, type SubmitEvent } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
+  orderDetailQueryOptions,
   orderLimits,
   orderPaymentStatuses,
   orderStatuses,
@@ -26,7 +28,14 @@ import { Label } from '@/shared/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { UnsavedChangesDialog } from '@/shared/ui/unsaved-changes-dialog'
-import { initialOrderForm, parseOrderForm, type OrderFormInput } from '../model/form'
+import {
+  initialOrderForm,
+  parseOrderForm,
+  rebaseOrderForm,
+  type OrderFormInput,
+  type OrderFormField,
+} from '../model/form'
+import { OrderConflictFields } from './order-conflict-fields'
 
 interface OrderEditorDialogProps {
   open: boolean
@@ -71,11 +80,21 @@ function OrderForm({
   const submittingRef = useRef(false)
   const createOrder = useCreateOrder()
   const updateOrder = useUpdateOrder()
-  const [initialInput] = useState(() => initialOrderForm(order))
+  const queryClient = useQueryClient()
+  const [initialInput, setInitialInput] = useState(() => initialOrderForm(order))
+  const [revision, setRevision] = useState(order?.revision)
+  const [review, setReview] = useState<'idle' | 'required' | 'loading' | 'reviewed'>('idle')
+  const [conflicts, setConflicts] = useState<OrderFormField[]>([])
+  const reviewRef = useRef<HTMLParagraphElement>(null)
+  const missingRevision = Boolean(order && revision === undefined)
   const [input, setInput] = useState(initialInput)
   const [errors, setErrors] = useState<Record<string, FieldError>>({})
   const [serverError, setServerError] = useState<Error | null>(null)
-  const isPending = createOrder.isPending || updateOrder.isPending
+  const isPending = createOrder.isPending || updateOrder.isPending || review === 'loading'
+  const canSave = !isPending && !missingRevision && review !== 'required' && !conflicts.length
+  useLayoutEffect(() => {
+    if (review === 'required' || review === 'reviewed') reviewRef.current?.focus()
+  }, [review])
   const protection = useUnsavedChanges({
     dirty: open && JSON.stringify(input) !== JSON.stringify(initialInput),
     pending: open && isPending,
@@ -118,7 +137,7 @@ function OrderForm({
           inputMode={field === 'shipping' ? 'decimal' : undefined}
           autoComplete="off"
           value={input[field]}
-          disabled={isPending}
+          disabled={isPending || missingRevision}
           onFocus={(event) => {
             // Radix restores the first field with preventScroll when its focus loop wraps.
             // Keep that field visible inside this form's independently scrolling body.
@@ -141,9 +160,42 @@ function OrderForm({
     )
   }
 
+  async function reviewLatest() {
+    if (!order || submittingRef.current) return
+    submittingRef.current = true
+    setReview('loading')
+    setServerError(null)
+    onPendingChange(true)
+    try {
+      const latest = await queryClient.query({
+        ...orderDetailQueryOptions(order.id),
+        staleTime: 0,
+      })
+      if (!latest) throw new ApiError('Order not found.', 'HTTP_ERROR', 404)
+      const saved = initialOrderForm(latest)
+      const rebased = rebaseOrderForm(initialInput, input, saved)
+      setInitialInput(saved)
+      setRevision(latest.revision)
+      setInput(rebased.draft)
+      setConflicts(rebased.conflicts)
+      setReview('reviewed')
+    } catch (error) {
+      setServerError(error instanceof Error ? error : new Error())
+      setReview('required')
+    } finally {
+      submittingRef.current = false
+      onPendingChange(false)
+    }
+  }
+
+  function chooseValue(field: OrderFormField, useSaved: boolean) {
+    if (useSaved) setInput((current) => ({ ...current, [field]: initialInput[field] }))
+    setConflicts((current) => current.filter((unresolved) => unresolved !== field))
+  }
+
   async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    if (isPending || submittingRef.current) return
+    if (!canSave || submittingRef.current) return
     const result = parseOrderForm(input)
     if (!result.success) {
       const nextErrors: Record<string, FieldError> = {}
@@ -177,14 +229,15 @@ function OrderForm({
     onPendingChange(true)
     try {
       const saved = order
-        ? await updateOrder.mutateAsync({ id: order.id, input: result.data })
+        ? await updateOrder.mutateAsync({ id: order.id, input: result.data, revision })
         : await createOrder.mutateAsync(result.data)
       toast.success(t(order ? 'updated' : 'created'), { description: t('ready', { id: saved.id }) })
       protection.markSaved()
       onSaved?.(saved)
       onOpenChange(false)
     } catch (error) {
-      setServerError(error instanceof Error ? error : new Error())
+      if (order && error instanceof ApiError && error.status === 412) setReview('required')
+      else setServerError(error instanceof Error ? error : new Error())
     } finally {
       submittingRef.current = false
       onPendingChange(false)
@@ -215,7 +268,7 @@ function OrderForm({
                 <Label htmlFor={`${formId}-${field}`}>{t(field)}</Label>
                 <Select
                   value={input[field]}
-                  disabled={isPending}
+                  disabled={isPending || missingRevision}
                   onValueChange={(value) => {
                     if (field === 'status' && orderStatuses.some((status) => status === value)) {
                       updateInput({ ...input, status: value as OrderFormInput['status'] })
@@ -266,7 +319,7 @@ function OrderForm({
                   type="button"
                   size="sm"
                   variant="outline"
-                  disabled={isPending || input.items.length >= orderLimits.items}
+                  disabled={isPending || missingRevision || input.items.length >= orderLimits.items}
                   onClick={() => {
                     updateInput({
                       ...input,
@@ -290,7 +343,7 @@ function OrderForm({
                   className="min-w-0 gap-3 rounded-lg border p-4"
                 >
                   <fieldset
-                    disabled={isPending}
+                    disabled={isPending || missingRevision}
                     aria-label={t('item', { number: formatNumber(index + 1) })}
                   >
                     <HStack justify="between" className="gap-2">
@@ -302,7 +355,7 @@ function OrderForm({
                         size="icon"
                         variant="ghost"
                         aria-label={t('removeItem', { number: formatNumber(index + 1) })}
-                        disabled={isPending || input.items.length <= 1}
+                        disabled={isPending || missingRevision || input.items.length <= 1}
                         onClick={() => {
                           updateInput({
                             ...input,
@@ -361,6 +414,34 @@ function OrderForm({
               ))}
             </section>
           </VStack>
+          {missingRevision && (
+            <p role="alert" className="text-sm">
+              {t('missingRevision')}
+            </p>
+          )}
+          {!missingRevision && review !== 'idle' && (
+            <VStack align="stretch" className="gap-3 rounded-md border p-3">
+              <p role="status" tabIndex={-1} ref={reviewRef} className="text-sm">
+                {t(review === 'reviewed' ? 'reviewed' : 'changed')}
+              </p>
+              {(review === 'required' || review === 'loading') && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPending}
+                  onClick={() => void reviewLatest()}
+                >
+                  {t(review === 'loading' ? 'reviewLoading' : 'reviewLatest')}
+                </Button>
+              )}
+              <OrderConflictFields
+                fields={conflicts}
+                mine={input}
+                saved={initialInput}
+                onChoose={chooseValue}
+              />
+            </VStack>
+          )}
           {serverError && (
             <div
               role="alert"
@@ -378,7 +459,7 @@ function OrderForm({
           <Button type="button" variant="outline" disabled={isPending} onClick={onRequestClose}>
             {t('cancel')}
           </Button>
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={!canSave}>
             {isPending && (
               <LoaderCircle
                 className="animate-spin motion-reduce:animate-none"

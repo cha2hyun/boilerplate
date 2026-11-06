@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ApiError, delay } from '@/shared/api'
 import { storageKeys } from '@/shared/config/product'
+import { createDemoRecordId } from '@/shared/lib/demo-record-id'
 import { projectInputSchema, projectSchema, projectsSchema } from '../model/schema'
 import type { Project } from '../model/schema'
 import { seedProjects } from './seed'
@@ -31,7 +32,7 @@ export function createDemoProjectAdapter(options: DemoOptions = {}): ProjectAdap
   let storage = options.storage === undefined ? browserStorage() : options.storage
   let memory = projectsSchema.parse(seedProjects)
   const now = options.now ?? (() => new Date())
-  const createId = options.createId ?? (() => `prj_${crypto.randomUUID()}`)
+  const createId = options.createId ?? (() => createDemoRecordId('prj_'))
   const latency = options.delayMs ?? 280
 
   let reportedUnavailable = false
