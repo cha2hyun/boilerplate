@@ -11,7 +11,7 @@ export interface PageMetadata {
 /** Shared by the client head and the static HTML build; never include private user data. */
 export const pageMetadata = {
   '/login': {
-    title: 'Sign in',
+    title: 'Workspace sign-in',
     description: 'Sign in with the sample account to explore workspace user management.',
   },
   '/users': {
@@ -66,7 +66,7 @@ export const publicIndexablePaths: readonly PagePath[] = []
 
 const koreanPageMetadata: Record<PagePath, PageMetadata> = {
   '/login': {
-    title: '로그인',
+    title: '워크스페이스 로그인',
     description: '샘플 계정으로 로그인해 워크스페이스 사용자 관리를 체험하세요.',
   },
   '/users': {

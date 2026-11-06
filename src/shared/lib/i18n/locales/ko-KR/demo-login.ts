@@ -1,8 +1,10 @@
 import type en from '../en-US/demo-login'
 
 export default {
-  title: '로그인',
-  description: '데모 워크스페이스에 로그인하세요.',
+  title: '워크스페이스 로그인',
+  description: '데모 계정으로 Blueprint에 로그인하세요.',
+  previewLabel: '워크스페이스 미리보기',
+  previewOrderNumber: '주문 번호',
   browseDashboard: '대시보드 둘러보기',
   or: '또는',
   microsoft: 'Microsoft로 로그인',

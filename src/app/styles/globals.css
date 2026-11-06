@@ -95,6 +95,22 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  --background-image-login-preview:
+    linear-gradient(
+      to right,
+      color-mix(in oklab, var(--muted-foreground) 12%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in oklab, var(--muted-foreground) 12%, transparent) 1px,
+      transparent 1px
+    ),
+    radial-gradient(
+      ellipse at 86% 18%,
+      color-mix(in oklab, var(--brand) 7%, transparent),
+      transparent 72%
+    );
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);

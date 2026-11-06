@@ -31,12 +31,61 @@ async function expectLoadedAvatar(avatar: Locator, src: string) {
   await expect(avatar.locator('[data-slot="avatar-fallback"]')).toHaveCount(0)
 }
 
+test('shows the public order preview only on desktop and keeps sign-in reachable', async ({
+  page,
+  context,
+  exchangeRateMock,
+}, testInfo) => {
+  // The public USD sample should not fetch private orders or exchange rates, even for a KRW user.
+  await page.addInitScript(() => {
+    localStorage.setItem(
+      'blueprint-locale-preferences',
+      JSON.stringify({ state: { locale: 'en-US', currency: 'KRW' }, version: 1 }),
+    )
+  })
+  const orderRequests: string[] = []
+  context.on('request', (request) => {
+    if (/^\/api\/orders(?:\/|$)/.test(new URL(request.url()).pathname)) {
+      orderRequests.push(request.method())
+    }
+  })
+  const viewport = page.viewportSize()
+  if (!viewport) throw new Error('A viewport is required for responsive login coverage.')
+  const desktop = testInfo.project.name === 'desktop'
+  const preview = page.getByRole('complementary', { name: 'Workspace preview' })
+  await page.goto('/login')
+  for (const width of desktop ? [1279, 1280] : [viewport.width]) {
+    await page.setViewportSize({ width, height: viewport.height })
+    await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeInViewport()
+    await expect(page.getByRole('button', { name: 'Sign in with Microsoft' })).toBeInViewport()
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    )
+    if (width < 1280) {
+      await expect(preview).toBeHidden()
+      continue
+    }
+    await expect(preview).toBeVisible()
+    await expect(preview.getByRole('cell', { name: /^ORD-/ })).toHaveCount(3)
+    for (const id of ['ORD-1042', 'ORD-1041', 'ORD-1040']) {
+      await expect(preview.getByRole('cell', { name: id, exact: true })).toBeInViewport()
+    }
+    await page.getByRole('button', { name: 'Language (English)', exact: true }).click()
+    await page.getByRole('menuitemradio', { name: '한국어', exact: true }).click()
+    await expect(page.getByRole('heading', { name: '워크스페이스 로그인', level: 1 })).toBeVisible()
+    await expect(page.getByRole('complementary', { name: '워크스페이스 미리보기' })).toBeVisible()
+  }
+  expect(orderRequests).toEqual([])
+  expect(exchangeRateMock.requests).toBe(0)
+})
+
 test('restores a protected account in this tab and requires sign-in after logout', async ({
   page,
   context,
 }) => {
   await page.goto('/account')
-  await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
   await expect(page.locator('[data-slot="sidebar"]')).toHaveCount(0)
   const email = page.getByLabel('Email', { exact: true })
   const password = page.getByLabel('Password', { exact: true })
@@ -69,17 +118,17 @@ test('restores a protected account in this tab and requires sign-in after logout
   ).toHaveText('chae')
   const another = await context.newPage()
   await another.goto('/account')
-  await expect(another.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+  await expect(another.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
   await another.close()
   await page.getByRole('link', { name: 'View workspace users' }).click()
   await expect(page.getByRole('heading', { name: 'Users', level: 1 })).toBeVisible()
   await page.getByRole('button', { name: 'Account menu' }).click()
   await page.getByRole('menuitem', { name: 'Sign out' }).click()
-  await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
   await page.goBack()
-  await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
   await page.goto('/users')
-  await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
 })
 
 test('restores a user deep link and keeps demo invitations and access changes on reload', async ({
@@ -171,9 +220,9 @@ test('keeps the signed-in session when a draft blocks sign-out', async ({ page }
   await expect(name).toHaveValue('Unsaved workspace')
   await signOut()
   await prompt.getByRole('button', { name: 'Discard changes' }).click()
-  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Workspace sign-in' })).toBeVisible()
   await page.goto('/account')
-  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: 'Workspace sign-in' })).toBeVisible()
 })
 
 test('rechecks a protected document restored after its tab session ended', async ({
@@ -192,7 +241,7 @@ test('rechecks a protected document restored after its tab session ended', async
       sessionStorage.removeItem('blueprint.demo.session.v1')
       window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
     })
-    await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
     await expect(page.getByRole('main').getByText('soohyun chae', { exact: true })).toHaveCount(0)
     expect(new URL(page.url()).searchParams.get('returnTo')).toBe(path)
   }
@@ -339,7 +388,7 @@ test('keeps all header actions aligned and accessible before and after sign-in',
   }
   await expect(signInLink).toBeFocused()
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
   await signIn(page)
   await checkHeaderActions(page, toolbar, true)
   await page.goto('/orders')
@@ -357,7 +406,7 @@ test('keeps all header actions aligned and accessible before and after sign-in',
   await page.keyboard.press('End')
   await expect(page.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeFocused()
   await page.keyboard.press('Enter')
-  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', exact: true })).toBeVisible()
 })
 
 test('resolves a failed account image to initials and renders the next signed-in profile', async ({
@@ -405,9 +454,9 @@ test('resolves a failed account image to initials and renders the next signed-in
   // A fresh sign-in uses a new cache, with the fetch override above the running MSW adapter.
   await account.click()
   await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click()
-  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', exact: true })).toBeVisible()
   await page.reload()
-  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Workspace sign-in', exact: true })).toBeVisible()
   const changedSrc = `${ownerAvatar}?profile=riley`
   await page.evaluate((src) => {
     const originalFetch = window.fetch.bind(window)

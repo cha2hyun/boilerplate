@@ -1,6 +1,8 @@
 export default {
-  title: 'Sign in',
-  description: 'Sign in to the demo workspace.',
+  title: 'Workspace sign-in',
+  description: 'Sign in to Blueprint with the demo account.',
+  previewLabel: 'Workspace preview',
+  previewOrderNumber: 'Order number',
   browseDashboard: 'Browse dashboard',
   or: 'or',
   microsoft: 'Sign in with Microsoft',

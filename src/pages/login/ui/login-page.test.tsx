@@ -82,7 +82,7 @@ describe('public demo login', () => {
     const user = userEvent.setup()
     await renderLogin(signedIn)
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content')
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('로그인')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^워크스페이스 로그인$/)
     expect(screen.getByRole('textbox', { name: '이메일' })).toHaveValue(demoCredentials.email)
     const password = screen.getByLabelText('비밀번호', { exact: true })
     expect(password).toHaveValue(demoCredentials.password)
