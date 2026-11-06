@@ -232,8 +232,8 @@ export function AppShell({ children }: AppShellProps) {
             <HStack wrap className="ml-auto max-w-full shrink-0 gap-1 md:gap-2">
               <Button
                 variant="ghost"
-                size="sm"
-                className="size-8 gap-2 p-0 text-muted-foreground xl:h-9 xl:w-auto xl:px-3"
+                size="icon-sm"
+                className="xl:h-9 xl:w-auto xl:px-3 xl:text-muted-foreground"
                 onClick={() => {
                   setCommandOpen(true)
                 }}
@@ -250,8 +250,7 @@ export function AppShell({ children }: AppShellProps) {
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
-                    className="size-8"
+                    size="icon-sm"
                     aria-label={t(
                       resolvedTheme === 'dark' ? 'shell.lightTheme' : 'shell.darkTheme',
                     )}
@@ -272,12 +271,7 @@ export function AppShell({ children }: AppShellProps) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        aria-label={t('shell.language')}
-                      >
+                      <Button variant="ghost" size="icon-sm" aria-label={t('shell.language')}>
                         <Globe className="size-4" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>

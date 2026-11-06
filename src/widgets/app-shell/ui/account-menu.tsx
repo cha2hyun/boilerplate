@@ -4,6 +4,7 @@ import { useDemoSession } from '@/features/demo-session'
 import { env } from '@/shared/config'
 import { useTranslation } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,21 +19,30 @@ export function AccountMenu() {
   if (env.dataSource !== 'demo') return null
   if (!session) {
     return (
-      <Button asChild variant="outline" size="sm" className="h-8 gap-2">
-        <Link to="/login" aria-label={t('account.signIn')}>
-          <LogIn aria-hidden="true" />
-          <span className="hidden xl:inline">{t('account.signIn')}</span>
-        </Link>
-      </Button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button asChild variant="ghost" size="icon-sm">
+            <Link to="/login" aria-label={t('account.signIn')}>
+              <LogIn aria-hidden="true" />
+            </Link>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('account.signIn')}</TooltipContent>
+      </Tooltip>
     )
   }
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" aria-label={t('account.menu')}>
-          <CircleUserRound aria-hidden="true" />
-        </Button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label={t('account.menu')}>
+              <CircleUserRound aria-hidden="true" />
+            </Button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent>{t('account.menu')}</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end">
         <DropdownMenuItem asChild>
           <Link to="/account">

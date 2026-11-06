@@ -35,7 +35,7 @@ export function CurrencyMenu() {
       <Tooltip open={tooltipOpen && !menuOpen} onOpenChange={setTooltipOpen}>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8" aria-label={t('shell.currency')}>
+            <Button variant="ghost" size="icon-sm" aria-label={t('shell.currency')}>
               <Banknote className="size-4" aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>

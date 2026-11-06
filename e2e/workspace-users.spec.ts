@@ -1,4 +1,4 @@
-import { expect, test, type Page } from './fixtures.js'
+import { expect, test, type Locator, type Page } from './fixtures.js'
 
 async function signIn(page: Page) {
   await page.getByRole('button', { name: 'Fill demo credentials', exact: true }).click()
@@ -113,4 +113,43 @@ test('rechecks a protected document restored after its tab session ended', async
     await expect(page.getByText('Alex Morgan', { exact: true })).toHaveCount(0)
     expect(new URL(page.url()).searchParams.get('returnTo')).toBe(path)
   }
+})
+
+test('keeps the account action aligned with the header icons before and after sign-in', async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.goto('/orders')
+  const currency = page.getByRole('button', { name: 'Display currency', exact: true })
+  const signInLink = page.getByRole('link', { name: 'Sign in', exact: true })
+  const appearance = (control: Locator) =>
+    control.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      const glyph = element.querySelector('svg')!.getBoundingClientRect()
+      const style = getComputedStyle(element)
+      return {
+        width: rect.width,
+        height: rect.height,
+        centerY: rect.y + rect.height / 2,
+        glyphWidth: glyph.width,
+        glyphOffset: glyph.x - rect.x,
+        border: style.borderTopWidth,
+        background: style.backgroundColor,
+        shadow: style.boxShadow,
+      }
+    })
+  await expect(signInLink).toBeVisible()
+  await page.mouse.move(0, 0)
+  expect(await appearance(signInLink)).toEqual(await appearance(currency))
+  await currency.focus()
+  await page.keyboard.press('Tab')
+  await expect(signInLink).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+  await signIn(page)
+  const account = page.getByRole('button', { name: 'Account menu', exact: true })
+  await expect(account).toBeVisible()
+  expect(await appearance(account)).toEqual(await appearance(currency))
+  await account.click()
+  await expect(page.getByRole('menuitem', { name: 'My account', exact: true })).toBeVisible()
 })
