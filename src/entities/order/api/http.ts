@@ -1,23 +1,64 @@
 import { z } from 'zod'
-import { apiClient } from '@/shared/api'
-import { orderInputSchema, orderSchema, ordersSchema } from '../model/schema'
+import { ApiError, apiClient } from '@/shared/api'
+import {
+  orderInputSchema,
+  orderSchema,
+  orderPageSchema,
+  orderSummarySchema,
+  orderListParamsSchema,
+  orderListDefaults,
+} from '../model/schema'
 import type { OrderAdapter } from './types'
 
+function orderPath(id: string) {
+  // URL parsers remove complete dot segments even when percent encoded. Never send a
+  // read or destructive request to a collection/parent instead of the requested row.
+  if (!id || id === '.' || id === '..')
+    throw new ApiError('Invalid order identifier.', 'HTTP_ERROR', 400)
+  return `/orders/${encodeURIComponent(id)}`
+}
+function matchingOrder(id: string) {
+  return orderSchema.refine((order) => order.id === id, {
+    message: 'The order ID must match the requested record.',
+  })
+}
+
 export const httpOrderAdapter: OrderAdapter = {
-  list: (signal) => apiClient('/orders', ordersSchema, { signal }),
+  list: (params = orderListDefaults, signal) => {
+    const validated = orderListParamsSchema.parse(params)
+    const search = new URLSearchParams(
+      Object.entries(validated).map(([key, value]) => [key, String(value)]),
+    )
+    return apiClient(
+      `/orders?${search.toString()}`,
+      orderPageSchema.refine(
+        (page) =>
+          page.pageSize === validated.pageSize &&
+          page.page ===
+            Math.min(validated.page, Math.max(1, Math.ceil(page.total / validated.pageSize))),
+        { message: 'The response must match the requested page size and effective page.' },
+      ),
+      { signal },
+    )
+  },
+  async detail(id, signal) {
+    return apiClient(orderPath(id), matchingOrder(id), { signal })
+  },
+  summary: (signal) => apiClient('/orders/summary/counts', orderSummarySchema, { signal }),
   create: (input, signal) =>
     apiClient('/orders', orderSchema, {
       method: 'POST',
       body: orderInputSchema.parse(input),
       signal,
     }),
-  update: (id, input, signal) =>
-    apiClient(`/orders/${encodeURIComponent(id)}`, orderSchema, {
+  async update(id, input, signal) {
+    return apiClient(orderPath(id), matchingOrder(id), {
       method: 'PATCH',
       body: orderInputSchema.parse(input),
       signal,
-    }),
+    })
+  },
   async delete(id, signal) {
-    await apiClient(`/orders/${encodeURIComponent(id)}`, z.null(), { method: 'DELETE', signal })
+    await apiClient(orderPath(id), z.null(), { method: 'DELETE', signal })
   },
 }

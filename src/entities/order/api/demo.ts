@@ -6,10 +6,13 @@ import {
   orderSchema,
   ordersSchema,
   orderLimits,
+  orderListParamsSchema,
+  orderListDefaults,
   type SampleOrder,
   type OrderHistoryEntry,
 } from '../model/schema'
 import { sampleOrders } from './seed'
+import { pageOrders, summarizeOrders } from '../model/list'
 import type { OrderAdapter } from './types'
 
 export const ORDER_STORAGE_KEY = storageKeys.demoOrders
@@ -21,6 +24,7 @@ interface DemoOptions {
   delayMs?: number
   createId?: () => string
   now?: () => Date
+  onStorageUnavailable?: () => void
 }
 
 function browserStorage(): StorageAdapter | null {
@@ -44,6 +48,15 @@ function initials(name: string) {
 /** Browser demo storage; customer information is an independent order snapshot. */
 export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter {
   let storage = options.storage === undefined ? browserStorage() : options.storage
+  let notified = false
+  function fallBackToMemory() {
+    storage = null
+    if (!notified) {
+      notified = true
+      options.onStorageUnavailable?.()
+    }
+  }
+  if (!storage) fallBackToMemory()
   let memory = ordersSchema.parse(sampleOrders)
   const createId = options.createId ?? (() => `ORD-${crypto.randomUUID()}`)
   const now = options.now ?? (() => new Date())
@@ -54,7 +67,7 @@ export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter 
     try {
       storage?.setItem(ORDER_STORAGE_KEY, JSON.stringify({ version: 1, orders: memory }))
     } catch {
-      storage = null
+      fallBackToMemory()
     }
   }
 
@@ -64,7 +77,7 @@ export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter 
     try {
       raw = storage.getItem(ORDER_STORAGE_KEY)
     } catch {
-      storage = null
+      fallBackToMemory()
       return ordersSchema.parse(memory)
     }
     if (raw === null) {
@@ -89,9 +102,18 @@ export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter 
   }
 
   return {
-    async list(signal) {
+    async list(params = orderListDefaults, signal) {
+      const validated = orderListParamsSchema.parse(params)
       await delay(latency, signal)
-      return read()
+      return pageOrders(read(), validated)
+    },
+    async detail(id, signal) {
+      await delay(latency, signal)
+      return read().find((order) => order.id === id) ?? notFound()
+    },
+    async summary(signal) {
+      await delay(latency, signal)
+      return summarizeOrders(read())
     },
     async create(input, signal) {
       const validated = orderInputSchema.parse(input)

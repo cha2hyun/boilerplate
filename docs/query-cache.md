@@ -8,14 +8,16 @@
 
 키는 직렬화 가능한 배열이며 `도메인 → 조회 종류 → 응답을 바꾸는 파라미터` 순서입니다. 서버 응답을 바꾸는 기간·검색·정렬·페이지·계정/워크스페이스 식별자는 키에 포함합니다. 순서가 불안정한 문자열 조합이나 화면별 하드코딩 키는 쓰지 않습니다. 이 기준은 [공식 Query Keys 가이드](https://tanstack.com/query/latest/docs/framework/react/guides/query-keys)를 따릅니다.
 
-| 도메인/화면 | 옵션                         | 실제 키                                                 |
-| ----------- | ---------------------------- | ------------------------------------------------------- |
-| Overview    | `analyticsQueryOptions()`    | `['analytics', 'summary']`                              |
-| Analytics   | `trafficQueryOptions('7')`   | `['traffic', 'summary', { period: '7' }]`               |
-| Orders      | `ordersQueryOptions()`       | `['orders', 'list']`                                    |
-| Customers   | `customersQueryOptions()`    | `['customers', 'list']`                                 |
-| Projects    | `projectsQueryOptions()`     | `['projects', 'list']`                                  |
-| 환율        | `exchangeRateQueryOptions()` | `['exchange-rates', 'frankfurter', 'v2', 'USD', 'KRW']` |
+| 도메인/화면 | 옵션                          | 실제 키                                                   |
+| ----------- | ----------------------------- | --------------------------------------------------------- |
+| Overview    | `analyticsQueryOptions()`     | `['analytics', 'summary']`                                |
+| Analytics   | `trafficQueryOptions('7')`    | `['traffic', 'summary', { period: '7' }]`                 |
+| Orders 목록 | `ordersQueryOptions(params)`  | `['orders', 'list', { q, status, sort, page, pageSize }]` |
+| Orders 상세 | `orderDetailQueryOptions(id)` | `['orders', 'detail', id]`                                |
+| Orders 요약 | `orderSummaryQueryOptions()`  | `['orders', 'summary']`                                   |
+| Customers   | `customersQueryOptions()`     | `['customers', 'list']`                                   |
+| Projects    | `projectsQueryOptions()`      | `['projects', 'list']`                                    |
+| 환율        | `exchangeRateQueryOptions()`  | `['exchange-rates', 'frankfurter', 'v2', 'USD', 'KRW']`   |
 
 ```ts
 const options = trafficQueryOptions('7')
@@ -24,7 +26,7 @@ const query = useQuery(options)
 await queryClient.query(options)
 ```
 
-현재 주문/고객/프로젝트의 검색·정렬·페이지 나누기는 내려받은 전체 목록의 클라이언트 표현입니다. 따라서 이 상태는 목록 키에 넣지 않습니다. 서버에서 필터링/페이지 나누기를 시작하면 API 계약과 키를 함께 바꿉니다. 서로 다른 데이터 형태인 목록/상세/infinite query에 같은 키를 재사용하지 않습니다.
+주문은 HTTP 응답을 바꾸는 다섯 파라미터를 검증한 뒤 목록 키에 포함합니다. `detail`은 목록 키에 포함하지 않아 상세 열기/닫기로 목록을 다시 요청하지 않습니다. 요약은 전체 집계이므로 검색·페이지를 키에 넣지 않습니다. 고객·프로젝트는 전체 목록을 받아 클라이언트에서 검색·정렬·페이지를 나누므로 이 상태를 목록 키에 넣지 않습니다. 서로 다른 데이터 형태인 목록/상세/infinite query에 같은 키를 재사용하지 않습니다.
 
 ## 수명과 화면 동작
 
@@ -38,9 +40,9 @@ await queryClient.query(options)
 
 ## 변경과 취소
 
-프로젝트·주문·고객 mutation 성공 시 도메인 루트로 진행 중인 조회를 취소하고 **정확한 목록 키**를 갱신한 뒤 해당 도메인을 무효화합니다. 늦은 GET이 성공한 변경을 덮지 않도록 순서를 유지합니다. 관계없는 도메인을 전부 무효화하거나 서버 상태를 Zustand에 복제하지 않습니다.
+프로젝트·고객 mutation 성공 시 도메인 루트로 진행 중인 조회를 취소하고 **정확한 목록 키**를 갱신한 뒤 해당 도메인을 무효화합니다. 주문은 취소 후 서버가 확정한 상세 응답만 상세 키에 기록합니다(삭제는 `null`). 필터 포함 여부·정렬 위치·총계는 서버 소유이므로 페이지/요약을 임의로 합성하지 않고 주문 도메인을 무효화하여 활성 목록·상세·요약을 재조회합니다. 새 페이지는 `total`, 유효 `page`, `pageSize`, 실제 행 수를 검증한 뒤 캐시에 들어갑니다. 재조회 실패 시 마지막 검증된 페이지와 확인된 상세를 유지하며 오류를 알립니다. 늦은 GET이 성공한 변경을 덮지 않도록 순서를 유지합니다. 관계없는 도메인을 전부 무효화하거나 서버 상태를 Zustand에 복제하지 않습니다.
 
-쓰기 결과가 `ApiError.mayHaveSucceeded`로 불확실하다고 표시된 경우에도 진행 중인 해당 도메인 조회를 먼저 취소하고 도메인을 무효화합니다. 활성 목록은 다시 조회하고 비활성 캐시는 다음 사용 시 갱신합니다. 이 경로에서는 추측으로 목록을 수정하지 않으며, 재조회가 끝나도 mutation은 원래 오류 상태와 결과 재확인 안내를 유지합니다. timeout·연결 끊김·5xx(502/504 포함)·2xx 응답 검증 실패가 여기에 해당하고 mutation 자체를 자동 재시도하지 않습니다. 4xx 거부는 이 불확실성 재조회 경로에 들어가지 않습니다.
+쓰기 결과가 `ApiError.mayHaveSucceeded`로 불확실하다고 표시된 경우에도 진행 중인 해당 도메인 조회를 먼저 취소하고 도메인을 무효화합니다. 활성 조회는 다시 실행하고 비활성 캐시는 다음 사용 시 갱신합니다. 이 경로에서는 추측으로 목록을 수정하지 않으며, 재조회가 끝나도 mutation은 원래 오류 상태와 결과 재확인 안내를 유지합니다. timeout·연결 끊김·5xx(502/504 포함)·2xx 응답 검증 실패가 여기에 해당하고 mutation 자체를 자동 재시도하지 않습니다. 4xx 거부는 이 불확실성 재조회 경로에 들어가지 않습니다.
 
 Traffic 일별 데이터는 날짜 중복·수치 관계를 검증한 뒤 날짜순으로 캐시에 넣습니다. 프로젝트·주문·고객 목록에는 중복 ID를 허용하지 않습니다. 잘못된 갱신 응답은 오류로 표시하되 기존의 검증된 캐시를 덮어쓰지 않습니다.
 
@@ -48,7 +50,7 @@ Traffic 일별 데이터는 날짜 중복·수치 관계를 검증한 뒤 날짜
 
 ## 목업으로 확인하기
 
-demo 모드에서 MSW가 `/api/analytics`, `/api/traffic?period=…`, `/api/orders`, `/api/customers`의 실제 fetch를 처리합니다. 목업 응답은 450ms 지연과 `Cache-Control: no-store`를 사용합니다. 브라우저 HTTP 캐시와 Query 캐시를 혼동하지 않기 위한 설정이며, cache hit에 인위적인 지연을 추가하지 않습니다. 주문·고객의 POST/PATCH/DELETE도 동일한 HTTP 경계를 거치며 검증된 데모 저장소에 반영됩니다. 성공 후 목록 캐시 갱신은 이 문서의 변경 계약을 따릅니다. 실제 API 모드는 worker를 시작하지 않습니다. 외부 Frankfurter 환율 요청은 demo에서도 MSW를 통과해 실제 API로 전송됩니다. 고정 환율 fixture는 테스트에만 둡니다.
+demo 모드에서 MSW가 `/api/analytics`, `/api/traffic?period=…`, `/api/orders?…`, `/api/orders/:id`, `/api/orders/summary/counts`, `/api/customers`의 실제 fetch를 처리합니다. 목업 응답은 450ms 지연과 `Cache-Control: no-store`를 사용합니다. 브라우저 HTTP 캐시와 Query 캐시를 혼동하지 않기 위한 설정이며, cache hit에 인위적인 지연을 추가하지 않습니다. 주문·고객의 POST/PATCH/DELETE도 동일한 HTTP 경계를 거치며 검증된 데모 저장소에 반영됩니다. 성공 후 목록 캐시 갱신은 이 문서의 변경 계약을 따릅니다. 실제 API 모드는 worker를 시작하지 않습니다. 외부 Frankfurter 환율 요청은 demo에서도 MSW를 통과해 실제 API로 전송됩니다. 고정 환율 fixture는 테스트에만 둡니다.
 
 1. 새로고침 후 한 페이지를 열어 Network의 첫 요청과 초기 스켈레톤을 확인합니다.
 2. 사이드바로 다른 경로에 갔다가 60초 안에 돌아옵니다. 같은 endpoint 요청은 증가하지 않고 데이터가 바로 표시되어야 합니다.

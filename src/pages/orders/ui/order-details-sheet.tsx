@@ -7,6 +7,7 @@ import {
 } from '@/shared/lib/i18n'
 import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Button } from '@/shared/ui/button'
+import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Separator } from '@/shared/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { HStack, VStack } from '@/shared/ui/stack'
@@ -92,6 +93,17 @@ export function OrderDetailsSheet({
         )}
         {order && (
           <VStack align="stretch" className="min-w-0 gap-6 px-6 pb-6 text-sm wrap-anywhere">
+            {error && (
+              <Alert variant="destructive">
+                <AlertTitle>{t('orders.refreshError')}</AlertTitle>
+                <AlertDescription>
+                  <p>{errorMessage(error)}</p>
+                  <Button variant="outline" size="sm" onClick={onRetry}>
+                    {t('common.tryAgain')}
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
             <HStack wrap className="gap-2">
               <Button
                 variant="outline"

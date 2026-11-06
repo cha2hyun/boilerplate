@@ -6,6 +6,9 @@ import {
   orderLimits,
   orderSchema,
   ordersSchema,
+  orderListParamsSchema,
+  orderPageSchema,
+  orderSummarySchema,
 } from './schema'
 
 const input = orderInputSchema.parse(sampleOrders[0])
@@ -117,4 +120,32 @@ describe('order validation boundaries', () => {
     expect(orderSchema.parse({ ...sampleOrders[0], customer }).customer.name).toBe(customer.name)
     expect(orderInputSchema.safeParse({ ...input, customer }).success).toBe(false)
   })
+})
+
+it('rejects invalid server page metadata, duplicate records and mismatched summary counts', () => {
+  const page = { items: sampleOrders.slice(0, 6), total: 12, page: 1, pageSize: 6 }
+  expect(orderPageSchema.parse(page)).toEqual(page)
+  for (const invalid of [
+    { ...page, total: -1 },
+    { ...page, page: 3 },
+    { ...page, pageSize: 7 },
+    { ...page, items: [] },
+    { ...page, items: Array(6).fill(sampleOrders[0]) },
+    { ...page, pageSize: undefined },
+  ])
+    expect(orderPageSchema.safeParse(invalid).success).toBe(false)
+  for (const invalid of [
+    { page: 0 },
+    { page: '2' },
+    { pageSize: 500 },
+    { sort: 'unknown' },
+    { q: 'x'.repeat(201) },
+  ])
+    expect(orderListParamsSchema.safeParse(invalid).success).toBe(false)
+  expect(
+    orderSummarySchema.safeParse({
+      total: 4,
+      counts: { Processing: 1, Shipped: 1, Delivered: 1, Cancelled: 0 },
+    }).success,
+  ).toBe(false)
 })

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { orderInputSchema, orderSchema } from '../model/schema'
+import { orderInputSchema, orderSchema, orderListDefaults } from '../model/schema'
 import { httpOrderAdapter } from './http'
 import { sampleOrders } from './seed'
 
@@ -17,12 +17,12 @@ describe('order HTTP contract', () => {
     const body = orderInputSchema.parse(input)
     const fetchMock = vi
       .fn<typeof fetch>()
-      .mockResolvedValueOnce(Response.json([order]))
+      .mockResolvedValueOnce(Response.json({ items: [order], total: 1, page: 1, pageSize: 6 }))
       .mockResolvedValueOnce(Response.json(order, { status: 201 }))
       .mockResolvedValueOnce(Response.json(order))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
-    expect(await httpOrderAdapter.list()).toEqual([order])
+    expect((await httpOrderAdapter.list()).items).toEqual([order])
     expect(await httpOrderAdapter.create(input)).toEqual(order)
     expect(await httpOrderAdapter.update(order.id, input)).toEqual(order)
     await httpOrderAdapter.delete(order.id)
@@ -34,7 +34,11 @@ describe('order HTTP contract', () => {
         body: options?.body,
       })),
     ).toEqual([
-      { url: collection, method: 'GET', body: undefined },
+      {
+        url: `${collection}?q=&status=all&sort=newest&page=1&pageSize=6`,
+        method: 'GET',
+        body: undefined,
+      },
       { url: collection, method: 'POST', body: JSON.stringify(body) },
       {
         url: `${collection}/${encodeURIComponent(order.id)}`,
@@ -58,7 +62,14 @@ describe('order HTTP contract', () => {
   it('rejects duplicate identities at the HTTP list boundary', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(Response.json([sampleOrders[0], sampleOrders[0]])),
+      vi.fn().mockResolvedValue(
+        Response.json({
+          items: [sampleOrders[0], sampleOrders[0]],
+          total: 2,
+          page: 1,
+          pageSize: 6,
+        }),
+      ),
     )
     await expect(httpOrderAdapter.list()).rejects.toMatchObject({
       code: 'INVALID_RESPONSE',
@@ -97,8 +108,43 @@ describe('order HTTP contract', () => {
           }),
       ),
     )
-    const pending = httpOrderAdapter.list(controller.signal)
+    const pending = httpOrderAdapter.list(orderListDefaults, controller.signal)
     controller.abort()
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
   })
+})
+
+it.each(['.', '..', ''])(
+  'rejects unsafe path ID %j without issuing a read, PATCH or DELETE',
+  async (id) => {
+    const fetchMock = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchMock)
+    await expect(httpOrderAdapter.detail(id)).rejects.toMatchObject({
+      status: 400,
+      mayHaveSucceeded: false,
+    })
+    await expect(
+      httpOrderAdapter.update(id, orderInputSchema.parse(sampleOrders[0])),
+    ).rejects.toMatchObject({ status: 400, mayHaveSucceeded: false })
+    await expect(httpOrderAdapter.delete(id)).rejects.toMatchObject({
+      status: 400,
+      mayHaveSucceeded: false,
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+  },
+)
+
+it('treats mismatched detail IDs as invalid and a mismatched PATCH response as uncertain', async () => {
+  const order = orderSchema.parse(sampleOrders[0])
+  vi.stubGlobal(
+    'fetch',
+    vi.fn<typeof fetch>(() => Promise.resolve(Response.json({ ...order, id: 'different' }))),
+  )
+  await expect(httpOrderAdapter.detail(order.id)).rejects.toMatchObject({
+    code: 'INVALID_RESPONSE',
+    mayHaveSucceeded: false,
+  })
+  await expect(
+    httpOrderAdapter.update(order.id, orderInputSchema.parse(order)),
+  ).rejects.toMatchObject({ code: 'INVALID_RESPONSE', mayHaveSucceeded: true })
 })

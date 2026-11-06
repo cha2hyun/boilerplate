@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw/http'
 import type { z } from 'zod'
 import { demoAnalytics } from '@/entities/analytics'
 import { createDemoCustomerAdapter, customerInputSchema } from '@/entities/customer'
-import { createDemoOrderAdapter, orderInputSchema } from '@/entities/order'
+import { createDemoOrderAdapter, orderInputSchema, orderListParamsSchema } from '@/entities/order'
 import { getSampleTraffic, trafficPeriodSchema } from '@/entities/traffic'
 import { ApiError } from '@/shared/api'
 import { env } from '@/shared/config'
@@ -72,8 +72,29 @@ export function createDemoHandlers({
       return HttpResponse.json(getSampleTraffic(period.data), responseOptions)
     }),
     http.get(`${apiBaseUrl}/orders`, async ({ request }) => {
+      const search = Object.fromEntries(new URL(request.url).searchParams)
+      const params = orderListParamsSchema.safeParse({
+        ...search,
+        ...(search.page !== undefined
+          ? { page: /^\d+$/.test(search.page) ? Number(search.page) : Number.NaN }
+          : {}),
+        ...(search.pageSize !== undefined
+          ? { pageSize: /^\d+$/.test(search.pageSize) ? Number(search.pageSize) : Number.NaN }
+          : {}),
+      })
+      if (!params.success) return invalidInput()
       await delay(delayMs)
-      return HttpResponse.json(await orders.list(request.signal), responseOptions)
+      return HttpResponse.json(await orders.list(params.data, request.signal), responseOptions)
+    }),
+    http.get(`${apiBaseUrl}/orders/summary/counts`, async ({ request }) => {
+      await delay(delayMs)
+      return HttpResponse.json(await orders.summary(request.signal), responseOptions)
+    }),
+    http.get(`${apiBaseUrl}/orders/:id`, async ({ request, params }) => {
+      if (typeof params.id !== 'string') return invalidInput()
+      const id = params.id
+      await delay(delayMs)
+      return mutationResponse(() => orders.detail(id, request.signal))
     }),
     http.post(`${apiBaseUrl}/orders`, async ({ request }) => {
       const input = await readInput(request, orderInputSchema)
@@ -119,6 +140,3 @@ export function createDemoHandlers({
     }),
   ]
 }
-
-// Only explicitly declared app endpoints are mocked. External APIs retain real behavior.
-export const handlers = createDemoHandlers()

@@ -46,7 +46,7 @@ const orderTableColumnCount = 7
 interface OrdersListProps {
   search: OrdersSearch
   onSearchChange: SearchChange<OrdersSearch>
-  orders: SampleOrder[]
+  totalOrders: number | undefined
   selection: ReturnType<typeof selectOrders>
   isLoading: boolean
   hasLoadError: boolean
@@ -62,7 +62,7 @@ interface OrdersListProps {
 export function OrdersList({
   search,
   onSearchChange,
-  orders,
+  totalOrders,
   selection,
   isLoading,
   hasLoadError,
@@ -81,9 +81,10 @@ export function OrdersList({
   const currency = useLocalePreferences((state) => state.currency)
   const errorMessage = useErrorMessage()
   const { q, status, sort, pageSize } = search
-  const { filtered: filteredOrders, pageCount, currentPage, visible: visibleOrders } = selection
+  const { total: filteredTotal, pageCount, currentPage, visible: visibleOrders } = selection
   const scrollHintId = useId()
   const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
+  const hasOrders = totalOrders === undefined ? hasFilters : totalOrders > 0
   function resetFilters() {
     onSearchChange({ ...ordersSearchDefaults, pageSize, detail: search.detail })
     requestAnimationFrame(() => searchRef.current?.focus())
@@ -91,7 +92,9 @@ export function OrdersList({
   return (
     <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
       <CardHeader className="px-5">
-        <CardTitle className="text-base">{t('orders.all')}</CardTitle>
+        <CardTitle className="text-base" asChild>
+          <h2>{t('orders.all')}</h2>
+        </CardTitle>
         <CardDescription>{t('orders.browse', { currency })}</CardDescription>
       </CardHeader>
       <VStack asChild align="stretch" className="min-w-0 gap-4 px-0">
@@ -372,14 +375,14 @@ export function OrdersList({
                       <EmptyTitle>
                         {hasLoadError
                           ? t('orders.loadError')
-                          : orders.length
+                          : hasOrders
                             ? t('orders.noMatch')
                             : t('orders.empty')}
                       </EmptyTitle>
                       <EmptyDescription>
                         {hasLoadError
                           ? errorMessage(error)
-                          : orders.length
+                          : hasOrders
                             ? t('common.searchHint')
                             : t('orders.emptyHint')}
                       </EmptyDescription>
@@ -389,7 +392,7 @@ export function OrdersList({
                         {t('common.tryAgain')}
                       </Button>
                     ) : (
-                      orders.length > 0 && (
+                      hasOrders && (
                         <Button variant="outline" onClick={resetFilters}>
                           {t('common.clearFilters')}
                         </Button>
@@ -406,13 +409,13 @@ export function OrdersList({
                       ? t('orders.loading')
                       : hasLoadError
                         ? t('orders.loadError')
-                        : filteredOrders.length
+                        : filteredTotal
                           ? t('orders.showing', {
                               start: formatNumber(currentPage * pageSize + 1),
                               end: formatNumber(
-                                Math.min((currentPage + 1) * pageSize, filteredOrders.length),
+                                Math.min((currentPage + 1) * pageSize, filteredTotal),
                               ),
-                              total: formatNumber(filteredOrders.length),
+                              total: formatNumber(filteredTotal),
                             })
                           : t('orders.count', { total: formatNumber(0) })}
                   </p>

@@ -1,11 +1,20 @@
 import { queryOptions, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { ApiError } from '@/shared/api'
 import { env } from '@/shared/config'
+import { storageKeys } from '@/shared/config/product'
+import { markDemoStorageUnavailable } from '@/shared/lib/demo-storage-status'
 import type { Project, ProjectInput } from '../model/schema'
 import { createDemoProjectAdapter } from './demo'
 import { httpProjectAdapter } from './http'
 
-const adapter = env.dataSource === 'demo' ? createDemoProjectAdapter() : httpProjectAdapter
+const adapter =
+  env.dataSource === 'demo'
+    ? createDemoProjectAdapter({
+        onStorageUnavailable: () => {
+          markDemoStorageUnavailable(storageKeys.demoProjects)
+        },
+      })
+    : httpProjectAdapter
 export const projectKeys = {
   all: ['projects'] as const,
   lists: () => [...projectKeys.all, 'list'] as const,

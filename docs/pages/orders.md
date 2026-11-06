@@ -24,7 +24,7 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 
 ## 상태별 화면
 
-최초 로딩은 요약·표 skeleton, 최초 오류는 결측 요약과 표 오류/재시도입니다. 캐시 재조회 중 기존 데이터와 열린 상세를 유지하고 실패는 상단 재조회 오류/재시도로 알립니다. 전체 빈 데이터와 필터 빈 결과의 설명을 구분하며 후자에만 필터 지우기를 제공합니다. 로딩·성공·빈 상태에서 표 프레임을 유지하고 성공한 조회 뒤에만 범위 밖 URL 페이지를 보정합니다.
+최초 로딩은 요약·표 skeleton입니다. 목록과 요약은 독립적으로 요청하고 실패한 영역에만 오류·재시도를 제공합니다. 요약 응답을 받지 못했을 때 0건으로 단정하지 않습니다. 캐시 재조회 중 기존 데이터와 열린 상세를 유지하고 실패는 상단 재조회 오류/재시도로 알립니다. 전체 빈 데이터와 필터 빈 결과의 설명을 구분하며 후자에만 필터 지우기를 제공합니다. 로딩·성공·빈 상태에서 표 프레임을 유지하고 성공한 조회 뒤에만 범위 밖 URL 페이지를 보정합니다.
 
 ## 반응형 동작
 
@@ -39,10 +39,10 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 ## 상태 소유권과 구현 근거
 
 - URL: [라우트](../../src/app/routes/orders.tsx), [조회 스키마](../../src/pages/orders/model/search.ts).
-- Query: [주문 조회·mutation](../../src/entities/order/api/queries.ts). 성공한 쓰기는 이전 GET을 취소하고 목록 캐시를 갱신한 뒤 재조회합니다. 불확실한 쓰기도 GET 취소 후 재조회하되 추측으로 캐시를 변경하지 않습니다. 필터·정렬·페이지는 원본 목록 캐시에 클라이언트 계산을 적용합니다. [순수 selector](../../src/pages/orders/model/selectors.ts)는 입력 배열을 변경하지 않고, 금액 정렬 시 항목 합계를 레코드마다 한 번 계산합니다. 화면의 memo는 조회 조건만 구독하므로 상세 열기/닫기와 폼 상태 변경이 정렬을 다시 실행하지 않습니다.
-- 저장: [스키마](../../src/entities/order/model/schema.ts), [HTTP 어댑터](../../src/entities/order/api/http.ts), [데모 저장](../../src/entities/order/api/demo.ts). demo/api 모두 HTTP 경계를 사용하고 demo MSW가 `orbit.demo.orders.v1`의 버전 1 저장소로 연결합니다. 손상된 저장값은 샘플로 복구하며 저장소 접근 실패는 메모리 세션으로 전환합니다.
+- Query: [주문 조회·mutation](../../src/entities/order/api/queries.ts). 목록은 `q/status/sort/page/pageSize`를 요청과 키에 포함하고 서버가 돌려준 페이지와 `total`만 표시합니다. 전체 요약·ID별 상세는 별도 키로 병렬 조회하므로 현재 페이지에 없는 상세도 복원합니다. [표시 selector](../../src/pages/orders/model/selectors.ts)는 응답 메타로 페이지 도구만 계산합니다. 성공 쓰기는 이전 주문 GET을 취소하고 확정한 상세만 갱신한 뒤 목록·요약·상세를 재조회합니다. 불확실한 쓰기는 캐시를 추측해 바꾸지 않고 도메인을 재조회합니다.
+- 저장: [스키마](../../src/entities/order/model/schema.ts), [HTTP 어댑터](../../src/entities/order/api/http.ts), [데모 저장](../../src/entities/order/api/demo.ts). demo/api 모두 HTTP 경계를 사용하고 demo MSW가 `orbit.demo.orders.v1`의 버전 1 저장소로 연결합니다. 손상된 저장값은 샘플로 복구하며 저장소 접근·쓰기 실패는 메모리 세션으로 전환하고 공통 셸의 지속성 안내를 표시합니다.
 - 조합: [화면](../../src/pages/orders/ui/orders-page.tsx)은 Query·mutation 창·URL·초점, [목록](../../src/pages/orders/ui/orders-list.tsx)은 필터·표·페이지 도구, [상세](../../src/pages/orders/ui/order-details-sheet.tsx)는 상세 조회와 편집 진입, [변경 기록](../../src/pages/orders/ui/order-history.tsx)은 기록 표시를 소유합니다.
-- 임시 상태: 화면의 초점 복구 대상·편집/삭제 대상·[모바일 요약](../../src/pages/orders/ui/orders-summary.tsx)의 펼침 여부와 [편집기](../../src/features/order-editor/ui/order-editor-dialog.tsx)의 초안·오류. [정렬·금액 계산](../../src/pages/orders/model/sample-orders.ts)이 데이터 계산을 소유하고 표시 통화는 공통 [국제화](../i18n.md)를 따릅니다.
+- 임시 상태: 화면의 초점 복구 대상·편집/삭제 대상·[모바일 요약](../../src/pages/orders/ui/orders-summary.tsx)의 펼침 여부와 [편집기](../../src/features/order-editor/ui/order-editor-dialog.tsx)의 초안·오류. [데모 서버의 페이지·금액 계산](../../src/entities/order/model/list.ts)이 조회와 합계를 소유하고 표시 통화는 공통 [국제화](../i18n.md)를 따릅니다.
 
 ## 수용 기준
 
@@ -51,10 +51,11 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 - 상태와 검색 조합·빈 결과 복구: [상거래 E2E](../../e2e/commerce.spec.ts)의 `combines order status and customer search, and recovers from empty results`.
 - 페이지·정렬·상세·초점: 같은 파일의 `paginates and sorts orders, then opens details with keyboard focus restored`. 실제 터치/키보드 스크롤·화면 폭: `keeps commerce tables and detail sheets inside the viewport`.
 - 잘못된 URL과 로드 뒤 페이지 보정: 같은 파일의 `recovers invalid commerce URL filters and clamps pages after data loads`. 상세 최신성: `/orders keeps open details current and contains long customer text`.
-- 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Orders keeps card geometry and cached data through real demo requests`. 최초/재조회 실패·전체 빈 응답은 이 테스트가 검증하지 않으므로 해당 상태 변경 시 별도로 확인합니다. 조회 값 복구는 [스키마 테스트](../../src/pages/orders/model/search.test.ts)에서 확인합니다.
+- 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Orders keeps card geometry and cached data through real demo requests`. 목록 실패·재시도는 상거래 E2E의 상태/검색 시나리오에서 별도로 확인합니다. 조회 값 복구는 [스키마 테스트](../../src/pages/orders/model/search.test.ts)에서 확인합니다.
 - CRUD·초안 보호·새로고침 지속성·합계·초점: [상거래 E2E](../../e2e/commerce.spec.ts)의 `creates, edits and deletes an order with protected drafts and persisted totals`.
 - 데이터 검증: [주문 스키마](../../src/entities/order/model/schema.test.ts), [정확한 USD 변환](../../src/features/order-editor/model/form.test.ts), [데모 지속성·저장소 실패·취소](../../src/entities/order/api/demo.test.ts), [HTTP 계약](../../src/entities/order/api/http.test.ts), [성공/불확실 쓰기와 늦은 GET 경합](../../src/entities/order/api/queries.test.tsx).
 
 - 페이지 크기·상세 직접 링크·새로고침·history와 미저장 편집 폐기·없는 ID 회복·모바일 요약: [상거래 E2E](../../e2e/commerce.spec.ts)의 `orders restores shared details and page size through reload and history`.
 - 생성 → 상세에서 결제 상태 수정 → 기록 확인 → 새로고침 후 주문 상태 변경 기록 보존은 기존 CRUD E2E가 함께 검증합니다. 실제 삭제된 상세는 설명을 확인한 후 명시적으로 닫으며 나중에 같은 ID가 다시 나타나도 임의로 열리지 않습니다.
-- 대량 계산의 의미: [selector 테스트](../../src/pages/orders/model/selectors.test.ts)는 10,000개 주문의 합계 정렬·두 번째 페이지·원본 순서 보존을 확인합니다. 실행 시간 기준이나 실제 대량 렌더링 성능 보증으로 사용하지 않습니다.
+- 별도 서버 조회: [HTTP·캐시 테스트](../../src/app/mocks/queries.test.ts)는 페이지와 검색 키 분리, 목록 밖 상세, 전체 요약, 잘못된 입력 400, 마지막 페이지 삭제 뒤 보정을 확인합니다. [상거래 E2E](../../e2e/commerce.spec.ts)의 `loads order pages from HTTP and restores a detail outside the current page`와 `corrects the order URL after deleting the only row on the last server page`가 실제 HTTP 응답·URL·새로고침을 검증합니다.
+- 대량 계산의 의미: [데모 페이지 계산 테스트](../../src/entities/order/model/list.test.ts)는 10,000개 주문의 금액 정렬·두 번째 페이지·원본 순서 보존을 확인합니다. [화면 selector](../../src/pages/orders/model/selectors.test.ts)는 서버 총계와 행을 그대로 표시합니다. 실행 시간 기준이나 실제 운영 서버 성능 보증으로 사용하지 않습니다.

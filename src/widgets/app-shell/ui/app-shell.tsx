@@ -7,6 +7,7 @@ import { usePreferences } from '@/features/workspace-preferences'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
 import { navigation, navigationGroups } from '../model/navigation'
 import { CurrencyMenu } from './currency-menu'
+import { DemoStorageNotice } from './demo-storage-notice'
 import { useTheme } from '@/shared/lib/theme'
 import { cn } from '@/shared/lib/utils'
 import {
@@ -304,6 +305,7 @@ export function AppShell({ children }: AppShellProps) {
             compact && 'md:p-4 xl:p-5',
           )}
         >
+          <DemoStorageNotice />
           {children}
         </div>
         <HStack

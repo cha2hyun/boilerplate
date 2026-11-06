@@ -33,7 +33,7 @@ Orders/Customers의 상세 패널은 URL `detail` ID가 소유합니다. 상세 
 
 선택 필터·정렬·탭·페이지 이동·상세 열기/닫기·초기화는 history push를 사용합니다. 텍스트 입력은 현재 항목을 replace하여 글자마다 방문 기록을 만들지 않습니다. 따라서 뒤로 가기는 선택 단계나 이전 페이지로 돌아가며 글자 단위 실행 취소가 아닙니다. 조회 조건 변경은 `resetScroll: false`로 화면 위치를 유지합니다.
 
-여러 조건을 한 번에 바꿀 때 한 search updater로 원자적으로 갱신하고, 다른 조건은 보존합니다. URL을 읽은 뒤 별도 effect로 로컬 필터와 양방향 동기화하지 않습니다. Query 키에는 실제 요청을 바꾸는 검증된 조건만 포함합니다. Analytics는 기존 기간별 Query 키를 사용하고, 클라이언트에서 거르는 표는 기존 원본 목록 캐시를 재사용합니다. URL에 비밀이나 인증 토큰을 넣지 않습니다.
+여러 조건을 한 번에 바꿀 때 한 search updater로 원자적으로 갱신하고, 다른 조건은 보존합니다. URL을 읽은 뒤 별도 effect로 로컬 필터와 양방향 동기화하지 않습니다. Query 키에는 실제 요청을 바꾸는 검증된 조건만 포함합니다. Analytics는 기간별 Query 키를 사용합니다. Orders는 검증한 검색·상태·정렬·페이지·페이지 크기를 목록 Query 키와 HTTP 요청에 넣으며 상세 ID와 전체 요약은 별도 Query입니다. 클라이언트에서 거르는 Projects/Customers 표는 원본 목록 캐시를 재사용합니다. URL에 비밀이나 인증 토큰을 넣지 않습니다.
 
 ## 검증
 
@@ -44,4 +44,4 @@ Orders/Customers의 상세 패널은 URL `detail` ID가 소유합니다. 상세 
 
 기반 API는 [TanStack Router 검색 파라미터 검증](https://tanstack.com/router/latest/docs/how-to/validate-search-params)과 [탐색 옵션](https://tanstack.com/router/latest/docs/api/router/NavigateOptionsType)을 따릅니다.
 
-Orders/Customers의 조회 계산은 각 `model/selectors.ts`가 소유합니다. Query 응답과 실제 조회 조건만 memo 의존성에 넣어 상세 ID·폼 상태 변경 시 전체 목록을 다시 정렬하지 않습니다. 주문 합계 정렬은 항목 합계를 행당 한 번 계산합니다. 이는 클라이언트 계산의 비용 절감이며 서버 페이지네이션 또는 가상화의 구현을 뜻하지 않습니다.
+Orders의 검색·정렬·페이지 보정은 API 어댑터 계약이 소유하며 페이지는 검증된 응답의 행·전체 수·페이지를 표시합니다. 성공 응답의 보정된 페이지는 URL에 replace하고 로딩/실패에서는 복원한 URL을 초기화하지 않습니다. 상세는 현재 목록에 포함되지 않은 ID도 별도로 조회합니다. Customers의 클라이언트 조회 계산은 `model/selectors.ts`가 소유하고, 응답과 실제 조회 조건만 memo 의존성에 넣어 상세 ID·폼 상태 변경 때 재정렬하지 않습니다. 데모에서는 MSW가 Orders의 서버 계약을 모방하며 실제 운영 서버나 가상화가 구현된 것은 아닙니다.

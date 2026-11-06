@@ -11,6 +11,8 @@ import {
   useUpdateOrder,
 } from './queries'
 import { sampleOrders } from './seed'
+import { pageOrders } from '../model/list'
+import { orderListDefaults } from '../model/schema'
 
 vi.mock('@/shared/config', () => ({ env: { dataSource: 'api', apiBaseUrl: '/api' } }))
 
@@ -73,7 +75,7 @@ describe('order mutation cache reconciliation', () => {
             firstSignal = options?.signal
             return firstResponse.promise
           }
-          return Promise.resolve(Response.json(saved))
+          return Promise.resolve(Response.json(pageOrders(saved, orderListDefaults)))
         }),
       )
       const client = new QueryClient({
@@ -113,7 +115,7 @@ describe('order mutation cache reconciliation', () => {
                 : result.current.delete.mutateAsync(existing.id)
           const outcome = mutation.catch((error: unknown) => error)
           await invalidated.promise
-          firstResponse.resolve(Response.json(sampleOrders))
+          firstResponse.resolve(Response.json(pageOrders(sampleOrders, orderListDefaults)))
           const settled = await outcome
           if (uncertain)
             expect(settled).toMatchObject({
@@ -126,10 +128,12 @@ describe('order mutation cache reconciliation', () => {
         expect(reads).toBe(2)
         expect(writes).toBe(1)
         await waitFor(() => {
-          expect(result.current.orders.data).toEqual(saved)
+          expect(result.current.orders.data).toEqual(pageOrders(saved, orderListDefaults))
           expect(result.current[operation].isError).toBe(uncertain)
         })
-        expect(client.getQueryData(orderKeys.lists())).toEqual(saved)
+        expect(client.getQueryData(orderKeys.list(orderListDefaults))).toEqual(
+          pageOrders(saved, orderListDefaults),
+        )
         expect(client.getQueryData(['customers', 'list'])).toEqual(['independent customer data'])
         expect(client.getQueryState(['customers', 'list'])?.isInvalidated).toBe(false)
       } finally {
@@ -140,7 +144,7 @@ describe('order mutation cache reconciliation', () => {
     },
   )
 
-  it('keeps the successful update in cache when its follow-up GET fails', async () => {
+  it('keeps the confirmed detail and last known page when its follow-up GET fails', async () => {
     const existing = orderSchema.parse(sampleOrders[0])
     const updated = orderSchema.parse({ ...existing, status: 'Shipped' })
     vi.stubGlobal(
@@ -152,7 +156,10 @@ describe('order mutation cache reconciliation', () => {
       ),
     )
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-    client.setQueryData(orderKeys.lists(), [existing])
+    client.setQueryData(
+      orderKeys.list(orderListDefaults),
+      pageOrders([existing], orderListDefaults),
+    )
     function Wrapper({ children }: PropsWithChildren) {
       return <QueryClientProvider client={client}>{children}</QueryClientProvider>
     }
@@ -170,7 +177,8 @@ describe('order mutation cache reconciliation', () => {
       await waitFor(() => {
         expect(result.current.orders.isError).toBe(true)
       })
-      expect(result.current.orders.data).toEqual([updated])
+      expect(result.current.orders.data?.items).toEqual([existing])
+      expect(client.getQueryData(orderKeys.detail(existing.id))).toEqual(updated)
       expect(result.current.update.isSuccess).toBe(true)
     } finally {
       cleanup()

@@ -11,6 +11,32 @@ async function createProject(page: Page, name: string, description = '') {
   await expect(page.getByRole('button', { name: name.trim(), exact: true })).toBeVisible()
 }
 
+test('explains session-only demo storage while keeping project edits usable', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Storage availability is viewport independent.')
+  await page.addInitScript(() => {
+    const original = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key === 'orbit.demo.projects.v1')
+        throw new DOMException('Quota exceeded', 'QuotaExceededError')
+      original.call(this, key, value)
+    }
+  })
+  await page.goto('/projects')
+  const notice = page
+    .getByRole('status')
+    .filter({ hasText: 'Some demo changes are kept only in this tab' })
+  await expect(notice).toBeVisible()
+  await createProject(page, 'Session-only project')
+  await expect(notice).toBeVisible()
+  await page.reload()
+  await expect(notice).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Session-only project', exact: true })).toHaveCount(
+    0,
+  )
+})
+
 test('validates, creates, edits and deletes a project with persistence across reloads', async ({
   page,
 }) => {
