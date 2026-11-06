@@ -6,7 +6,7 @@ import {
   useTranslation,
 } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import {
@@ -261,11 +261,13 @@ export function OrdersList({
                                 </TableCell>
                                 <TableCell>
                                   <HStack className="min-w-0 gap-3">
-                                    <Avatar className="size-8 shrink-0">
-                                      <AvatarFallback className="text-xs font-medium">
-                                        {order.customer.initials}
-                                      </AvatarFallback>
-                                    </Avatar>
+                                    <ProfileAvatar
+                                      name={order.customer.name}
+                                      src={order.customer.avatarUrl}
+                                      initials={order.customer.initials}
+                                      className="size-8 shrink-0"
+                                      fallbackClassName="text-xs font-medium"
+                                    />
                                     <VStack align="stretch" className="min-w-0 flex-1">
                                       <p
                                         className="truncate font-medium"

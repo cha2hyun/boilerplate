@@ -79,6 +79,42 @@ const otherElementVariants = new Set([
   'backdrop',
 ])
 const pageHeaderProps = new Set(['title', 'description', 'badgeLabel', 'actions', 'key'])
+const headerActionDirectory = 'widgets/app-shell/ui/header-actions/'
+const headerActionModule = `${headerActionDirectory}header-action-button`
+const headerActionStyleProps = new Set(['variant', 'size', 'className', 'style'])
+
+function importsRuntimeValue(node) {
+  if (ts.isImportTypeNode(node) || node.isTypeOnly) return false
+  if (ts.isImportDeclaration(node)) {
+    const clause = node.importClause
+    if (!clause || clause.isTypeOnly) return false
+    const bindings = clause.namedBindings
+    return Boolean(
+      clause.name ||
+      (bindings &&
+        (ts.isNamespaceImport(bindings) || bindings.elements.some((item) => !item.isTypeOnly))),
+    )
+  }
+  if (ts.isExportDeclaration(node) && node.exportClause && ts.isNamedExports(node.exportClause)) {
+    return node.exportClause.elements.some((item) => !item.isTypeOnly)
+  }
+  return true
+}
+
+// A header consumer can spread known data/ARIA props. An opaque spread could also set a visual prop.
+function knownHeaderSpread(node, values, seen = new Set()) {
+  const object = values.resolve(node)
+  if (!object || !ts.isObjectLiteralExpression(object) || seen.has(object)) return false
+  const next = new Set(seen).add(object)
+  return object.properties.every((property) => {
+    if (ts.isSpreadAssignment(property)) return knownHeaderSpread(property.expression, values, next)
+    if (!ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property))
+      return false
+    if (!ts.isComputedPropertyName(property.name)) return true
+    const key = values.resolve(property.name.expression)
+    return key && (ts.isStringLiteralLike(key) || ts.isNumericLiteral(key))
+  })
+}
 
 // Follow values that can reach className, rather than arbitrary strings in conditions or callbacks.
 function classStrings(node, values, seen = new Set()) {
@@ -320,6 +356,8 @@ export function checkFile(filename, contents) {
   const isUi = file.startsWith('shared/ui/')
   const isTest = testFilePattern.test(file)
   const isPage = sourceLayer === 'pages' && !isTest
+  const isHeaderAction = !isTest && file.startsWith(headerActionDirectory)
+  const isHeaderActionOwner = file === `${headerActionModule}.tsx`
   const values = staticUiValues(source)
   const importedComponent = (node, module, name) => {
     const imported = values.imported(node)
@@ -381,6 +419,7 @@ export function checkFile(filename, contents) {
     }
   }
   let usesPageHeader = false
+  let usesOwnerButton = false
   const checkedHeaderAncestors = new Set()
   if (sourceLevel < 0 && !sourceEntrypoints.has(file)) {
     report('unknown-layer', '앱 코드는 app/pages/widgets/features/entities/shared 레이어에 두세요.')
@@ -404,6 +443,18 @@ export function checkFile(filename, contents) {
     }
 
     const target = internalPath(specifier, file)
+    if (
+      isHeaderAction &&
+      !isHeaderActionOwner &&
+      target?.replace(/\.[cm]?[jt]sx?$/, '') === 'shared/ui/button' &&
+      importsRuntimeValue(node)
+    ) {
+      report(
+        'header-action-owner',
+        '헤더 액션은 shared/ui/button 대신 HeaderActionButton을 사용하세요.',
+        line,
+      )
+    }
     if (stylesheetPattern.test(specifier) && target !== 'app/styles/globals.css') {
       report('stylesheet-import', '스타일시트 import는 app/styles/globals.css만 허용합니다.', line)
     }
@@ -456,6 +507,83 @@ export function checkFile(filename, contents) {
         line,
       )
     }
+  }
+
+  function inspectHeaderAction(node, tags) {
+    if (!isHeaderAction) return
+    if (isHeaderActionOwner && importedComponent(node.tagName, 'shared/ui/button', 'Button')) {
+      usesOwnerButton = true
+      // Unknown forwarded props must come first so they cannot overwrite the two fixed props.
+      const attributes = node.attributes.properties
+      const explicit = attributes.slice(attributes.findLastIndex(ts.isJsxSpreadAttribute) + 1)
+      for (const [name, expected] of [
+        ['variant', 'ghost'],
+        ['size', 'icon-sm'],
+      ]) {
+        const value = jsxAttributeValue(node, name)
+        if (
+          !explicit.some(
+            (attribute) => ts.isJsxAttribute(attribute) && attribute.name.getText(source) === name,
+          ) ||
+          !value ||
+          !ts.isStringLiteralLike(value) ||
+          value.text !== expected
+        ) {
+          report(
+            'header-action-contract',
+            `헤더 Button의 ${name}="${expected}"를 전달 props 뒤에 고정하세요.`,
+            location(source, node),
+          )
+        }
+      }
+    }
+    if (importedComponent(node.tagName, headerActionModule, 'HeaderActionButton')) {
+      for (const attribute of values.attributes(node)) {
+        if (headerActionStyleProps.has(attribute.name)) {
+          report(
+            'header-action-props',
+            `HeaderActionButton의 ${attribute.name}은 호출부에서 덮어쓸 수 없습니다.`,
+            location(source, attribute.node),
+          )
+        }
+      }
+      for (const attribute of node.attributes.properties) {
+        if (
+          ts.isJsxSpreadAttribute(attribute) &&
+          !knownHeaderSpread(attribute.expression, values)
+        ) {
+          report(
+            'header-action-props',
+            '헤더 액션에는 검증 가능한 정적 spread 또는 명시적 동작·접근성 props를 사용하세요.',
+            location(source, attribute),
+          )
+        }
+      }
+    }
+    const nativeLink = tags.includes('a') && jsxAttributeValue(node, 'href')
+    const clickableElement =
+      tags.some((name) => /^[a-z]/.test(name) && !nativeControls.has(name)) &&
+      values.attributes(node).some(({ name }) => name === 'onClick')
+    if (!nativeLink && !clickableElement && !tags.includes('summary')) return
+    // A real link can be the asChild content of a toolbar button or a dropdown menu item.
+    const element = ts.isJsxOpeningElement(node) ? node.parent : node
+    const parent = element.parent
+    if (nativeLink && ts.isJsxElement(parent)) {
+      const wrapper = parent.openingElement
+      const slot = values.attributes(wrapper).find(({ name }) => name === 'asChild')
+      if (
+        slot &&
+        (!slot.value || values.resolve(slot.value)?.kind === ts.SyntaxKind.TrueKeyword) &&
+        (importedComponent(wrapper.tagName, headerActionModule, 'HeaderActionButton') ||
+          importedComponent(wrapper.tagName, 'shared/ui/dropdown-menu', 'DropdownMenuItem'))
+      )
+        return
+    }
+    report(
+      'header-action-control',
+      '직접 만든 헤더 컨트롤 대신 HeaderActionButton 또는 기존 메뉴 항목을 사용하세요.',
+      location(source, node),
+    )
   }
 
   function visit(node) {
@@ -557,6 +685,7 @@ export function checkFile(filename, contents) {
     if (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) {
       const tag = node.tagName.getText(source)
       const tags = /^[a-z][\w-]*$/.test(tag) ? [tag] : classStrings(node.tagName, values)
+      inspectHeaderAction(node, tags)
       const pageHeader = importedComponent(node.tagName, 'shared/ui/page-header', 'PageHeader')
       if (isPage) {
         const role = jsxAttributeValue(node, 'role')
@@ -723,6 +852,12 @@ export function checkFile(filename, contents) {
   }
 
   visit(source)
+  if (isHeaderActionOwner && !usesOwnerButton) {
+    report(
+      'header-action-contract',
+      'HeaderActionButton은 shared/ui/button의 실제 Button을 렌더링해야 합니다.',
+    )
+  }
   if (isPage && /(?:^|\/)[^/]+-page\.tsx$/.test(file) && !usesPageHeader) {
     report(
       'page-header-required',

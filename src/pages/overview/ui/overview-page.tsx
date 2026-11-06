@@ -24,7 +24,6 @@ import type { SearchChange } from '@/shared/lib/search-params'
 import type { OverviewSearch } from '../model/search'
 import { env } from '@/shared/config'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import {
@@ -217,11 +216,13 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
                   const Icon = activityIcons[activity.type]
                   return (
                     <HStack key={activity.id} className="min-h-18 shrink-0 gap-3">
-                      <Avatar className="size-9 shrink-0 rounded-lg">
-                        <AvatarFallback className="rounded-lg">
-                          <Icon className="size-4 text-muted-foreground" />
-                        </AvatarFallback>
-                      </Avatar>
+                      <HStack
+                        justify="center"
+                        className="size-9 shrink-0 rounded-lg bg-muted"
+                        aria-hidden="true"
+                      >
+                        <Icon className="size-4 text-muted-foreground" />
+                      </HStack>
                       <VStack align="stretch" className="min-w-0 flex-1 gap-1">
                         <p className="text-sm leading-5 font-medium wrap-break-word">
                           {env.dataSource === 'demo' && activity.id in demoActivity

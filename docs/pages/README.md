@@ -2,17 +2,20 @@
 
 페이지의 목적, 정보 순서, 조작 영향과 수용 기준은 이 폴더의 **페이지당 한 문서**에서 관리합니다. 구현 전 해당 명세를 갱신하고, 구현 후 실제 동작·소유 코드·검증 근거와 맞춥니다. 여러 페이지에 걸친 실행 순서는 [계획](../plans/_template.md)에 남기되 페이지 계약을 복제하지 않습니다.
 
-| 경로           | 명세                          | 핵심 역할                             |
-| -------------- | ----------------------------- | ------------------------------------- |
-| `/`            | [Overview](overview.md)       | 워크스페이스 요약과 프로젝트 진입     |
-| `/projects`    | [Projects](projects.md)       | 프로젝트 생성·조회·편집·삭제·내보내기 |
-| `/analytics`   | [Analytics](analytics.md)     | 같은 기간의 방문 지표 비교            |
-| `/orders`      | [Orders](orders.md)           | 주문 생성·조회·편집·삭제              |
-| `/customers`   | [Customers](customers.md)     | 고객 생성·조회·편집·삭제              |
-| `/inbox`       | [Inbox](inbox.md)             | 메모리 샘플 메시지 분류와 읽기        |
-| `/settings`    | [Settings](settings.md)       | 브라우저 환경 설정                    |
-| `/components`  | [Components](components.md)   | UI 구성 요소 체험                     |
-| `/foundations` | [Foundations](foundations.md) | 디자인 원칙과 표시 방식 체험          |
+| 경로           | 명세                          | 핵심 역할                               |
+| -------------- | ----------------------------- | --------------------------------------- |
+| `/`            | [Overview](overview.md)       | 워크스페이스 요약과 프로젝트 진입       |
+| `/projects`    | [Projects](projects.md)       | 프로젝트 생성·조회·편집·삭제·내보내기   |
+| `/analytics`   | [Analytics](analytics.md)     | 같은 기간의 방문 지표 비교              |
+| `/orders`      | [Orders](orders.md)           | 주문 생성·조회·편집·삭제                |
+| `/login`       | [Login](login.md)             | 공개 샘플 계정으로 탭 세션 시작         |
+| `/users`       | [Users](users.md)             | 워크스페이스 구성원·초대·역할·상태 관리 |
+| `/account`     | [Account](account.md)         | 로그인한 샘플 사용자의 프로필 조회      |
+| `/customers`   | [Customers](customers.md)     | 고객 생성·조회·편집·삭제                |
+| `/inbox`       | [Inbox](inbox.md)             | 메모리 샘플 메시지 분류와 읽기          |
+| `/settings`    | [Settings](settings.md)       | 브라우저 환경 설정                      |
+| `/components`  | [Components](components.md)   | UI 구성 요소 체험                       |
+| `/foundations` | [Foundations](foundations.md) | 디자인 원칙과 표시 방식 체험            |
 
 ## 작성과 변경
 

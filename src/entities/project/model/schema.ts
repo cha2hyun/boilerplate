@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { avatarUrlSchema } from '@/shared/lib/avatar-url'
 
 export const projectStatusSchema = z.enum(['active', 'paused', 'archived'])
 
@@ -18,6 +19,7 @@ export const projectSchema = projectInputSchema.extend({
     name: z.string().min(1),
     email: z.email(),
     initials: z.string().min(1).max(3),
+    avatarUrl: avatarUrlSchema,
   }),
   progress: z.number().min(0).max(100),
   updatedAt: z.iso.datetime({ offset: true }),

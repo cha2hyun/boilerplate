@@ -12,9 +12,9 @@ Router는 전체 라우트의 `validateSearch`를 시작 시 준비하고, 페�
 
 ## 결정
 
-기존 root `index.ts` 공개 원칙을 유지하면서 아래 여덟 파일만 조회 계약의 추가 공개 진입점으로 허용한다.
+기존 root `index.ts` 공개 원칙을 유지하면서 아래 아홉 파일만 조회 계약의 추가 공개 진입점으로 허용한다.
 
-- `pages/{overview,projects,analytics,orders,customers,inbox}/search.ts`
+- `pages/{overview,projects,analytics,orders,customers,inbox,users}/search.ts`
 - `widgets/{project-table,revenue-chart}/search.ts`
 
 `search.ts`는 기존 스키마·기본값·출력 타입의 named re-export만 한다. 스키마의 소유 모델, URL 값, 복원·탐색 동작은 바꾸지 않는다. 기존 `index.ts`도 같은 계약을 재공개하여 기존 소비자 API를 유지한다. 여섯 라우트는 조회 계약만 `search.ts`로 가져오고 Page는 계속 `index.ts`에서 가져온다. Overview의 조회 모델과 Projects의 공개 조회 계약도 위젯 `search.ts`를 참조한다.

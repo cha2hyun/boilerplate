@@ -32,14 +32,17 @@ test('emits route-specific HTML from the built shell without changing scripts or
   )
   assert.deepEqual(emitted.map(({ fileName }) => fileName).sort(), [
     '404.html',
+    'account/index.html',
     'analytics/index.html',
     'components/index.html',
     'customers/index.html',
     'foundations/index.html',
     'inbox/index.html',
+    'login/index.html',
     'orders/index.html',
     'projects/index.html',
     'settings/index.html',
+    'users/index.html',
   ])
   for (const asset of emitted) {
     assert.equal(asset.source.split('<body>')[1], index.split('<body>')[1])

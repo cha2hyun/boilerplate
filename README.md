@@ -1,14 +1,18 @@
 # Blueprint
 
-React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러플레이트입니다. 대시보드, 프로젝트 관리, 분석, 주문, 고객, 받은편지함, 설정, Foundations 화면과 함께 FSD 구조, 서버/클라이언트 상태 분리, 디자인 토큰, 테스트, CI, AI 작업 가드레일을 제공합니다.
+React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러플레이트입니다. 대시보드, 프로젝트 관리, 분석, 주문, 고객, 샘플 로그인, 워크스페이스 사용자·내 계정, 받은편지함, 설정, Foundations 화면과 함께 FSD 구조, 서버/클라이언트 상태 분리, 디자인 토큰, 테스트, CI, AI 작업 가드레일을 제공합니다.
 
 기본 실행은 **브라우저에 저장되는 데모 모드**입니다. 대시보드 수치는 샘플이며 실제 계정, 결제, 인증, 서버 권한 검사는 포함하지 않습니다. 운영 연결은 [API 계약](docs/api-contract.md)과 [운영 전환 체크리스트](docs/production-readiness.md)를 기준으로 진행하세요.
 
-Overview·Analytics·Orders·Customers는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 300ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [숫자 표시 규칙](docs/number-formatting.md)·[로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
+상단 **로그인**을 열면 이메일과 비밀번호에 편집 가능한 데모 값이 미리 입력되어 있습니다. **로그인**과 **Microsoft로 로그인**은 같은 출처의 데모 API에 요청하며, 성공하면 현재 탭의 세션이 열립니다. 폼 아래 **데모 응답**에서 다음 요청을 느리게 하거나 서버 오류를 발생시켜 대기와 재시도를 확인할 수 있습니다. 잘못된 비밀번호로는 계정 오류도 재현할 수 있습니다. [로그인](docs/pages/login.md) · [내 계정](docs/pages/account.md)
+
+[사용자](docs/pages/users.md)에서는 구매 고객과 별도로 워크스페이스 구성원의 역할·상태·초대 대기를 관리합니다.
+
+Overview·Analytics·Orders·Customers·Users는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 300ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [숫자 표시 규칙](docs/number-formatting.md)·[로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
 
 ## 미리보기
 
-2026-11-06에 커밋 `b8fe73e`의 production 데모 번들에서 캡처했습니다. 기능·탐색·정보 구조가 바뀌면 해당 커밋의 번들에서 소개 이미지도 갱신합니다. Overview 미리보기는 밝은 테마와 어두운 테마에 맞춰 표시됩니다. [캡처에 사용한 Actions 실행](https://github.com/cha2hyun/boilerplate/actions/runs/42138337131)
+2026-11-06에 커밋 `1ee7ddf`의 production 데모 번들에서 캡처했습니다. 기능·탐색·정보 구조가 바뀌면 해당 커밋의 번들에서 소개 이미지도 갱신합니다. Overview 미리보기는 밝은 테마와 어두운 테마에 맞춰 표시됩니다. [캡처에 사용한 Actions 실행](https://github.com/cha2hyun/boilerplate/actions/runs/42149542188)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png" />
@@ -80,15 +84,17 @@ VITE_API_BASE_URL=/api
 
 ## 샘플 페이지
 
-| 메뉴                  | 제공하는 흐름                                                     |
-| --------------------- | ----------------------------------------------------------------- |
-| Overview / Projects   | 기간별 요약, 프로젝트 생성·수정·삭제, 검색·필터                   |
-| Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지                |
-| Orders                | 서버 조회 계약의 검색·정렬·페이지, 별도 상세·요약, 생성·수정·삭제 |
-| Customers             | 고객 생성·수정·삭제, 상태 필터·검색·정렬, 고객 상세 Sheet         |
-| Inbox                 | 검색, 읽음/읽지 않음, 보관·복원, 메시지 상세                      |
-| Components / Settings | shadcn 구성 요소·토큰·폰트, 테마와 워크스페이스 설정              |
-| Foundations           | 디자인 규칙, HStack/VStack 조합, 문구·국제화·피드백 예시          |
+| 메뉴                  | 제공하는 흐름                                                            |
+| --------------------- | ------------------------------------------------------------------------ |
+| Overview / Projects   | 기간별 요약, 프로젝트 생성·수정·삭제, 검색·필터                          |
+| Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지                       |
+| Orders                | 서버 조회 계약의 검색·정렬·페이지, 별도 상세·요약, 생성·수정·삭제        |
+| Customers             | 고객 생성·수정·삭제, 상태 필터·검색·정렬, 고객 상세 Sheet                |
+| Login / My account    | 데모 값 제출·Microsoft 데모 로그인, 탭 세션 복원·종료, 내 역할·상태 확인 |
+| Users                 | 내부 구성원 조회·검색·상세, 초대 대기 생성·역할/상태 수정                |
+| Inbox                 | 검색, 읽음/읽지 않음, 보관·복원, 메시지 상세                             |
+| Components / Settings | shadcn 구성 요소·토큰·폰트, 테마와 워크스페이스 설정                     |
+| Foundations           | 디자인 규칙, HStack/VStack 조합, 문구·국제화·피드백 예시                 |
 
 주문/고객은 HTTP 목업을 통해 생성·수정·삭제하고 브라우저 저장소에 보존합니다. 저장소를 사용할 수 없으면 현재 탭의 메모리에서만 유지되며 셸에서 새로고침·종료 시 사라질 수 있음을 안내합니다. 고객 구매 이력과 주문의 고객 정보는 독립된 샘플이며 서로 연쇄 변경하지 않습니다. 받은편지함 변경은 페이지를 떠나면 초기화됩니다. 실제 메일 발송이나 결제 기능은 없습니다. 모바일(768px 미만)은 사이드바 drawer, 태블릿(768–1279px)은 기본 아이콘 탐색, PC(1280px 이상)는 펼친 사이드바를 사용합니다. 접힌 로고·메뉴는 같은 중심선을 사용합니다. 설정은 Resources 메뉴에서 엽니다. 저장한 워크스페이스 이름은 첫 탐색 그룹 제목에 즉시 반영되며 하단 프로필·워크스페이스 전환 블록은 표시하지 않습니다.
 

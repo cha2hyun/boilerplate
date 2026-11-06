@@ -3,6 +3,119 @@ import test from 'node:test'
 import { checkFile } from './check-architecture.mjs'
 
 const rules = (file, source) => checkFile(file, source).map((issue) => issue.rule)
+const headerActions = 'widgets/app-shell/ui/header-actions/'
+const headerOwner = `${headerActions}header-action-button.tsx`
+
+test('only the canonical header action owner can import or re-export the shadcn Button at runtime', () => {
+  for (const source of [
+    `import { Button as Styled } from '@/shared/ui/button'; export const New = () => <Styled variant="outline" />`,
+    `import * as Controls from '../../../../shared/ui/button'; const Local = Controls.Button; export const New = () => <Local />`,
+    `export { Button as Another } from '@/shared/ui/button.tsx'`,
+    `const controls = import('@/shared/ui/button')`,
+  ]) {
+    assert.deepEqual(rules(`${headerActions}new-action.tsx`, source), ['header-action-owner'])
+  }
+  const nonHeader = `import { Button as Styled } from '@/shared/ui/button'; export const Tool = () => <Styled variant="outline" />`
+  assert.deepEqual(rules(`${headerActions}future/header-action-button.tsx`, nonHeader), [
+    'header-action-owner',
+  ])
+  assert.deepEqual(rules('widgets/app-shell/ui/account-form.tsx', nonHeader), [])
+  assert.deepEqual(
+    rules(`${headerActions}types.ts`, `import type { Button } from '@/shared/ui/button'`),
+    [],
+  )
+})
+
+test('checks the real owner Button and fixes ghost/icon-sm after forwarded props', () => {
+  const view = (props) => `import * as Controls from '@/shared/ui/button'
+    const Action = Controls.Button; const appearance = 'ghost'
+    export const HeaderActionButton = (props) => <Action ${props} />`
+  assert.deepEqual(rules(headerOwner, view('{...props} variant={appearance} size="icon-sm"')), [])
+  for (const props of [
+    '{...props} variant="outline" size="icon-sm"',
+    '{...props} variant="ghost" size="icon"',
+    'variant="ghost" {...props} size="icon-sm"',
+    '{...props} size="icon-sm"',
+  ]) {
+    assert.deepEqual(rules(headerOwner, view(props)), ['header-action-contract'])
+  }
+  assert.deepEqual(
+    rules(
+      headerOwner,
+      `const Button = () => null; export const HeaderActionButton = () => <Button variant="ghost" size="icon-sm" />`,
+    ),
+    ['header-action-contract'],
+  )
+})
+
+test('header consumers can pass link, search, access and event props but cannot override visual props', () => {
+  const file = `${headerActions}new-action.tsx`
+  const imports = `import * as Header from './header-action-button'
+    import { DropdownMenuItem } from '@/shared/ui/dropdown-menu'
+    const Trigger = Header.HeaderActionButton`
+  assert.deepEqual(
+    rules(
+      file,
+      `${imports}
+    const attrs = { 'aria-label': 'Search', onClick: openSearch }
+    export const Search = () => <Trigger {...attrs} desktopSearchLabel="Search" />
+    export const Login = () => <Trigger asChild><a href="/login">Sign in</a></Trigger>
+    export const Item = () => <DropdownMenuItem asChild><a href="/account">Account</a></DropdownMenuItem>`,
+    ),
+    [],
+  )
+  for (const key of ['variant', 'size', 'className', 'style']) {
+    const result = rules(
+      file,
+      `${imports}
+      const attrs = { ${key}: 'override' }; export const New = () => <Trigger {...{ ...attrs }} />`,
+    )
+    assert.ok(result.includes('header-action-props'), key)
+  }
+  assert.deepEqual(
+    rules(
+      file,
+      `${imports}; export const New = (props) => <Trigger {...{ ...props, 'aria-label': 'New' }} />`,
+    ),
+    ['header-action-props'],
+  )
+  assert.deepEqual(
+    rules(file, `${imports}; export const New = ({ Trigger }) => <Trigger size="lg" />`),
+    [],
+  )
+})
+
+test('rejects native header action controls, including aliases, without changing ordinary links elsewhere', () => {
+  const file = `${headerActions}future-menu.tsx`
+  assert.deepEqual(rules(file, `const Native = 'button'; export const Bad = () => <Native />`), [
+    'shadcn-control',
+  ])
+  assert.deepEqual(rules(file, `export const Bad = () => <span role="button" />`), [
+    'shadcn-control',
+  ])
+  for (const tag of [
+    '<a href="/login">Login</a>',
+    '<div onClick={open} />',
+    '<summary>Menu</summary>',
+  ]) {
+    assert.deepEqual(rules(file, `export const New = () => ${tag}`), ['header-action-control'])
+  }
+  assert.deepEqual(
+    rules(
+      file,
+      `import { HeaderActionButton } from './header-action-button'
+      export const New = () => <HeaderActionButton asChild={false}><a href="/login">Login</a></HeaderActionButton>`,
+    ),
+    ['header-action-control'],
+  )
+  assert.deepEqual(
+    rules(
+      'widgets/app-shell/ui/navigation.tsx',
+      `export const Link = () => <a href="/login">Login</a>`,
+    ),
+    [],
+  )
+})
 
 test('requires the canonical number formatter while preserving date APIs and test fixtures', () => {
   const independentFormatters = `

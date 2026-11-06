@@ -3,7 +3,9 @@ import { ArrowUpRight, Bell, Check, LoaderCircle, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { AvatarGroupCount } from '@/shared/ui/avatar'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
+import { currentDemoUser } from '@/entities/workspace-user'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -174,15 +176,24 @@ export function ComponentsPage() {
                 </HStack>
                 <HStack wrap className="gap-3">
                   <HStack className="-space-x-2">
-                    {['JD', 'AK', 'ML', 3].map((name) => (
-                      <Avatar key={name} className="border-2 border-background">
-                        <AvatarFallback className="text-xs">
-                          {typeof name === 'number'
-                            ? formatNumber(name, { signDisplay: 'always' })
-                            : name}
-                        </AvatarFallback>
-                      </Avatar>
+                    <ProfileAvatar
+                      name={currentDemoUser.name}
+                      src={currentDemoUser.avatarUrl}
+                      className="border-2 border-background"
+                      fallbackClassName="text-xs"
+                    />
+                    {['AK', 'ML'].map((initials) => (
+                      <ProfileAvatar
+                        key={initials}
+                        name=""
+                        initials={initials}
+                        className="border-2 border-background"
+                        fallbackClassName="text-xs"
+                      />
                     ))}
+                    <AvatarGroupCount className="shrink-0 border-2 border-background text-xs ring-0">
+                      {formatNumber(3, { signDisplay: 'always' })}
+                    </AvatarGroupCount>
                   </HStack>
                   <span className="text-sm text-muted-foreground">{t('components.together')}</span>
                 </HStack>

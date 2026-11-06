@@ -1,7 +1,7 @@
 import { customerStatuses, type SampleCustomer } from '@/entities/customer'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
 import {
@@ -204,11 +204,13 @@ export function CustomersList({
                         <TableRow key={customer.id} className="group/customer-row h-18">
                           <TableCell className="sticky left-0 z-10 border-r bg-card py-2 pl-5 group-hover/customer-row:bg-muted">
                             <HStack className="min-w-0 gap-3">
-                              <Avatar className="hidden size-8 shrink-0 md:flex">
-                                <AvatarFallback className="text-xs font-medium">
-                                  {customer.initials}
-                                </AvatarFallback>
-                              </Avatar>
+                              <ProfileAvatar
+                                name={customer.name}
+                                src={customer.avatarUrl}
+                                initials={customer.initials}
+                                className="hidden size-8 shrink-0 md:flex"
+                                fallbackClassName="text-xs font-medium"
+                              />
                               <VStack align="stretch" className="min-w-0 flex-1">
                                 <Button
                                   variant="link"

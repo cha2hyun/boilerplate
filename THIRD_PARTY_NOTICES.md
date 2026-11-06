@@ -47,3 +47,7 @@ The default font uses the unmodified static dynamic subsets from the official `p
 - Source: [orioncactus/pretendard v1.3.9](https://github.com/orioncactus/pretendard/tree/v1.3.9)
 - Copyright (c) 2021, Kil Hyung-jin, with Reserved Font Name Pretendard.
 - License: SIL Open Font License 1.1. The unmodified copyright notice and full license are included in [public/fonts/pretendard/OFL.txt](public/fonts/pretendard/OFL.txt), which is copied into the deployed application at `/fonts/pretendard/OFL.txt`.
+
+## Microsoft sign-in symbol
+
+The [local symbol](src/pages/login/assets/microsoft-symbol.svg) comes from [Microsoft’s sign-in branding assets](https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-branding-in-apps). It identifies the local Microsoft sign-in demo.

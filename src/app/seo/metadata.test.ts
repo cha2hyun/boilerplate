@@ -11,6 +11,9 @@ describe('page metadata', () => {
     for (const path of [
       '/',
       '/projects',
+      '/login',
+      '/users',
+      '/account',
       '/analytics',
       '/orders',
       '/customers',

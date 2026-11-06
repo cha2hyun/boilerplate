@@ -3,6 +3,7 @@ export interface SampleMessage {
   sender: string
   email: string
   initials: string
+  avatarUrl?: string
   subject: string
   preview: string
   body: string[]

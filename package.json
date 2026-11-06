@@ -27,7 +27,7 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:core": "playwright test e2e/workspace.spec.ts e2e/projects.spec.ts e2e/query-cache.spec.ts e2e/localization.spec.ts e2e/design-visual.spec.ts e2e/accessibility.spec.ts e2e/unsaved-changes.spec.ts e2e/app-recovery.spec.ts e2e/browser-compatibility.spec.ts",
-    "test:e2e:samples": "playwright test e2e/commerce.spec.ts e2e/analytics-inbox.spec.ts",
+    "test:e2e:samples": "playwright test e2e/commerce.spec.ts e2e/analytics-inbox.spec.ts e2e/workspace-users.spec.ts",
     "test:e2e:workspace": "playwright test e2e/workspace.spec.ts",
     "test:e2e:projects": "playwright test e2e/projects.spec.ts",
     "test:e2e:cache": "playwright test e2e/query-cache.spec.ts",

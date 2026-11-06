@@ -11,8 +11,18 @@ const entrySource = `export { schema, type Search } from './model/search'`
 const graph = (files) => checkSearchRuntimeGraph(new Map(Object.entries(files)))
 const rules = (file, source) => checkFile(file, source).map((issue) => issue.rule)
 
-test('only the six page and two widget search entrypoints extend the public API', () => {
-  assert.equal(searchEntrypoints.size, 8)
+test('only the approved page and widget search entrypoints extend the public API', () => {
+  assert.deepEqual([...searchEntrypoints].sort(), [
+    'pages/analytics/search.ts',
+    'pages/customers/search.ts',
+    'pages/inbox/search.ts',
+    'pages/orders/search.ts',
+    'pages/overview/search.ts',
+    'pages/projects/search.ts',
+    'pages/users/search.ts',
+    'widgets/project-table/search.ts',
+    'widgets/revenue-chart/search.ts',
+  ])
   for (const file of searchEntrypoints) {
     const target = file.replace(/\.ts$/, '')
     assert.deepEqual(rules('app/routes/index.tsx', `import { schema } from '@/${target}'`), [])

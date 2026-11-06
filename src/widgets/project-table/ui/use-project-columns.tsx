@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import type { Project } from '@/entities/project'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Checkbox } from '@/shared/ui/checkbox'
 import {
@@ -135,9 +135,13 @@ export function useProjectColumns({
         header: t('table.owner'),
         cell: ({ row }) => (
           <HStack className="gap-2.5">
-            <Avatar className="size-7">
-              <AvatarFallback className="text-xs">{row.original.owner.initials}</AvatarFallback>
-            </Avatar>
+            <ProfileAvatar
+              name={row.original.owner.name}
+              src={row.original.owner.avatarUrl}
+              initials={row.original.owner.initials}
+              className="size-7"
+              fallbackClassName="text-xs"
+            />
             <span className="text-sm whitespace-nowrap">{row.original.owner.name}</span>
           </HStack>
         ),

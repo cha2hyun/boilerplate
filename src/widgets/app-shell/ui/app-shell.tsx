@@ -2,12 +2,12 @@ import { normalizePagePath } from '@/shared/lib/normalize-page-path'
 import { product } from '@/shared/config/product'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
-import { Boxes, ExternalLink, Globe, Moon, Search, Sun } from 'lucide-react'
-import { useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
+import { Boxes, ExternalLink, Moon } from 'lucide-react'
+import { useTranslation } from '@/shared/lib/i18n'
 import { usePreferences } from '@/features/workspace-preferences'
 import { useIsDesktop } from '@/shared/hooks/use-desktop'
 import { navigation, navigationGroups } from '../model/navigation'
-import { CurrencyMenu } from './currency-menu'
+import { HeaderActions } from './header-actions/header-actions'
 import { DemoStorageNotice } from './demo-storage-notice'
 import { useTheme } from '@/shared/lib/theme'
 import { cn } from '@/shared/lib/utils'
@@ -28,17 +28,7 @@ import {
   CommandList,
   CommandShortcut,
 } from '@/shared/ui/command'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
 import { Separator } from '@/shared/ui/separator'
-import { Kbd } from '@/shared/ui/kbd'
 import {
   Sidebar,
   SidebarContent,
@@ -56,7 +46,6 @@ import {
   useSidebar,
 } from '@/shared/ui/sidebar'
 import { HStack } from '@/shared/ui/stack'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { TextLink } from '@/shared/ui/text-link'
 
 function useNavigationPath() {
@@ -165,8 +154,6 @@ interface AppShellProps {
 }
 export function AppShell({ children }: AppShellProps) {
   const { t } = useTranslation('workspace')
-  const locale = useLocalePreferences((state) => state.locale)
-  const setLocale = useLocalePreferences((state) => state.setLocale)
   const [commandOpen, setCommandOpen] = useState(false)
   const commandOpenerRef = useRef<HTMLElement | null>(null)
   const commandNavigatedRef = useRef(false)
@@ -182,7 +169,9 @@ export function AppShell({ children }: AppShellProps) {
   const compact = usePreferences((state) => state.compactMode)
   const pathname = useNavigationPath()
   const currentPage = navigation.find((item) => item.to === pathname)
-  const title = t(currentPage?.labelKey ?? 'shell.notFound')
+  const title = t(
+    pathname === '/account' ? 'account.title' : (currentPage?.labelKey ?? 'shell.notFound'),
+  )
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
@@ -226,81 +215,11 @@ export function AppShell({ children }: AppShellProps) {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
-            <HStack wrap className="ml-auto max-w-full shrink-0 gap-1 md:gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="size-8 gap-2 p-0 text-muted-foreground xl:h-9 xl:w-auto xl:px-3"
-                onClick={() => {
-                  setCommandOpen(true)
-                }}
-                aria-label={t('shell.searchWorkspace')}
-                aria-keyshortcuts="Meta+K Control+K"
-              >
-                <Search className="size-4" aria-hidden="true" />
-                <span className="hidden xl:inline">{t('shell.search')}</span>
-                <Kbd aria-hidden="true" className="hidden xl:inline-flex">
-                  ⌘ K
-                </Kbd>
-              </Button>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8"
-                    aria-label={t(
-                      resolvedTheme === 'dark' ? 'shell.lightTheme' : 'shell.darkTheme',
-                    )}
-                    onClick={() => {
-                      setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
-                    }}
-                  >
-                    {resolvedTheme === 'dark' ? (
-                      <Sun className="size-4" />
-                    ) : (
-                      <Moon className="size-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>{t('shell.toggleTheme')}</TooltipContent>
-              </Tooltip>
-              <DropdownMenu>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        aria-label={t('shell.language')}
-                      >
-                        <Globe className="size-4" aria-hidden="true" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                  </TooltipTrigger>
-                  <TooltipContent>{t('shell.language')}</TooltipContent>
-                </Tooltip>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{t('shell.language')}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuRadioGroup
-                    value={locale}
-                    onValueChange={(value) => {
-                      if (value === 'ko-KR' || value === 'en-US') setLocale(value)
-                    }}
-                  >
-                    <DropdownMenuRadioItem value="ko-KR" lang="ko">
-                      한국어
-                    </DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value="en-US" lang="en">
-                      English
-                    </DropdownMenuRadioItem>
-                  </DropdownMenuRadioGroup>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <CurrencyMenu />
-            </HStack>
+            <HeaderActions
+              onSearch={() => {
+                setCommandOpen(true)
+              }}
+            />
           </HStack>
         </header>
         <div

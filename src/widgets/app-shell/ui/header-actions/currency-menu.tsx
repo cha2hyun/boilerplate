@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Banknote, LoaderCircle, RefreshCw } from 'lucide-react'
 import { useExchangeRate } from '@/entities/exchange-rate'
 import { useFormatters, useLocalePreferences, useTranslation } from '@/shared/lib/i18n'
-import { Button } from '@/shared/ui/button'
+import { HeaderActionButton } from './header-action-button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,9 +35,9 @@ export function CurrencyMenu() {
       <Tooltip open={tooltipOpen && !menuOpen} onOpenChange={setTooltipOpen}>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-8" aria-label={t('shell.currency')}>
-              <Banknote className="size-4" aria-hidden="true" />
-            </Button>
+            <HeaderActionButton aria-label={t('shell.currency')}>
+              <Banknote aria-hidden="true" />
+            </HeaderActionButton>
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent>{t('shell.currency')}</TooltipContent>

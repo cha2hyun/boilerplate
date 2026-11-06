@@ -62,7 +62,7 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 공통 fixture는 context에 열린 모든 페이지의 예기치 않은 `pageerror`를 해당 테스트 실패로 처리합니다. 복구 시나리오는 직접 주입한 오류의 정확한 메시지/청크 경로와 최대 횟수만 테스트 안에서 허용합니다. 모든 console 메시지를 오류로 취급하거나 다른 테스트에 예외를 상속하지 않습니다.
 
-외부 요청 fixture는 같은 테스트 context를 공유합니다. 종료 시 `context.unrouteAll({ behavior: 'wait' })`로 진행 중인 응답이 끝난 뒤 interception을 해제합니다. 폰트 파일을 읽는 중에 기본 `unroute`로 마지막 handler를 제거하면 요청이 먼저 계속 처리되어 뒤늦은 `fulfill`과 충돌할 수 있습니다.
+폰트와 환율 fixture는 context를 공유하고, 공통 소유자가 두 fixture 종료 후 한 번만 `context.unrouteAll({ behavior: 'wait' })`를 호출합니다. 폰트는 허용된 패키지 파일을 워커에서 처음 요청할 때 읽고 그 바이트로 즉시 응답합니다. 비동기 파일 읽기와 마지막 요청 해제가 겹쳐 같은 요청에 두 번 응답하는 경합을 피합니다.
 
 | Playwright project | viewport    | 입력/환경                                  |
 | ------------------ | ----------- | ------------------------------------------ |
@@ -136,3 +136,5 @@ Sidebar 공간 전환은 `workspace.spec.ts`의 desktop/tablet 회귀가 실제 
 GitHub는 각 job의 부분 분을 올림하고 실행한 job별 사용량을 합산합니다. 병렬화는 대기 시간을 줄이지만 총 사용 시간을 무료로 만들지는 않습니다. 현재 표준 Linux 2-core 요율 $0.006/분을 단독으로 사용한다면 $12는 약 2,000분에 해당하는 계산이며, 고정 분 쿼터 보장은 아닙니다. [Runner 요율과 반올림](https://docs.github.com/en/billing/reference/actions-runner-pricing).
 
 코드 변경의 changes/gate 두 경량 job은 설치·빌드 없이 분류와 결과만 검증합니다. 브라우저 구성을 작은 job 12개로 분리하지 않은 이유는 checkout/설치/브라우저 준비와 job 단위 반올림 비용을 줄이기 위해서입니다. production bundle은 1일, 실패 진단은 3일만 보관하고 성공 브라우저 보고서는 업로드하지 않습니다. pnpm 캐시는 공유하지만 Chromium 바이너리 캐시나 매 실행 coverage를 추가하지 않습니다. 실제 Actions 시간/실패 빈도를 본 뒤 필요한 범위만 조정하세요.
+
+`samples`의 `e2e/workspace-users.spec.ts`는 샘플 로그인 복귀·새로고침·종료와 사용자 초대 기록·역할 수정을 실제 데모 HTTP 경로에서 확인합니다.

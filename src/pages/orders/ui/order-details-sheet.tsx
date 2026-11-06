@@ -5,7 +5,7 @@ import {
   useLocalePreferences,
   useTranslation,
 } from '@/shared/lib/i18n'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
 import { Separator } from '@/shared/ui/separator'
@@ -176,9 +176,12 @@ export function OrderDetailsSheet({
               <section aria-label={t('orders.orderCustomer')}>
                 <h2 className="font-medium">{t('common.customer')}</h2>
                 <HStack className="gap-3">
-                  <Avatar className="shrink-0">
-                    <AvatarFallback>{order.customer.initials}</AvatarFallback>
-                  </Avatar>
+                  <ProfileAvatar
+                    name={order.customer.name}
+                    src={order.customer.avatarUrl}
+                    initials={order.customer.initials}
+                    className="shrink-0"
+                  />
                   <VStack align="stretch" className="min-w-0">
                     <p className="font-medium wrap-anywhere">{order.customer.name}</p>
                     <p className="wrap-anywhere text-muted-foreground">{order.customer.email}</p>

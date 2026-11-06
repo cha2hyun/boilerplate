@@ -158,7 +158,13 @@ export function createDemoOrderAdapter(options: DemoOptions = {}): OrderAdapter 
         ...validated,
         id,
         history: [...existing.history, ...changes].slice(-orderLimits.history),
-        customer: { ...validated.customer, initials: initials(validated.customer.name) },
+        customer: {
+          ...validated.customer,
+          initials: initials(validated.customer.name),
+          ...(existing.customer.email === validated.customer.email && existing.customer.avatarUrl
+            ? { avatarUrl: existing.customer.avatarUrl }
+            : {}),
+        },
       })
       persist(orders.map((order) => (order.id === id ? updated : order)))
       return updated
