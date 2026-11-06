@@ -191,6 +191,7 @@ const workspace = {
     description: '데모 워크스페이스에 등록된 내 프로필과 역할을 확인하세요.',
     profile: '워크스페이스 프로필',
     menu: '계정 메뉴',
+    workspaceSettings: '워크스페이스 설정',
     signIn: '로그인',
     signOut: '로그아웃',
     directory: '워크스페이스 사용자 보기',

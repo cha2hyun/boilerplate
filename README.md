@@ -4,7 +4,7 @@ React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러
 
 기본 실행은 **브라우저에 저장되는 데모 모드**입니다. 대시보드 수치는 샘플이며 실제 계정, 결제, 인증, 서버 권한 검사는 포함하지 않습니다. 운영 연결은 [API 계약](docs/api-contract.md)과 [운영 전환 체크리스트](docs/production-readiness.md)를 기준으로 진행하세요.
 
-상단 **로그인**을 열면 이메일과 비밀번호에 편집 가능한 데모 값이 미리 입력되어 있습니다. **로그인**과 **Microsoft로 로그인**은 같은 출처의 데모 API에 요청하며, 성공하면 현재 탭의 세션이 열립니다. 폼 아래 **데모 응답**에서 다음 요청을 느리게 하거나 서버 오류를 발생시켜 대기와 재시도를 확인할 수 있습니다. 잘못된 비밀번호로는 계정 오류도 재현할 수 있습니다. [로그인](docs/pages/login.md) · [내 계정](docs/pages/account.md)
+상단 **로그인**을 열면 이메일과 비밀번호에 편집 가능한 데모 값이 미리 입력되어 있습니다. **로그인**과 **Microsoft로 로그인**은 같은 출처의 데모 API에 요청하며, 성공하면 현재 탭에서 홈 대시보드가 열립니다. 보호된 내 계정이나 사용자 목록에서 로그인을 시작한 경우에는 해당 화면으로 돌아갑니다. 폼 아래 **데모 응답**에서 다음 요청을 느리게 하거나 서버 오류를 발생시켜 대기와 재시도를 확인할 수 있습니다. 잘못된 비밀번호로는 계정 오류도 재현할 수 있습니다. [로그인](docs/pages/login.md) · [내 계정](docs/pages/account.md)
 
 [사용자](docs/pages/users.md)에서는 구매 고객과 별도로 워크스페이스 구성원의 역할·상태·초대 대기를 관리합니다.
 
@@ -59,6 +59,43 @@ VITE_API_BASE_URL=/api
 ```
 
 `VITE_DATA_SOURCE=api`로 바꾸면 실제 API 어댑터를 사용합니다. 환경 변수는 Vite 빌드 시 번들에 포함되므로 변경 후 개발 서버 재시작/재빌드가 필요합니다. `VITE_` 변수에는 비밀 값을 넣지 마세요.
+
+## 폴더 구조
+
+주요 폴더와 파일을 역할별로 추리면 다음과 같습니다.
+
+```text
+boilerplate/
+├── src/
+│   ├── main.tsx         # 번역과 데모 목업을 준비하고 React 앱을 시작
+│   ├── app/             # 라우터와 데이터·테마 설정 등 앱 전체를 조립
+│   │   ├── routes/      # URL을 화면에 연결하고 접근 조건과 검색 조건을 처리
+│   │   ├── providers/   # QueryClient, 테마, 언어 등 앱 전반의 설정
+│   │   ├── mocks/       # MSW로 데모 HTTP 요청에 응답
+│   │   └── styles/      # 전역 CSS와 색상·폰트 토큰
+│   ├── pages/           # 로그인, 주문, 설정처럼 URL별 화면을 구성
+│   ├── widgets/         # 헤더·사이드바가 있는 앱 셸, 프로젝트 표, 매출 차트
+│   ├── features/        # 데모 로그인, 주문 편집 등 사용자가 수행하는 동작
+│   ├── entities/        # 주문·고객·사용자 등 도메인별 모델, API, Query 옵션
+│   ├── shared/          # 여러 도메인에서 공통으로 사용하는 코드
+│   │   ├── api/         # HTTP 요청, 응답 검증, 오류 처리
+│   │   ├── config/      # 환경 변수, 제품 이름, 저장소 키
+│   │   ├── hooks/       # 화면 크기 감지, 미저장 입력 보호 등 공통 React 훅
+│   │   ├── lib/         # 번역, 숫자·날짜 표시 등 공통 로직
+│   │   └── ui/          # 버튼, 입력, 메뉴 등 공통 UI 컴포넌트
+│   └── test/            # Vitest 공통 설정 (단위 테스트는 대상 코드 옆에 배치)
+├── public/              # 그대로 제공하는 아이콘, 아바타, 목업 서비스 워커
+├── e2e/                 # Playwright로 검증하는 사용자 흐름과 화면 비교 기준
+├── scripts/             # 구조·문서 검사, 빌드 검증, 브랜드 자산 생성
+├── docs/
+│   ├── pages/           # 페이지별 목적, 동작, 수용 기준
+│   ├── design/          # 레이아웃, 색상, 타이포그래피 등 UI 규칙
+│   └── adr/             # 아키텍처 결정과 그 이유
+├── .github/             # CI 워크플로, Dependabot 설정, 이슈·PR 템플릿
+└── .husky/              # 커밋 전 검사와 커밋 메시지 검사
+```
+
+예를 들어 **주문 목록의 열을 바꿀 때**는 `src/pages/orders/`, **주문 편집 폼을 바꿀 때**는 `src/features/order-editor/`, **주문 API나 응답 스키마를 바꿀 때**는 `src/entities/order/`에서 시작하면 됩니다. 레이어 간 import는 `app → pages → widgets → features → entities → shared` 순서에서 아래 방향으로 허용됩니다. [아키텍처와 import 규칙](docs/architecture.md)
 
 ## 기술 선택
 
@@ -131,16 +168,6 @@ Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이�
 CI는 production build를 한 번만 만들고 초기 JS 예산을 검사한 뒤 `core`·`samples` 브라우저 job이 같은 번들을 공유합니다. 브라우저와 OS 의존성은 설치된 Playwright와 버전을 맞춘 digest 고정 이미지에서 제공하므로 각 job에서 Ubuntu 패키지를 다시 설치하지 않습니다. Chromium에서 PC·태블릿·모바일을 확인하고, core job 안에서 WebKit 모바일의 날짜 입력·입력 보호·탐색과 표 스크롤 두 smoke 시나리오를 별도로 확인합니다. 전체 시나리오를 엔진별로 반복하거나 dev 서버 테스트를 중복 실행하지 않습니다. 브라우저 job은 최대 2개, 각 worker는 2개입니다. 로컬 브라우저 재현이 필요한 경우에만 `pnpm exec playwright install chromium`으로 준비하고, WebKit smoke를 재현할 때는 `pnpm exec playwright install webkit`도 실행하세요. 모든 PR에는 최종 `CI Gate`가 생성되며 문서 전용 변경은 무거운 job을 생략합니다. 포크 후 [main 보호 설정](docs/ci-gate.md)은 원격에서 별도로 적용·확인해야 합니다.
 
 ## 구조와 문서
-
-```text
-src/
-  app/       # 진입, providers, router, 전역 토큰
-  pages/     # 경로별 화면 조합
-  widgets/   # 여러 기능을 묶는 화면 블록
-  features/  # 사용자 행동/편집 흐름
-  entities/  # 도메인 모델, API 어댑터, Query 옵션
-  shared/    # shadcn UI, API transport, 설정, 공통 도구
-```
 
 - [작업별 문서 지도](docs/README.md) — 필요한 책임의 문서만 선택
 - [페이지별 현재 기획과 수정 방법](docs/pages/README.md) — 목적·동작·상태·수용 기준

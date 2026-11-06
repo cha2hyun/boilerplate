@@ -11,16 +11,25 @@ describe('demo login return destination', () => {
     })
   })
 
+  it.each(['/account', '/Account/', '/account?extra=ignore#profile'])(
+    'restores the protected account without copying unrecognized input for %s',
+    (returnTo) => {
+      expect(demoDestination(returnTo)).toEqual({ to: '/account' })
+    },
+  )
+
   it.each([
     undefined,
-    '/account',
+    '',
+    '/',
+    '/account/settings',
     '/users-other',
     '/orders',
     '//example.com/users',
     '/\\example.com/users',
     'https://example.com/users',
     'javascript:alert(1)',
-  ])('returns to the local account for %s', (returnTo) => {
-    expect(demoDestination(returnTo)).toEqual({ to: '/account' })
+  ])('opens the dashboard by default or for an unsupported destination %s', (returnTo) => {
+    expect(demoDestination(returnTo)).toEqual({ to: '/' })
   })
 })
