@@ -62,7 +62,7 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 공통 fixture는 context에 열린 모든 페이지의 예기치 않은 `pageerror`를 해당 테스트 실패로 처리합니다. 복구 시나리오는 직접 주입한 오류의 정확한 메시지/청크 경로와 최대 횟수만 테스트 안에서 허용합니다. 모든 console 메시지를 오류로 취급하거나 다른 테스트에 예외를 상속하지 않습니다.
 
-외부 요청 fixture는 같은 테스트 context를 공유합니다. 종료 시 `context.unrouteAll({ behavior: 'wait' })`로 진행 중인 응답이 끝난 뒤 interception을 해제합니다. 폰트 파일을 읽는 중에 기본 `unroute`로 마지막 handler를 제거하면 요청이 먼저 계속 처리되어 뒤늦은 `fulfill`과 충돌할 수 있습니다.
+폰트와 환율 fixture는 context를 공유하고, 공통 소유자가 두 fixture 종료 후 한 번만 `context.unrouteAll({ behavior: 'wait' })`를 호출합니다. 폰트는 허용된 패키지 파일을 워커에서 처음 요청할 때 읽고 그 바이트로 즉시 응답합니다. 비동기 파일 읽기와 마지막 요청 해제가 겹쳐 같은 요청에 두 번 응답하는 경합을 피합니다.
 
 | Playwright project | viewport    | 입력/환경                                  |
 | ------------------ | ----------- | ------------------------------------------ |

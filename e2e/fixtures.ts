@@ -1,4 +1,5 @@
-import { test as base, expect, type Page, type Route } from '@playwright/test'
+import { test as base, expect, type BrowserContext, type Page, type Route } from '@playwright/test'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { createPageErrorTracker } from './page-errors.js'
 
@@ -18,12 +19,20 @@ interface ExchangeRateMock {
 }
 
 export const fontCdnBaseUrl = 'https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/'
+const fontBodies = new Map<string, Buffer>()
 
 export const test = base.extend<{
+  externalRouteContext: BrowserContext
   exchangeRateMock: ExchangeRateMock
   fontCdnRequests: string[]
   pageErrors: ReturnType<typeof createPageErrorTracker>
 }>({
+  externalRouteContext: async ({ context }, use) => {
+    await use(context)
+    // Remove interception once, after both fixtures finish. Removing the last handler
+    // releases pending routes to fallback; wait for callbacks while the context is alive.
+    await context.unrouteAll({ behavior: 'wait' })
+  },
   pageErrors: [
     async ({ context }, use) => {
       const tracker = createPageErrorTracker()
@@ -38,7 +47,7 @@ export const test = base.extend<{
     { auto: true },
   ],
   fontCdnRequests: [
-    async ({ context }, use) => {
+    async ({ externalRouteContext: context }, use) => {
       const requests: string[] = []
       const pattern = 'https://cdn.jsdelivr.net/npm/pretendard@*/**'
       const handler = async (route: Route) => {
@@ -50,14 +59,18 @@ export const test = base.extend<{
           throw new Error(`Unexpected Pretendard CDN asset: ${url}`)
         }
         requests.push(url)
-        // Use the identical pinned package bytes without contacting the CDN in CI.
-        // Keep the CDN URL so relative font URLs and CORS are exercised by the browser.
+        // fulfill({ path }) awaits a disk read before sending its protocol command. During
+        // teardown another completed route can release this request to fallback first.
+        // Send the verified package bytes in the same turn; cache only requested assets.
+        let body = fontBodies.get(file)
+        if (body === undefined) {
+          body = readFileSync(
+            path.resolve(import.meta.dirname, '../node_modules/pretendard/dist/web/static', file),
+          )
+          fontBodies.set(file, body)
+        }
         await route.fulfill({
-          path: path.resolve(
-            import.meta.dirname,
-            '../node_modules/pretendard/dist/web/static',
-            file,
-          ),
+          body,
           contentType: file.endsWith('.css')
             ? 'text/css'
             : file.endsWith('.woff2')
@@ -68,14 +81,11 @@ export const test = base.extend<{
       }
       await context.route(pattern, handler)
       await use(requests)
-      // Both external fixtures share this test context. Drain pending file responses
-      // before removing interception, regardless of which fixture tears down first.
-      await context.unrouteAll({ behavior: 'wait' })
     },
     { auto: true },
   ],
   exchangeRateMock: [
-    async ({ context }, use) => {
+    async ({ externalRouteContext: context }, use) => {
       const traffic = { requests: 0 }
       const handler = async (route: Route) => {
         traffic.requests += 1
@@ -89,7 +99,6 @@ export const test = base.extend<{
       // Keep every application /api request on its real demo adapter and query-cache path.
       await context.route(exchangeRateUrl, handler)
       await use(traffic)
-      await context.unrouteAll({ behavior: 'wait' })
     },
     { auto: true },
   ],
