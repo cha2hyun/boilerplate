@@ -10,6 +10,8 @@ React · TypeScript · Vite 기반의 제품 개발용 프런트엔드 보일러
 
 Overview·Analytics·Orders·Customers·Users는 MSW가 실제 fetch에 목업 응답을 제공하고 TanStack Query가 캐시합니다. 최초 로딩과 데이터 화면은 같은 카드 크기를 유지하며, 핵심 수치는 API/캐시 진입 모두 300ms 모션을 사용합니다. [캐시 확인 방법](docs/query-cache.md)과 [숫자 표시 규칙](docs/number-formatting.md)·[로딩·모션 계약](docs/loading-and-motion.md)을 참고하세요. API 모드에서는 mock worker를 시작하지 않습니다.
 
+다른 업무용 제품으로 포크할 때는 담당자가 할 일 한 가지를 먼저 정하고, 그 업무의 데이터 모델과 첫 화면을 만듭니다. 설비 점검 예시에서 `inspection`의 목록 조회·완료 처리, 라우트·목업·테스트 연결, 기본 샘플 제거 순서를 확인할 수 있습니다. [새 제품으로 시작하기](docs/new-project.md) · [도메인 교체 실습](docs/examples/minimal-admin.md)
+
 ## 미리보기
 
 2026-11-06에 커밋 `1ee7ddf`의 production 데모 번들에서 캡처했습니다. 기능·탐색·정보 구조가 바뀌면 해당 커밋의 번들에서 소개 이미지도 갱신합니다. Overview 미리보기는 밝은 테마와 어두운 테마에 맞춰 표시됩니다. [캡처에 사용한 Actions 실행](https://github.com/cha2hyun/boilerplate/actions/runs/42149542188)
@@ -142,7 +144,7 @@ src/
 
 - [작업별 문서 지도](docs/README.md) — 필요한 책임의 문서만 선택
 - [페이지별 현재 기획과 수정 방법](docs/pages/README.md) — 목적·동작·상태·수용 기준
-- [새 제품 도입·브랜드·데모 정리](docs/new-project.md) · [셸·주문·설정만 남기는 포크 예시](docs/examples/minimal-admin.md)
+- [새 제품 도입·브랜드·데모 정리](docs/new-project.md) · [다른 도메인으로 교체하는 포크 실습](docs/examples/minimal-admin.md)
 - [아키텍처와 경계](docs/architecture.md)
 - [폰트·색상·반응형 규칙](docs/design-system.md)
 - [공통 화면 조합](docs/design/compositions.md) · [시각 기준 검토](docs/design/visual-regression.md)
