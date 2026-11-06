@@ -34,7 +34,7 @@ import { httpProjectAdapter } from './http'
 
 `@/entities/project/api/http`처럼 내부 파일을 외부에서 직접 가져오거나 `features/a → features/b`로 연결하면 `pnpm check:architecture`가 실패합니다. 정적 import, 재수출, import type, 문자열 dynamic import, require 및 상대 경로를 모두 확인합니다. 검사할 수 없는 계산형 dynamic import와 `import.meta.glob`은 금지합니다.
 
-`src`의 코드는 위 여섯 레이어에 둡니다. 예외는 앱 진입점 `src/main.tsx`와 테스트 초기화 파일 `src/test/setup.ts`뿐이며 다른 소스가 이 두 파일을 가져올 수는 없습니다. `src/utils` 같은 별도 루트 폴더를 거쳐 레이어 경계를 우회하는 import도 거부합니다.
+`src`의 코드는 위 여섯 레이어에 둡니다. 앱 진입점 `src/main.tsx`와 테스트 초기화 파일 `src/test/setup.ts`만 레이어 밖에 둡니다. 두 파일에서 슬라이스를 소비할 때도 같은 공개 API 규칙이 적용됩니다. 다른 소스가 이 두 파일을 가져오거나 `src/utils` 같은 별도 루트 폴더를 거쳐 레이어 경계를 우회하면 검사가 실패합니다.
 
 ## 상태의 소유권
 
@@ -63,7 +63,7 @@ shadcn 컴포넌트는 `src/shared/ui`에 두며 [shadcn의 CSS 변수 테마 �
 
 본문·푸터의 텍스트 탐색에는 `shared/ui/text-link`의 승인된 shadcn 조합을 사용합니다. `TextLink`는 기존 Button link variant와 anchor를 조합하며 `RouterTextLink`는 TanStack `createLink`로 내부 경로 타입을 보존합니다. Sidebar/Breadcrumb 등의 기존 탐색 컨트롤은 유지합니다. 예외 범위는 [ADR 004](adr/004-text-link-composition.md), 동작/API 계약은 [텍스트 링크 규칙](design/text-links.md)이 소유합니다.
 
-`bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`, `chart-*` 등 의미 토큰을 사용합니다. `bg-blue-500` 또는 `bg-[#123456]`처럼 화면별 색을 하드코딩하지 않습니다. 임의 너비/그리드 값 같은 Tailwind 레이아웃 유틸리티는 허용합니다.
+`bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`, `chart-*` 등 의미 토큰을 사용합니다. 검사기는 고정 색상 유틸리티(`bg-[red]`, `border-l-red-500`, `ring-offset-red-500`)와 색 속성에 직접 넣은 값(`[color:#ff0000]`)도 검출합니다. 임의 너비/그리드 값 같은 Tailwind 레이아웃 유틸리티는 허용합니다.
 
 CSS 파일은 `src/app/styles/globals.css` 하나입니다. 여기에 Tailwind import, shadcn light/dark 토큰, `@theme`, 기본 `@apply`를 둡니다. 화면별 CSS, CSS Modules, Sass, styled-components/Emotion은 사용하지 않습니다. 공식 shadcn 컴포넌트의 차트/사이드바처럼 동적 CSS 변수 또는 내부 style 태그가 필요한 생성 코드만 `shared/ui`에서 허용합니다. Radix 직접 import, native/ARIA 컨트롤, inline style, `<style>` 예외는 [검사기의 정확한 파일 목록](../scripts/ui-exceptions.mjs)을 따릅니다. `shared/ui`에 파일을 추가한 것만으로 예외가 되지 않습니다. 예를 들어 Button은 native 버튼을, Chart는 동적 색상 스타일을 사용하지만 Button에 임의 inline style은 허용되지 않습니다. 새 registry 파일이 예외를 필요로 하면 생성 출처·diff·사용 이유를 확인한 뒤 필요한 규칙의 경로만 추가하고 회귀 검사를 유지합니다. 예외 목록은 파일의 출처를 증명하거나 그 파일의 모든 코드를 승인하지 않습니다.
 

@@ -28,4 +28,4 @@
 
 `node scripts/check-page-specs.mjs`는 Node 내장 모듈만 사용합니다. `src/app/routes`의 문자열 literal `createFileRoute` 선언과 명세의 1:1 대응, 정해진 섹션, 소유 코드·테스트의 실제 파일 링크, 이 폴더의 로컬 inline Markdown 링크 대상 존재와 저장소 내부 경로를 확인합니다. 일반 정적 경로와 이름 있는 동적 segment, index 마지막 `/`를 지원합니다. pathless layout·route group·splat 등 다른 라우트 관례는 조용히 건너뛰지 않고 지원 범위 갱신을 요구합니다. 링크는 `[이름](상대/경로)` 형식으로 쓰며 공백이 있는 경로는 `<상대 경로>` 또는 URL 인코딩을 사용합니다. 경로의 Markdown escape도 해석합니다. 코드 예시는 검사하지 않습니다.
 
-자연어 의미, 테스트 시나리오 이름의 실행 여부, 링크의 앵커, 원격 URL, 화면 픽셀·접근성을 검증하지 않습니다. 참조식 링크로 구현 근거를 대신하지 않습니다. 검사기의 회귀 검사는 `node --test scripts/check-page-specs.test.mjs`이며 실제 화면 검증은 [테스트 정책](../testing.md)을 따릅니다.
+같은 문서와 다른 Markdown 문서의 절 링크는 `pnpm check:docs`가 제목과 대조합니다. 링크할 절은 `#`부터 `######`까지의 Markdown 제목으로 작성합니다. 같은 제목이 반복되면 GitHub 순서에 따라 `-1`, `-2`가 붙습니다. 참조식 링크로 구현 근거를 대신하지 않습니다. 자연어 의미, 테스트 시나리오 이름의 실행 여부, 외부 URL, 화면 픽셀·접근성은 별도 검토 대상입니다. 명세 검사기의 회귀 검사는 `node --test scripts/check-page-specs.test.mjs`이며 실제 화면 검증은 [테스트 정책](../testing.md)을 따릅니다.

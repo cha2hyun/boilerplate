@@ -1,17 +1,62 @@
-export function proseOnly(markdown) {
+function outsideFences(markdown) {
   let fence
-  return markdown
-    .split('\n')
-    .map((line) => {
-      const marker = /^\s*(`{3,}|~{3,})/.exec(line)?.[1]
-      if (marker) {
-        if (!fence) fence = marker
-        else if (marker[0] === fence[0] && marker.length >= fence.length) fence = undefined
-        return ''
-      }
-      return fence ? '' : line.replace(/(`+).*?\1/g, '')
+  return markdown.split(/\r?\n/).map((line) => {
+    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line)
+    if (fence) {
+      if (
+        marker &&
+        marker[1][0] === fence[0] &&
+        marker[1].length >= fence.length &&
+        !marker[2].trim()
+      )
+        fence = undefined
+      return ''
+    }
+    if (marker) {
+      fence = marker[1]
+      return ''
+    }
+    return line
+  })
+}
+
+const inlineCode = /(?<!`)(`+)(?!`)([^\n]*?)(?<!`)\1(?!`)/g
+
+export function proseOnly(markdown) {
+  return outsideFences(markdown).join('\n').replace(inlineCode, '')
+}
+
+// GitHub section links use rendered heading text. Code contributes its literal
+// text, while link destinations and emphasis markers in prose do not.
+function headingText(title) {
+  const code = []
+  return title
+    .replace(inlineCode, (_, delimiter, value) => {
+      const index = code.push(
+        value.trim() && value.startsWith(' ') && value.endsWith(' ') ? value.slice(1, -1) : value,
+      )
+      return `\0${index - 1}\0`
     })
-    .join('\n')
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/(?<![\p{L}\p{N}_])(_{1,2})(?=\S)(.+?)\1(?![\p{L}\p{N}_])/gu, '$2')
+    .replace(/\0(\d+)\0/g, (_, index) => code[index])
+}
+
+export function markdownHeadingAnchors(markdown) {
+  const anchors = new Set()
+  for (const line of outsideFences(markdown)) {
+    const heading = /^ {0,3}#{1,6}[ \t]+(.+)$/.exec(line)
+    if (!heading) continue
+    const title = heading[1].replace(/[ \t]+#+[ \t]*$/, '').trim()
+    const base = headingText(title)
+      .toLowerCase()
+      .replace(/[^\p{L}\p{M}\p{N}_ -]/gu, '')
+      .replaceAll(' ', '-')
+    let anchor = base
+    for (let suffix = 1; anchors.has(anchor); suffix++) anchor = `${base}-${suffix}`
+    anchors.add(anchor)
+  }
+  return anchors
 }
 
 // This authoring format uses inline links, not a full Markdown parser.

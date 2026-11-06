@@ -215,6 +215,36 @@ test('allows the explicit application and test setup entrypoints', () => {
   )
 })
 
+test('application and test entrypoints respect slice public APIs', () => {
+  for (const file of ['main.tsx', 'test/setup.ts']) {
+    assert.deepEqual(
+      rules(
+        file,
+        `
+        import { schema } from '@/entities/project'
+        import { toolbar } from '@/widgets/project-table/index'
+        import { search } from '@/pages/orders/search'
+        import { Button } from '@/shared/ui/button'
+        import { App } from '@/app/app'
+      `,
+      ),
+      [],
+    )
+    assert.deepEqual(
+      rules(
+        file,
+        `
+        import type { Order } from '@/entities/order/model/schema'
+        const page = import('@/pages/orders/ui/orders-page')
+        export { model } from '@/features/project-editor/model/form'
+        import * as widgets from '@/widgets'
+      `,
+      ),
+      Array(4).fill('public-api'),
+    )
+  }
+})
+
 test('checks dynamic imports, import types, require, and import-equals', () => {
   assert.deepEqual(
     rules(
@@ -516,6 +546,35 @@ test('requires semantic colors while allowing Tailwind arbitrary layout values',
     ),
     ['design-token'],
   )
+})
+
+test('recognizes palette families, directional utilities and arbitrary color declarations', () => {
+  const check = (classes) =>
+    rules('widgets/header/ui/tool.tsx', `const view = <span className="${classes}" />`)
+  for (const classes of [
+    '[color:#ff0000]',
+    'md:hover:[border-inline-start-color:rebeccapurple]',
+    'bg-[red]',
+    'text-[red]/[35%]',
+    'bg-[#ff0000_0%]',
+    'stroke-[color:rgb(255_0_0)]',
+    'bg-[hsl(from_var(--background)_h_s_l_/_0.5)]',
+    'dark:border-l-red-500/50!',
+    'ring-offset-red-500',
+    'hover:inset-ring-mauve-950',
+    'md:[&:focus]:!border-e-white/50',
+  ]) {
+    assert.deepEqual(check(classes), ['design-token'], classes)
+  }
+  for (const classes of [
+    'border-l-border ring-offset-background/50 text-brand-foreground',
+    '[color:var(--foreground)] bg-[var(--background)] [border-color:currentColor]',
+    '[outline-color:CanvasText] bg-transparent text-[length:14px] bg-[length:2rem]',
+    "w-[123px] ring-offset-[3px] grid-cols-[1fr_2fr] [content:'bg-red-500']",
+    '[&.bg-red-500]:text-foreground',
+  ]) {
+    assert.deepEqual(check(classes), [], classes)
+  }
 })
 
 test('reports actionable line numbers', () => {
