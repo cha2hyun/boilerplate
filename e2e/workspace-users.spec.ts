@@ -273,8 +273,10 @@ test('keeps the signed-in session when a draft blocks sign-out', async ({ page }
     'One browser covers the route and draft handshake.',
   )
   await page.goto('/login')
-  await signIn(page)
-  await expect(page).toHaveURL('/account')
+  await page.getByRole('button', { name: 'Sign in with Microsoft' }).click()
+  await expect(page).toHaveURL('/')
+  await page.goto('/login')
+  await expect(page).toHaveURL('/')
   await page.goto('/settings')
   const name = page.getByRole('textbox', { name: 'Workspace name', exact: true })
   await name.fill('Unsaved workspace')
@@ -459,6 +461,7 @@ test('keeps all header actions aligned and accessible before and after sign-in',
   await page.keyboard.press('Enter')
   await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
   await signIn(page)
+  await expect(page).toHaveURL('/')
   await checkHeaderActions(page, toolbar, true)
   await page.goto('/orders')
   const account = toolbar.getByRole('button', { name: 'Account menu', exact: true })
@@ -466,7 +469,34 @@ test('keeps all header actions aligned and accessible before and after sign-in',
   await page.keyboard.press('Tab')
   await expect(account).toBeFocused()
   await page.keyboard.press('Enter')
-  const myAccount = page.getByRole('menuitem', { name: 'My account', exact: true })
+  const menu = page.getByRole('menu', { name: 'Account menu', exact: true })
+  await expect(menu.getByText('soohyun chae', { exact: true })).toBeVisible()
+  await expect(menu.getByText('admin@example.com', { exact: true })).toBeVisible()
+  await expect(
+    page.locator('[data-slot="tooltip-content"]').filter({ hasText: 'Account menu' }),
+  ).toHaveCount(0)
+  await expectLoadedAvatar(menu.locator('[data-slot="avatar"]'), ownerAvatar)
+  const myAccount = menu.getByRole('menuitem', { name: 'My account', exact: true })
+  const settings = menu.getByRole('menuitem', { name: 'Workspace settings', exact: true })
+  if (await page.evaluate(() => matchMedia('(pointer: coarse)').matches)) {
+    const minimum = await page.evaluate(
+      () => parseFloat(getComputedStyle(document.documentElement).fontSize) * 2.75,
+    )
+    for (const item of await menu.getByRole('menuitem').all()) {
+      expect((await item.boundingBox())?.height).toBeGreaterThanOrEqual(minimum)
+    }
+  }
+  await expect(myAccount).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(settings).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL('/settings')
+  await account.focus()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Escape')
+  await expect(menu).toBeHidden()
+  await expect(account).toBeFocused()
+  await page.keyboard.press('Enter')
   await expect(myAccount).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL('/account')
@@ -505,6 +535,7 @@ test('resolves a failed account image to initials and renders the next signed-in
   )
   const account = page.getByRole('button', { name: 'Account menu', exact: true })
   const avatar = account.locator('[data-slot="avatar"]')
+  const menuAvatar = page.getByRole('menu').locator('[data-slot="avatar"]')
   try {
     await page.goto('/account')
     await signIn(page)
@@ -513,9 +544,13 @@ test('resolves a failed account image to initials and renders the next signed-in
     await expect(avatar).toHaveAttribute('data-profile-state', 'loading')
     await expect(avatar.locator('[data-slot="skeleton"]')).toBeVisible()
     await expect(avatar.locator('[data-slot="avatar-fallback"]')).toHaveCount(0)
+    await account.click()
+    await expect(menuAvatar.locator('[data-slot="skeleton"]')).toBeVisible()
   } finally {
     releaseImage()
   }
+  await expect(menuAvatar.locator('[data-slot="avatar-fallback"]')).toHaveText('SC')
+  await page.keyboard.press('Escape')
   await expect(avatar).toHaveAttribute('data-profile-state', 'fallback')
   await expect(avatar.locator('[data-slot="avatar-fallback"]')).toHaveText('SC')
   await expect(avatar.locator('[data-slot="skeleton"]')).toHaveCount(0)
@@ -545,7 +580,11 @@ test('resolves a failed account image to initials and renders the next signed-in
     }
   }, changedSrc)
   await signIn(page)
+  await expect(page).toHaveURL('/')
   await expect(account.locator('[data-slot="account-nickname"]')).toHaveText('riley')
+  await account.click()
+  await page.getByRole('menuitem', { name: 'My account', exact: true }).click()
+  await expect(page).toHaveURL('/account')
   await expect(page.getByRole('main')).toContainText('Riley Park')
   await expectLoadedAvatar(avatar, changedSrc)
 })

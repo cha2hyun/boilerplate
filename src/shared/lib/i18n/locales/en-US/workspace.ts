@@ -187,6 +187,7 @@ const workspace = {
     description: 'Your profile and access in this demo workspace.',
     profile: 'Workspace profile',
     menu: 'Account menu',
+    workspaceSettings: 'Workspace settings',
     signIn: 'Sign in',
     signOut: 'Sign out',
     directory: 'View workspace users',
