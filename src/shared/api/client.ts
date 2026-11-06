@@ -24,7 +24,10 @@ export class ApiError extends Error {
   }
 }
 
-type RequestOptions = Omit<RequestInit, 'body'> & { body?: unknown }
+type RequestOptions = Omit<RequestInit, 'body'> & {
+  body?: unknown
+  mapHttpError?: (response: Response) => Promise<Error | undefined>
+}
 
 /** The HTTP boundary: bounded requests, cancellation and runtime response validation. */
 export function createApiClient(baseUrl: string) {
@@ -33,7 +36,7 @@ export function createApiClient(baseUrl: string) {
     schema: z.ZodType<T>,
     options: RequestOptions = {},
   ): Promise<T> {
-    const { body, ...requestOptions } = options
+    const { body, mapHttpError, ...requestOptions } = options
     const readOnly = ['GET', 'HEAD'].includes(options.method?.toUpperCase() ?? 'GET')
     const uncertainWriteMessage =
       'Your changes may have been saved. Refresh to check before trying again.'
@@ -80,6 +83,8 @@ export function createApiClient(baseUrl: string) {
 
       status = response.status
       if (!response.ok) {
+        const mapped = await mapHttpError?.(response)
+        if (mapped) throw mapped
         // A server or gateway failure does not prove that a write was rolled back.
         // Preserve the HTTP status while sending uncertain writes through reconciliation.
         const mayHaveSucceeded = !readOnly && response.status >= 500

@@ -7,9 +7,15 @@ import { createDemoOrderAdapter, orderInputSchema, orderListParamsSchema } from 
 import { getSampleTraffic, trafficPeriodSchema } from '@/entities/traffic'
 import {
   createDemoWorkspaceUserAdapter,
+  currentDemoUser,
   workspaceUserInviteSchema,
   workspaceUserUpdateSchema,
 } from '@/entities/workspace-user'
+import {
+  checkDemoCredentials,
+  demoLoginPath,
+  demoLoginRequestSchema,
+} from '@/features/demo-session'
 import { ApiError } from '@/shared/api'
 import { env } from '@/shared/config'
 
@@ -61,6 +67,26 @@ export function createDemoHandlers({
   delayMs = 450,
 } = {}) {
   return [
+    http.post(demoLoginPath, async ({ request }) => {
+      const input = await readInput(request, demoLoginRequestSchema)
+      if (!input) {
+        return HttpResponse.json({ code: 'invalid_request' }, { ...responseOptions, status: 400 })
+      }
+      await delay(input.scenario === 'slow' ? 2500 : 1000)
+      if (input.scenario === 'failure') {
+        return HttpResponse.json({ code: 'unavailable' }, { ...responseOptions, status: 503 })
+      }
+      if (input.method === 'credentials') {
+        const errors = checkDemoCredentials(input.email, input.password)
+        if (errors.email || errors.password) {
+          return HttpResponse.json(
+            { code: 'invalid_credentials', errors },
+            { ...responseOptions, status: 401 },
+          )
+        }
+      }
+      return HttpResponse.json({ id: currentDemoUser.id }, responseOptions)
+    }),
     http.get(`${apiBaseUrl}/workspace-users`, async ({ request }) => {
       await delay(delayMs)
       return adapterResponse(() => workspaceUsers.list(request.signal))

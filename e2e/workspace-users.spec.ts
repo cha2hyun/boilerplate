@@ -12,6 +12,22 @@ async function signIn(page: Page) {
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 }
 
+function waitForLoginResponse(page: Page) {
+  const endpoint = new URL('/api/demo-login', page.url()).href
+  return page.waitForResponse(
+    (response) => response.url() === endpoint && response.request().method() === 'POST',
+  )
+}
+
+function tabSession(page: Page) {
+  return page.evaluate(() => sessionStorage.getItem('blueprint.demo.session.v1'))
+}
+
+async function selectLoginResponse(page: Page, name: 'Slow' | 'Server error') {
+  await page.getByRole('button', { name: /^Demo response/ }).click()
+  await page.getByRole('menuitemradio', { name, exact: true }).click()
+}
+
 const ownerAvatar = '/avatars/soohyun-chae.svg'
 
 async function expectLoadedAvatar(avatar: Locator, src: string) {
@@ -94,12 +110,19 @@ test('restores a protected account in this tab and requires sign-in after logout
   await expect(password).toHaveValue('Blueprint123!')
   await email.fill('someone@example.com')
   await password.fill('invalid-demo-value')
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  const unauthorized = waitForLoginResponse(page)
+  await signIn(page)
+  expect((await unauthorized).status()).toBe(401)
   await expect(page.getByRole('alert')).toBeVisible()
+  expect(await tabSession(page)).toBeNull()
+  expect(new URL(page.url()).pathname).toBe('/login')
   await email.fill('admin@example.com')
   await password.fill('Blueprint123!')
+  const accepted = waitForLoginResponse(page)
   await signIn(page)
+  expect((await accepted).status()).toBe(200)
   await expect(page).toHaveURL('/account')
+  expect(await tabSession(page)).toBe('usr_demo')
   await expect(page.getByRole('main').getByText('admin@example.com', { exact: true })).toBeVisible()
   await page.reload()
   const profile = page.getByRole('main')
@@ -131,6 +154,34 @@ test('restores a protected account in this tab and requires sign-in after logout
   await expect(page.getByRole('heading', { name: 'Workspace sign-in', level: 1 })).toBeVisible()
 })
 
+test('retries a failed demo login from the same form after a service error', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop',
+    'The one-attempt error and retry contract is shared.',
+  )
+  await page.goto('/account')
+  await selectLoginResponse(page, 'Server error')
+  const unavailable = waitForLoginResponse(page)
+  await signIn(page)
+  expect((await unavailable).status()).toBe(503)
+  await expect(page.getByRole('alert')).toContainText('Try signing in again.')
+  expect(await tabSession(page)).toBeNull()
+  expect(new URL(page.url()).pathname).toBe('/login')
+  await page.getByRole('button', { name: /^Demo response/ }).click()
+  await expect(page.getByRole('menuitemradio', { name: 'Normal' })).toBeChecked()
+  await page.keyboard.press('Escape')
+  await expect(page.getByLabel('Email', { exact: true })).toHaveValue('admin@example.com')
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('Blueprint123!')
+  const retry = waitForLoginResponse(page)
+  await signIn(page)
+  expect((await retry).status()).toBe(200)
+  await expect(page).toHaveURL('/account')
+  await expect(page.getByText('Signed in to the demo account.', { exact: true })).toBeVisible()
+  expect(await tabSession(page)).toBe('usr_demo')
+})
+
 test('restores a user deep link and keeps demo invitations and access changes on reload', async ({
   page,
   context,
@@ -140,12 +191,18 @@ test('restores a user deep link and keeps demo invitations and access changes on
   const attemptedEmail = 'unused@example.invalid'
   const attemptedPassword = 'unused-private-input'
   const unexpectedRequests: string[] = []
+  const loginEndpoint = new URL('/api/demo-login', loginOrigin).href
+  const loginRequests: Request[] = []
+  const popups: Page[] = []
+  page.on('popup', (popup) => popups.push(popup))
   const observeLogin = (request: Request) => {
     const url = new URL(request.url())
     const expectedExternalAsset =
       !request.isNavigationRequest() &&
       (url.href.startsWith(fontCdnBaseUrl) || url.href === exchangeRateUrl)
-    if (
+    if (request.method() === 'POST' && url.href === loginEndpoint) {
+      loginRequests.push(request)
+    } else if (
       (url.origin !== loginOrigin && !expectedExternalAsset) ||
       !['GET', 'HEAD'].includes(request.method())
     ) {
@@ -162,7 +219,16 @@ test('restores a user deep link and keeps demo invitations and access changes on
   context.on('request', observeLogin)
   await page.getByLabel('Email', { exact: true }).fill(attemptedEmail)
   await page.getByLabel('Password', { exact: true }).fill(attemptedPassword)
+  await selectLoginResponse(page, 'Slow')
+  const accepted = waitForLoginResponse(page)
   await page.getByRole('button', { name: 'Sign in with Microsoft', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Signing in with Microsoft…' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: 'Sign in', exact: true })).toBeDisabled()
+  expect(await tabSession(page)).toBeNull()
+  expect(new URL(page.url()).pathname).toBe('/login')
+  // A second form submit during the provider request must not start another sign-in.
+  await page.locator('form').evaluate((form: HTMLFormElement) => form.requestSubmit())
+  expect((await accepted).status()).toBe(200)
   await expect(page).toHaveURL(
     (url) =>
       url.origin === loginOrigin &&
@@ -173,6 +239,9 @@ test('restores a user deep link and keeps demo invitations and access changes on
   const self = page.getByRole('dialog', { name: 'soohyun chae' })
   await expect(self).toBeVisible()
   context.off('request', observeLogin)
+  expect(popups).toHaveLength(0)
+  expect(loginRequests).toHaveLength(1)
+  expect(loginRequests[0]?.postDataJSON()).toEqual({ method: 'microsoft', scenario: 'slow' })
   expect(unexpectedRequests).toEqual([])
   await expect(self.getByRole('button', { name: 'Edit access' })).toHaveCount(0)
   await self.press('Escape')

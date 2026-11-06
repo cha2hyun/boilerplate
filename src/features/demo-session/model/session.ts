@@ -1,19 +1,8 @@
 import { currentDemoUser } from '@/entities/workspace-user'
 import { storageKeys } from '@/shared/config/product'
+import type { DemoSession } from './login-contract'
 
-/** Public sample values used to prefill the login form. */
-export const demoCredentials = {
-  email: currentDemoUser.email,
-  password: 'Blueprint123!',
-} as const
-
-const demoSession = Object.freeze({ id: currentDemoUser.id })
-export type DemoSession = typeof demoSession
-export interface DemoCredentialErrors {
-  email: 'emailRequired' | 'useDemoEmail' | null
-  password: 'passwordRequired' | 'useDemoPassword' | null
-}
-type SignInResult = { ok: true } | { ok: false; errors: DemoCredentialErrors }
+const demoSession: DemoSession = Object.freeze({ id: currentDemoUser.id })
 type SessionStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 /** Constructing the store does not read window or storage. The first route read restores the tab. */
@@ -52,25 +41,6 @@ export function createDemoSessionStore(resolveStorage: () => SessionStorage | nu
     for (const listener of listeners) listener()
   }
 
-  function signIn(email: string, password: string): SignInResult {
-    const normalizedEmail = email.trim().toLowerCase()
-    const errors: DemoCredentialErrors = {
-      email: !normalizedEmail
-        ? 'emailRequired'
-        : normalizedEmail === demoCredentials.email
-          ? null
-          : 'useDemoEmail',
-      password: !password
-        ? 'passwordRequired'
-        : password === demoCredentials.password
-          ? null
-          : 'useDemoPassword',
-    }
-    if (errors.email || errors.password) return { ok: false, errors }
-    publish(demoSession)
-    return { ok: true }
-  }
-
   function subscribe(listener: () => void) {
     listeners.add(listener)
     // Recheck sessionStorage when a cached document returns through browser history.
@@ -84,9 +54,8 @@ export function createDemoSessionStore(resolveStorage: () => SessionStorage | nu
   return {
     getSnapshot,
     subscribe,
-    signIn,
-    signInWithMicrosoftDemo: () => {
-      publish(demoSession)
+    accept: (session: DemoSession) => {
+      publish(session)
     },
     end: () => {
       publish(null)

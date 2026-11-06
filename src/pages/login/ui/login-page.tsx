@@ -1,9 +1,14 @@
-import { useId, useRef, useState, type SubmitEvent } from 'react'
+import { useEffect, useId, useRef, useState, type SubmitEvent } from 'react'
+import { useRouter } from '@tanstack/react-router'
+import { LoaderCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   demoCredentials,
   signInDemoAccount,
   signInWithMicrosoftDemo,
+  validateRequiredDemoCredentials,
   type DemoCredentialErrors,
+  type DemoLoginScenario,
 } from '@/features/demo-session'
 import { useTranslation } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
@@ -14,33 +19,110 @@ import { Separator } from '@/shared/ui/separator'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { RouterTextLink } from '@/shared/ui/text-link'
 import microsoftSymbol from '../assets/microsoft-symbol.svg'
+import { DemoResponseMenu } from './demo-response-menu'
 import { LoginHeader } from './login-header'
 import { LoginWorkspacePreview } from './login-workspace-preview'
 
 const noErrors: DemoCredentialErrors = { email: null, password: null }
 
+type LoginMethod = 'credentials' | 'microsoft'
+
 export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
   const { t } = useTranslation('demoLogin')
+  const router = useRouter()
   const formId = useId()
   const emailRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
   const [email, setEmail] = useState<string>(demoCredentials.email)
   const [password, setPassword] = useState<string>(demoCredentials.password)
   const [errors, setErrors] = useState(noErrors)
+  const [scenario, setScenario] = useState<DemoLoginScenario>('success')
+  const [pending, setPending] = useState<LoginMethod | null>(null)
+  const [serviceFailure, setServiceFailure] = useState<LoginMethod | null>(null)
+  const [signedIn, setSignedIn] = useState(false)
+  const activeRequest = useRef<AbortController | null>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
+  const microsoftRef = useRef<HTMLButtonElement>(null)
+  const locked = pending !== null || signedIn
+  const pendingLabel = pending === 'microsoft' ? t('microsoftPending') : t('pending')
+
+  useEffect(() => {
+    function cancelAttempt() {
+      if (!activeRequest.current) return
+      activeRequest.current.abort()
+      activeRequest.current = null
+      setPending(null)
+      setScenario('success')
+    }
+    // A pending route loader or a cached browser document can keep this page mounted.
+    const unsubscribe = router.subscribe('onBeforeNavigate', ({ pathChanged }) => {
+      if (pathChanged) cancelAttempt()
+    })
+    window.addEventListener('pagehide', cancelAttempt)
+    return () => {
+      unsubscribe()
+      window.removeEventListener('pagehide', cancelAttempt)
+      activeRequest.current?.abort()
+    }
+  }, [router])
+
+  function showFieldErrors(nextErrors: DemoCredentialErrors) {
+    setErrors(nextErrors)
+    const target = nextErrors.email ? emailRef : passwordRef
+    requestAnimationFrame(() => {
+      if (target.current?.getAttribute('aria-invalid') === 'true') target.current.focus()
+    })
+  }
+
+  async function signIn(method: LoginMethod) {
+    if (activeRequest.current || signedIn) return
+    setServiceFailure(null)
+    if (method === 'credentials') {
+      const required = validateRequiredDemoCredentials(email, password)
+      if (required.email || required.password) {
+        showFieldErrors(required)
+        return
+      }
+    }
+    setErrors(noErrors)
+    const controller = new AbortController()
+    activeRequest.current = controller
+    const options = { scenario, signal: controller.signal }
+    setPending(method)
+    let result
+    try {
+      result =
+        method === 'credentials'
+          ? await signInDemoAccount(email, password, options)
+          : await signInWithMicrosoftDemo(options)
+    } catch {
+      if (!controller.signal.aborted) {
+        setServiceFailure(method)
+        const trigger = method === 'credentials' ? submitRef : microsoftRef
+        requestAnimationFrame(() => trigger.current?.focus())
+      }
+      return
+    } finally {
+      if (activeRequest.current === controller) activeRequest.current = null
+      if (!controller.signal.aborted) {
+        setPending(null)
+        setScenario('success')
+      }
+    }
+    if (controller.signal.aborted) return
+    if (!result.ok) {
+      showFieldErrors(result.errors)
+      return
+    }
+    setSignedIn(true)
+    setPassword('')
+    toast.success(t('signedIn'))
+    onSignedIn()
+  }
 
   function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
-    const result = signInDemoAccount(email, password)
-    if (!result.ok) {
-      setErrors(result.errors)
-      const target = result.errors.email ? emailRef : passwordRef
-      requestAnimationFrame(() => {
-        if (target.current?.getAttribute('aria-invalid') === 'true') target.current.focus()
-      })
-      return
-    }
-    setPassword('')
-    onSignedIn()
+    void signIn('credentials')
   }
 
   return (
@@ -68,6 +150,7 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
                     autoCapitalize="none"
                     spellCheck={false}
                     required
+                    readOnly={locked}
                     value={email}
                     onChange={(event) => {
                       setEmail(event.target.value)
@@ -95,6 +178,7 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
                     type="password"
                     autoComplete="off"
                     required
+                    readOnly={locked}
                     value={password}
                     onChange={(event) => {
                       setPassword(event.target.value)
@@ -113,8 +197,23 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
                     </p>
                   )}
                 </VStack>
-                <Button type="submit" className="h-auto min-h-11 w-full whitespace-normal">
-                  {t('submit')}
+                <Button
+                  ref={submitRef}
+                  type="submit"
+                  className="h-auto min-h-11 w-full whitespace-normal"
+                  disabled={locked}
+                  aria-busy={pending === 'credentials'}
+                  aria-describedby={
+                    serviceFailure === 'credentials' ? `${formId}-server-error` : undefined
+                  }
+                >
+                  {pending === 'credentials' && (
+                    <LoaderCircle
+                      aria-hidden="true"
+                      className="animate-spin motion-reduce:animate-none"
+                    />
+                  )}
+                  {pending === 'credentials' ? pendingLabel : t('submit')}
                 </Button>
               </form>
             </VStack>
@@ -127,19 +226,41 @@ export function LoginPage({ onSignedIn }: { onSignedIn: () => void }) {
               type="button"
               variant="outline"
               className="h-auto min-h-11 w-full whitespace-normal"
-              onClick={() => {
-                signInWithMicrosoftDemo()
-                setPassword('')
-                onSignedIn()
-              }}
+              ref={microsoftRef}
+              disabled={locked}
+              aria-busy={pending === 'microsoft'}
+              aria-describedby={
+                serviceFailure === 'microsoft' ? `${formId}-server-error` : undefined
+              }
+              onClick={() => void signIn('microsoft')}
             >
-              <img src={microsoftSymbol} className="size-5 shrink-0" alt="" />
-              {t('microsoft')}
+              {pending === 'microsoft' ? (
+                <LoaderCircle
+                  aria-hidden="true"
+                  className="size-5 animate-spin motion-reduce:animate-none"
+                />
+              ) : (
+                <img src={microsoftSymbol} className="size-5 shrink-0" alt="" />
+              )}
+              {pending === 'microsoft' ? pendingLabel : t('microsoft')}
             </Button>
+            <p role="status" className="sr-only">
+              {pending ? pendingLabel : ''}
+            </p>
+            {serviceFailure && (
+              <p
+                role="alert"
+                id={`${formId}-server-error`}
+                className="text-sm wrap-anywhere text-destructive"
+              >
+                {t('serviceError')}
+              </p>
+            )}
           </VStack>
-          <p className="text-start text-sm">
+          <HStack wrap justify="between" className="min-w-0 gap-2 text-sm">
             <RouterTextLink to="/">{t('browseDashboard')}</RouterTextLink>
-          </p>
+            <DemoResponseMenu value={scenario} onChange={setScenario} disabled={locked} />
+          </HStack>
         </VStack>
         <LoginWorkspacePreview />
       </main>

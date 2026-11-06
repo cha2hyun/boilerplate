@@ -105,6 +105,19 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 금액의 원본 통화는 USD입니다. Analytics KPI/수익 차트는 달러 단위, Order 상품 가격·배송비와 Customer 누적 금액은 cents입니다. 선택 통화로 변환하기 전에 cents 호출부는 `/ 100`을 적용합니다. 외부 `https://api.frankfurter.dev/v2/rate/USD/KRW` 요청은 `VITE_API_BASE_URL`이나 demo 데이터 모드와 별개이며 `entities/exchange-rate`가 응답을 검증합니다. 공급자·변환·캐시 계약은 [언어와 표시 통화](i18n.md)를 따릅니다.
 
+### 데모 로그인
+
+데모 로그인 전용 경로는 현재 페이지와 같은 출처의 `POST /api/demo-login`입니다. 위 업무 API 목록과 달리 `VITE_API_BASE_URL`을 적용하지 않습니다. 브라우저에서 보낸 JSON을 MSW가 처리하며, API 모드에서는 이 폼과 목업을 활성화하지 않습니다.
+
+| 경로에 보낼 JSON                                       | 결과                                                          |
+| ------------------------------------------------------ | ------------------------------------------------------------- |
+| `{ method: 'credentials', email, password, scenario }` | 공개 데모 이메일·비밀번호가 일치하면 `200 { id: 'usr_demo' }` |
+| `{ method: 'microsoft', scenario }`                    | 폼 입력과 독립적으로 같은 사용자 ID를 반환                    |
+
+`scenario` 값은 `success`, `slow`, `failure`입니다. 기본 응답은 약 1초, 느린 응답은 약 2.5초를 기다립니다. 서버 오류는 약 1초 뒤 HTTP 503을 반환합니다. 올바른 형식의 요청에서 자격 증명이 일치하지 않으면 401, 요청 구조가 잘못되면 400을 반환합니다. 응답에는 입력한 값을 되돌려 보내지 않습니다. 성공 응답의 ID까지 검증한 뒤에만 탭 세션에 기록합니다.
+
+입력은 기본 로그인의 POST 본문에서만 사용하며 URL·저장소·오류 보고에 넣지 않습니다. Microsoft 요청은 폼의 이메일·비밀번호를 보내지 않습니다. 요청과 응답은 캐시하지 않습니다. [로그인 동작과 수용 기준](pages/login.md)
+
 ### 워크스페이스 사용자와 내 계정
 
 `entities/workspace-user`가 내부 구성원의 목록·상세·초대 대기 기록·역할/상태 변경을 소유합니다. 거래 고객과 독립된 목록입니다. 각 레코드는 `id`, `name`, `email`, `role`, `status`를 가집니다. `givenName`, `familyName`, `nickname`, `avatarUrl`은 선택 필드로 과거 응답에도 호환됩니다. 역할은 `admin | member | viewer`, 상태는 `active | invited | suspended`입니다. 목록은 전체 배열을 반환합니다.

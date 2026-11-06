@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { storageKeys } from '@/shared/config/product'
-import { createDemoSessionStore, demoCredentials } from './session'
+import { currentDemoUser } from '@/entities/workspace-user'
+import { createDemoSessionStore } from './session'
+
+const verified = { id: currentDemoUser.id }
 
 function browserStorage() {
   const values = new Map<string, string>()
@@ -27,15 +30,7 @@ describe('tab demo session', () => {
     storage.setItem.mockClear()
     const listener = vi.fn()
     const unsubscribe = store.subscribe(listener)
-    expect(store.signIn('else@example.com', 'unrelated input').ok).toBe(false)
-    expect(store.signIn(demoCredentials.email, demoCredentials.password.toLowerCase()).ok).toBe(
-      false,
-    )
-    expect(storage.setItem).not.toHaveBeenCalled()
-    expect(listener).not.toHaveBeenCalled()
-    expect(
-      store.signIn(`  ${demoCredentials.email.toUpperCase()}  `, demoCredentials.password),
-    ).toEqual({ ok: true })
+    store.accept(verified)
     expect(storage.setItem.mock.calls).toEqual([[storageKeys.demoSession, 'usr_demo']])
     expect(listener).toHaveBeenCalledTimes(1)
     expect(store.getSnapshot()).toBe(store.getSnapshot())
@@ -60,7 +55,7 @@ describe('tab demo session', () => {
     for (const resolve of [blocked, () => readOnly]) {
       const store = createDemoSessionStore(resolve)
       expect(store.getSnapshot()).toBeNull()
-      expect(store.signIn(demoCredentials.email, demoCredentials.password).ok).toBe(true)
+      store.accept(verified)
       expect(store.getSnapshot()).toEqual({ id: 'usr_demo' })
       expect(createDemoSessionStore(resolve).getSnapshot()).toBeNull()
       store.end()
@@ -71,7 +66,7 @@ describe('tab demo session', () => {
   it('rechecks the marker when browser history restores a cached document', () => {
     const storage = browserStorage()
     const store = createDemoSessionStore(() => storage)
-    store.signIn(demoCredentials.email, demoCredentials.password)
+    store.accept(verified)
     let observed = store.getSnapshot()
     const off = store.subscribe(() => {
       observed = store.getSnapshot()
