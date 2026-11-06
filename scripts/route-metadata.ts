@@ -1,11 +1,6 @@
+import { normalizePagePath } from '../src/shared/lib/normalize-page-path.ts'
 import type { Plugin } from 'vite'
-import {
-  createPageHead,
-  normalizePagePath,
-  pagePaths,
-  parseSiteUrl,
-  type HeadTag,
-} from '../src/app/seo/metadata.ts'
+import { createPageHead, pagePaths, parseSiteUrl, type HeadTag } from '../src/app/seo/metadata.ts'
 
 const headStart = '<!-- blueprint:head:start -->'
 const headEnd = '<!-- blueprint:head:end -->'

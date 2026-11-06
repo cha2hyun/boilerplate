@@ -59,3 +59,4 @@ PageHeader의 새 주문 → 전체 주문 상태 요약(모바일 기본 접힘
 - 생성 → 상세에서 결제 상태 수정 → 기록 확인 → 새로고침 후 주문 상태 변경 기록 보존은 기존 CRUD E2E가 함께 검증합니다. 실제 삭제된 상세는 설명을 확인한 후 명시적으로 닫으며 나중에 같은 ID가 다시 나타나도 임의로 열리지 않습니다.
 - 별도 서버 조회: [HTTP·캐시 테스트](../../src/app/mocks/queries.test.ts)는 페이지와 검색 키 분리, 목록 밖 상세, 전체 요약, 잘못된 입력 400, 마지막 페이지 삭제 뒤 보정을 확인합니다. [상거래 E2E](../../e2e/commerce.spec.ts)의 `loads order pages from HTTP and restores a detail outside the current page`와 `corrects the order URL after deleting the only row on the last server page`가 실제 HTTP 응답·URL·새로고침을 검증합니다.
 - 대량 계산의 의미: [데모 페이지 계산 테스트](../../src/entities/order/model/list.test.ts)는 10,000개 주문의 금액 정렬·두 번째 페이지·원본 순서 보존을 확인합니다. [화면 selector](../../src/pages/orders/model/selectors.test.ts)는 서버 총계와 행을 그대로 표시합니다. 실행 시간 기준이나 실제 운영 서버 성능 보증으로 사용하지 않습니다.
+- 정적 호스트의 디렉터리 URL(예: `/orders/`)로 직접 열어도 주문 제목·사이드바 활성 메뉴·현재 위치가 일치합니다. [셸 E2E](../../e2e/workspace.spec.ts)는 대소문자 변형과 실제 없는 경로도 구분합니다.

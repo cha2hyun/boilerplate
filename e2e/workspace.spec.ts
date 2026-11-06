@@ -1117,6 +1117,24 @@ test('keeps page titles and header badges consistent through responsive sidebar 
   }
 })
 
+test('matches direct directory URLs to the same sidebar item and breadcrumb', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'The desktop shell shows both labels.')
+  for (const path of ['/orders/', '/Orders/']) {
+    await page.goto(path)
+    await expect(page.locator('#main-content h1')).toHaveText('Orders')
+    await expect(page.locator('[data-slot="breadcrumb-page"]')).toHaveText('Orders')
+    await expect(page.getByRole('link', { name: 'Orders', exact: true })).toHaveAttribute(
+      'data-active',
+      'true',
+    )
+  }
+  await page.goto('/not-a-workspace-page/')
+  await expect(page.locator('[data-slot="breadcrumb-page"]')).toHaveText('Page not found')
+  await expect(page.locator('a[data-sidebar="menu-button"][data-active="true"]')).toHaveCount(0)
+})
+
 test('recovers from an unknown route and returns focus after closing a component dialog', async ({
   page,
 }) => {

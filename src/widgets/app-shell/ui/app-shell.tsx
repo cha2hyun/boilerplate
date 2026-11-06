@@ -1,3 +1,4 @@
+import { normalizePagePath } from '@/shared/lib/normalize-page-path'
 import { product } from '@/shared/config/product'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
@@ -58,9 +59,15 @@ import { HStack } from '@/shared/ui/stack'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { TextLink } from '@/shared/ui/text-link'
 
+function useNavigationPath() {
+  return useRouterState({
+    select: (state) => normalizePagePath(state.location.pathname).toLowerCase(),
+  })
+}
+
 function WorkspaceSidebar() {
   const { t } = useTranslation('workspace')
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useNavigationPath()
   const { setOpenMobile } = useSidebar()
   const workspaceName = usePreferences((state) => state.workspaceName)
   return (
@@ -173,7 +180,7 @@ export function AppShell({ children }: AppShellProps) {
   const { resolvedTheme, setTheme } = useTheme()
   const navigate = useNavigate()
   const compact = usePreferences((state) => state.compactMode)
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useNavigationPath()
   const currentPage = navigation.find((item) => item.to === pathname)
   const title = t(currentPage?.labelKey ?? 'shell.notFound')
   useEffect(() => {

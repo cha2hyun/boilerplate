@@ -1,3 +1,4 @@
+import { normalizePagePath } from '../../shared/lib/normalize-page-path.ts'
 import { product } from '../../shared/config/product.ts'
 
 export interface PageMetadata {
@@ -114,12 +115,6 @@ export function parseSiteUrl(input: unknown): string | undefined {
   throw new Error(
     'VITE_SITE_URL must be an HTTP(S) origin without credentials, path, query, or hash.',
   )
-}
-
-export function normalizePagePath(pathname: string): string {
-  const [path = ''] = pathname.split(/[?#]/, 1)
-  const normalized = path.replace(/\/+$/, '')
-  return normalized.length === 0 ? '/' : normalized
 }
 
 export function createPageHead(
