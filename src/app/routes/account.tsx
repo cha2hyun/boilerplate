@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { AccountPage } from '@/pages/account'
-import { useDemoSession } from '@/features/demo-session'
+import { DemoSessionBoundary } from '../demo-access/session-boundary'
 import { requireDemoSession } from '../demo-access/guard'
 
 export const Route = createFileRoute('/account')({
@@ -8,7 +8,8 @@ export const Route = createFileRoute('/account')({
     requireDemoSession(location.href)
   },
   component: function AccountRoute() {
-    const session = useDemoSession()
-    return session && <AccountPage userId={session.id} />
+    return (
+      <DemoSessionBoundary>{(session) => <AccountPage userId={session.id} />}</DemoSessionBoundary>
+    )
   },
 })

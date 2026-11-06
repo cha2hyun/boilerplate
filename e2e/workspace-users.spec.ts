@@ -94,3 +94,23 @@ test('keeps the signed-in session when a draft blocks sign-out', async ({ page }
   await page.goto('/account')
   await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible()
 })
+
+test('rechecks a protected document restored after its tab session ended', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'The pageshow session contract is shared.')
+  for (const path of ['/account', '/users?q=Alex']) {
+    await page.goto(path)
+    await signIn(page)
+    await expect(page.getByText('admin@example.com', { exact: true })).toBeVisible()
+    // Playwright disables Chromium BFCache by default. Deliver its persisted pageshow event
+    // to the still-mounted document after the same tab's other document has signed out.
+    await page.evaluate(() => {
+      sessionStorage.removeItem('blueprint.demo.session.v1')
+      window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
+    })
+    await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
+    await expect(page.getByText('Alex Morgan', { exact: true })).toHaveCount(0)
+    expect(new URL(page.url()).searchParams.get('returnTo')).toBe(path)
+  }
+})

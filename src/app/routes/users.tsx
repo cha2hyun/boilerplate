@@ -3,6 +3,7 @@ import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
 import { UsersPage } from '@/pages/users'
 import { usersSearchDefaults, usersSearchSchema, type UsersSearch } from '@/pages/users/search'
 import type { SearchChange } from '@/shared/lib/search-params'
+import { DemoSessionBoundary } from '../demo-access/session-boundary'
 import { requireDemoSession } from '../demo-access/guard'
 
 export const Route = createFileRoute('/users')({
@@ -24,6 +25,10 @@ export const Route = createFileRoute('/users')({
       },
       [navigate],
     )
-    return <UsersPage search={search} onSearchChange={onSearchChange} />
+    return (
+      <DemoSessionBoundary>
+        {() => <UsersPage search={search} onSearchChange={onSearchChange} />}
+      </DemoSessionBoundary>
+    )
   },
 })
