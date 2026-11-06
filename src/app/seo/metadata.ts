@@ -48,6 +48,9 @@ export const pageMetadata = {
 } as const satisfies Record<string, PageMetadata>
 
 export type PagePath = keyof typeof pageMetadata
+/** Explicitly public routes only. Configuring an origin never opts an admin page into indexing. */
+export const publicIndexablePaths: readonly PagePath[] = []
+
 const koreanPageMetadata: Record<PagePath, PageMetadata> = {
   '/': {
     title: '개요',
@@ -122,7 +125,15 @@ export function normalizePagePath(pathname: string): string {
 export function createPageHead(
   pathname: string,
   siteUrl?: string,
-  { indexable = true, locale = 'en-US' }: { indexable?: boolean; locale?: 'en-US' | 'ko-KR' } = {},
+  {
+    indexable = true,
+    indexablePaths = publicIndexablePaths,
+    locale = 'en-US',
+  }: {
+    indexable?: boolean
+    indexablePaths?: readonly PagePath[]
+    locale?: 'en-US' | 'ko-KR'
+  } = {},
 ): HeadTag[] {
   const origin = parseSiteUrl(siteUrl)
   const requestedPath = normalizePagePath(pathname)
@@ -146,7 +157,10 @@ export function createPageHead(
       tag: 'meta',
       attributes: {
         name: 'robots',
-        content: indexable && known && origin ? 'index, follow' : 'noindex, nofollow',
+        content:
+          indexable && known && origin && indexablePaths.includes(path)
+            ? 'index, follow'
+            : 'noindex, nofollow',
       },
     },
     { tag: 'meta', attributes: { property: 'og:type', content: 'website' } },

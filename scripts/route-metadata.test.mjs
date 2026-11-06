@@ -44,7 +44,9 @@ test('emits route-specific HTML from the built shell without changing scripts or
   for (const asset of emitted) {
     assert.equal(asset.source.split('<body>')[1], index.split('<body>')[1])
     assert.ok(asset.source.includes('/assets/app-hashed.js'))
+    assert.ok(asset.source.includes('content="noindex, nofollow"'))
   }
+  assert.ok(index.includes('content="noindex, nofollow"'))
   const orders = emitted.find(({ fileName }) => fileName === 'orders/index.html')
   assert.ok(orders)
   assert.ok(orders.source.includes('<title data-page-meta>Orders · Blueprint</title>'))

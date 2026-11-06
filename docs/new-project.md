@@ -2,6 +2,8 @@
 
 저장소를 복제한 뒤 아래 항목으로 제품의 이름과 범위를 정리하세요. 실행 환경은 [README](../README.md), 서버 연결과 배포 검증은 [운영 전환](production-readiness.md)이 소유합니다. 기본 데모가 실행된다는 사실은 운영 연결의 완료 근거가 아닙니다.
 
+구체적인 포크 범위가 필요하면 [주문 기록만 남기는 최소 어드민 예시](examples/minimal-admin.md)를 참고하세요. `/` 진입, Orders/Settings, 탐색·메타·번역·목업·검증을 함께 줄이고 새 도메인을 추가하는 예시입니다.
+
 - [ ] **이름과 문구:** `package.json`의 이름, README, `src/shared/lib/i18n/locales`의 앱 문구, `src/app/seo/metadata.ts`의 두 언어 제목/설명과 `og:site_name`, `public/site.webmanifest`의 이름을 제품에 맞게 바꾼다. 앱 이름·워드마크·작성자·저장소/문서 링크·워크스페이스 기본 이름은 `src/shared/config/product.ts`의 `product`에서 바꾼다. 셸과 페이지 메타데이터는 이 구성을 사용한다. 번역의 제품 설명, Foundations 예제와 정적 manifest/SVG는 실제 제품 내용에 맞게 별도로 검토한다. 설정 초기화는 store가 반환하는 기본값을 사용하므로 화면에 기본값을 다시 적지 않는다. 관련 테스트의 기대 문구도 함께 갱신한다.
 - [ ] **브랜드 자산:** `public/favicon.svg`와 `public/og/blueprint.svg`를 교체하고 `pnpm assets:generate`로 PNG/ICO를 재생성한다. 공유 이미지 이름을 바꾸면 생성 스크립트와 메타 registry의 경로도 바꾼다. 아이콘 크기와 연결 위치는 [SEO 가이드](seo.md)를 따른다.
 - [ ] **저장 namespace:** `src/shared/config/product.ts`의 `storageKeys`에 테마, 워크스페이스/언어 환경 설정, 프로젝트·주문·고객 데모 키가 모두 있다. 포크는 여섯 값을 제품 고유 namespace로 바꾼다. 원본의 기존 키 값(`blueprint-theme`, `blueprint-preferences`, `blueprint-locale-preferences`, `orbit.demo.projects.v1`, `orbit.demo.orders.v1`, `orbit.demo.customers.v1`)은 호환성을 위해 유지한다. 같은 origin의 다른 복제 앱과 데이터가 섞이지 않는지 확인하며, 이미 사용자가 있으면 키 교체 전 이관/폐기 정책을 정한다. 다른 앱의 저장소 전체를 지우지 않는다.

@@ -21,13 +21,14 @@ Vite의 `transformIndexHtml`/`generateBundle` 훅이 한 번 빌드한 HTML shel
 - `http` 또는 `https` origin과 선택적인 끝 `/`만 허용합니다. 자격증명, 하위 경로, query, hash는 거부합니다.
 - 설정하지 않으면 canonical, `og:url`, OG/Twitter 이미지의 절대 URL을 생략하고 `noindex, nofollow`를 출력합니다. localhost나 가상의 운영 도메인을 대신 넣지 않습니다.
 - 개발 서버에서만 CSR 메타가 현재 브라우저의 실제 origin을 사용하여 로컬 공유 이미지와 SEO inspector를 확인할 수 있습니다. 개발 메타는 `noindex`를 유지하며 이 fallback은 production HTML/번들 동작에 적용되지 않습니다.
-- 설정하면 알려진 페이지에 canonical과 공유 이미지의 절대 URL이 생기며 `index, follow`를 출력합니다. query/hash는 canonical에 포함하지 않습니다.
+- 설정하면 알려진 페이지에 canonical과 공유 이미지의 절대 URL이 생깁니다. 관리자 페이지의 기본 `noindex, nofollow`는 유지하며 query/hash는 canonical에 포함하지 않습니다.
+- 검색 공개는 별도 코드 정책인 `src/app/seo/metadata.ts`의 `publicIndexablePaths`에서 경로별로 선택합니다. 기본 목록은 비어 있습니다. 공개하기로 결정한 경로만 이 타입 검증된 목록에 추가하며, 해당 경로도 공개 origin이 없거나 개발 서버에서 실행되면 `noindex`입니다. 정적 HTML과 CSR은 같은 정책을 사용합니다.
 - 알 수 없는 경로는 도메인 설정과 관계없이 `noindex, nofollow`이며 알려진 페이지의 canonical을 재사용하지 않습니다.
 - 현재 앱과 메타 생성은 origin 루트 배포(`base: '/'`)를 전제로 합니다. 하위 경로 배포를 지원하려면 Router basepath, 정적 자산, manifest, 메타 URL 생성을 함께 바꿔야 합니다.
 
 `VITE_SITE_URL` 변경은 재빌드가 필요합니다. 운영용 빌드의 값이 preview 배포에 들어가면 운영 canonical을 가리키므로 환경별로 값을 관리하세요. `noindex`는 접근 제어가 아니며 실제 비공개 서비스는 서버 인증/권한이 필요합니다.
 
-`public/robots.txt`는 모든 크롤러의 페이지 접근을 허용합니다. 크롤러가 HTML의 robots 메타를 읽을 수 있어야 하므로 도메인 미설정 시에도 크롤링 자체를 차단하지 않습니다. 검색 색인 허용 여부는 위의 `VITE_SITE_URL`과 페이지별 robots 메타 정책을 따릅니다. 실제 공개 도메인이 정해지기 전에는 sitemap URL을 넣지 않습니다.
+`public/robots.txt`는 모든 크롤러의 페이지 접근을 허용합니다. 크롤러가 HTML의 robots 메타를 읽을 수 있어야 하므로 도메인 미설정 시에도 크롤링 자체를 차단하지 않습니다. 검색 색인 허용 여부는 공개 origin과 별도의 `publicIndexablePaths` 허용 목록을 함께 확인하는 페이지별 robots 메타 정책을 따릅니다. 실제 공개 도메인이 정해지기 전에는 sitemap URL을 넣지 않습니다.
 
 ## 정적 호스팅 순서
 
