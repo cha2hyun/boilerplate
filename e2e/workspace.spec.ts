@@ -975,13 +975,20 @@ test('keeps page titles and header badges consistent through responsive sidebar 
       await expect(badge).toHaveCount(expectedBadgeLabel === undefined ? 0 : 1)
       if (expectedBadgeLabel !== undefined) {
         await expect(badge).toHaveText(expectedBadgeLabel)
-        await expect(badge).toHaveAttribute('data-variant', 'outline')
+        await expect(badge).toHaveAttribute('data-variant', 'context')
         await expect(badge).toBeVisible()
         const measurements = await header.evaluate((element) => {
           const title = element.querySelector('[data-slot="page-title"]')
           const badge = element.querySelector('[data-slot="page-header-badge"]')
           const description = element.querySelector('[data-slot="page-description"]')
           if (!title || !badge || !description) throw new Error('The page header is incomplete.')
+          const swatch = document.createElement('span')
+          swatch.style.backgroundColor = 'var(--chip)'
+          swatch.style.color = 'var(--chip-foreground)'
+          element.append(swatch)
+          const chipSurface = getComputedStyle(swatch).backgroundColor
+          const chipText = getComputedStyle(swatch).color
+          swatch.remove()
           const titleBox = title.getBoundingClientRect()
           const badgeBox = badge.getBoundingClientRect()
           const style = getComputedStyle(badge)
@@ -1005,7 +1012,8 @@ test('keeps page titles and header badges consistent through responsive sidebar 
                 'padding-left',
               ].map((property) => [property, style.getPropertyValue(property)]),
             ),
-            mutedColor: getComputedStyle(description).color,
+            chipSurface,
+            chipText,
             gap: badgeBox.left - titleBox.right,
             centerDelta: Math.abs(
               titleBox.top + titleBox.height / 2 - badgeBox.top - badgeBox.height / 2,
@@ -1018,8 +1026,8 @@ test('keeps page titles and header badges consistent through responsive sidebar 
           'line-height': '16px',
           'border-top-width': '1px',
           'border-top-style': 'solid',
-          'background-color': 'rgba(0, 0, 0, 0)',
-          color: measurements.mutedColor,
+          'background-color': measurements.chipSurface,
+          color: measurements.chipText,
         })
         badgeAppearance ??= measurements.appearance
         expect(measurements.appearance).toEqual(badgeAppearance)

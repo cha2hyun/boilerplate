@@ -204,7 +204,7 @@ export function UsersPage({ search, onSearchChange }: UsersPageProps) {
                                 {user.name}
                               </Button>
                               {user.id === currentDemoUserId && (
-                                <Badge variant="outline">{t('self')}</Badge>
+                                <Badge variant="context">{t('self')}</Badge>
                               )}
                             </HStack>
                             <p className="min-w-0 text-sm wrap-anywhere text-muted-foreground">

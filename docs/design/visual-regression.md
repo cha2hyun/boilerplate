@@ -26,7 +26,7 @@
 
 참고: [Playwright 시각 비교](https://playwright.dev/docs/test-snapshots)는 동일 환경에서 기준 생성과 비교를 권장합니다. 현재 작은 픽셀 허용치는 렌더링 잡음용이며 배치·크기 변경의 허용 기준이 아닙니다.
 
-차트 축의 대비는 픽셀 기준과 별도로 실제 SVG computed fill을 검사합니다. `renders readable chart axes and avatar initials in both themes`가 Overview·Analytics의 축 글자가 현재 의미 토큰을 사용하는지와 카드 배경 대비를 확인합니다. 라이브러리 내부 DOM 변경으로 공통 선택자가 적용되지 않는 회귀를 포함합니다.
+차트 축의 대비는 픽셀 기준과 별도로 실제 SVG computed fill을 검사합니다. `renders chart series, readable axes and avatar initials in both themes`가 Overview·Analytics의 축 글자가 현재 의미 토큰을 사용하는지와 카드 배경 대비를 확인합니다. 같은 검사에서 주요 곡선과 보조 곡선의 실제 선 색과 범례·툴팁 표식이 각 계열의 토큰과 일치하는지도 확인합니다. 라이브러리 내부 DOM 변경으로 공통 선택자가 적용되지 않는 회귀를 포함합니다.
 
 같은 검사는 Overview·Projects의 Avatar 이니셜도 실제 computed color와 배경으로 확인합니다. 이니셜은 `muted` 배경 위 `foreground`를 사용하며, 12px 글자에서 4.5:1을 충족해야 합니다.
 
