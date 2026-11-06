@@ -21,6 +21,7 @@ import { ProjectTable, projectTableSearchDefaults } from '@/widgets/project-tabl
 import { RevenueChart } from '@/widgets/revenue-chart'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
+import { cn } from '@/shared/lib/utils'
 import type { OverviewSearch } from '../model/search'
 import { env } from '@/shared/config'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/ui/alert'
@@ -199,7 +200,16 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
             <CardDescription>{t('overview.activityDescription')}</CardDescription>
           </CardHeader>
           <VStack asChild align="stretch" className="h-88 gap-2 overflow-y-auto">
-            <CardContent role="region" aria-label={t('overview.activity')} tabIndex={0}>
+            <CardContent
+              role="region"
+              aria-label={t('overview.activity')}
+              tabIndex={0}
+              className={cn(
+                isLoading && !analytics.isFetched && 'motion-safe:opacity-[0.62]',
+                Boolean(analytics.data?.activity.length) &&
+                  'motion-safe:transition-opacity motion-safe:duration-160 motion-safe:ease-out',
+              )}
+            >
               {isLoading ? (
                 Array.from({ length: 4 }, (_, index) => (
                   <HStack key={index} className="min-h-18 shrink-0 gap-3" aria-hidden="true">

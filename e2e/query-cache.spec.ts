@@ -260,6 +260,7 @@ async function captureColdCards(page: Page, expectedCount: number) {
           ?.querySelector('[data-slot="skeleton"]')
           ?.getBoundingClientRect()
         const description = comparison?.lastElementChild?.getBoundingClientRect()
+        const activity = card.querySelector('[role="region"][aria-label="Recent activity"]')
         return {
           name:
             card.getAttribute('aria-label') ??
@@ -270,6 +271,7 @@ async function captureColdCards(page: Page, expectedCount: number) {
           width: rect.width,
           height: rect.height,
           skeletons: card.querySelectorAll('[data-slot="skeleton"]').length,
+          activityOpacity: activity ? getComputedStyle(activity).opacity : null,
           comparisonCenterDelta:
             indicator && description
               ? Math.abs(
@@ -353,10 +355,26 @@ async function expectReadyCards(cards: Locator, count: number) {
   ).toEqual(Array<string>(count).fill('false'))
 }
 
+async function watchActivityFade(page: Page) {
+  return page.evaluateHandle(() => {
+    const runs: string[] = []
+    document.addEventListener('transitionrun', (event) => {
+      const body = event.target
+      if (
+        body instanceof Element &&
+        body.matches('[role="region"][aria-label="Recent activity"]')
+      ) {
+        runs.push(`${event.propertyName}: ${getComputedStyle(body).transitionDuration}`)
+      }
+    })
+    return runs
+  })
+}
+
 for (const sample of pages) {
   test(`${sample.name} keeps card geometry and cached data through real demo requests`, async ({
     page,
-  }) => {
+  }, testInfo) => {
     const requests: string[] = []
     page.on('request', (request) => {
       const path = requestPath(request.url())
@@ -378,6 +396,13 @@ for (const sample of pages) {
       await document.fonts.ready
     })
 
+    // Exercise reduced motion on tablet and the normal transition on desktop and mobile.
+    const reduceActivity = testInfo.project.name === 'tablet'
+    if (sample.name === 'Overview') {
+      await page.emulateMedia({ reducedMotion: reduceActivity ? 'reduce' : 'no-preference' })
+    }
+    const fade = sample.name === 'Overview' ? await watchActivityFade(page) : undefined
+    const expectedFade = reduceActivity ? [] : ['opacity: 0.16s']
     const cold = captureColdCards(page, sample.cards)
     const firstResponse = page.waitForResponse(
       (response) => requestPath(response.url()) === sample.endpoint,
@@ -385,6 +410,9 @@ for (const sample of pages) {
     await navigate(page, sample.name, sample.route)
     const before = await cold
     if (sample.name === 'Overview') {
+      expect(before.find((card) => card.activityOpacity !== null)?.activityOpacity).toBe(
+        reduceActivity ? '1' : '0.62',
+      )
       const comparisons = before.filter((card) => card.comparisonCenterDelta !== null)
       expect(comparisons).toHaveLength(4)
       for (const card of comparisons) expect(card.comparisonCenterDelta).toBeLessThanOrEqual(1)
@@ -392,6 +420,13 @@ for (const sample of pages) {
     expect((await firstResponse).fromServiceWorker()).toBe(true)
     const cards = page.locator(cardSelector)
     await expectReadyCards(cards, sample.cards)
+    if (fade) {
+      await expect(page.getByRole('region', { name: 'Recent activity', exact: true })).toHaveCSS(
+        'opacity',
+        '1',
+      )
+      await expect.poll(() => fade.jsonValue()).toEqual(expectedFade)
+    }
     const after = await captureCards(cards)
     const metricHeight = (page.viewportSize()?.width ?? 1440) < 768 ? 136 : 192
     const metricHeights = await page
@@ -497,5 +532,10 @@ for (const sample of pages) {
     expect(await backgroundLoading.evaluate((observer) => observer.finish())).toBe(false)
     await backgroundLoading.dispose()
     expect(requestCount(sample.endpoint)).toBe(2)
+    if (fade) {
+      // Route search, cached remount and background refresh must not replay the entry.
+      expect(await fade.jsonValue()).toEqual(expectedFade)
+      await fade.dispose()
+    }
   })
 }
