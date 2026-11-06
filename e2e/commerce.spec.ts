@@ -563,6 +563,56 @@ async function fillCustomerForm(dialog: Locator, name: string) {
   await dialog.getByLabel('Joined', { exact: true }).fill('2026-01-01')
 }
 
+test('keeps a saved status and a stale editor’s city when two tabs edit an order', async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop',
+    'The order write contract is shared across viewports.',
+  )
+  const secondTab = await context.newPage()
+  const id = 'ORD-1042'
+  async function openEditor(tab: Page) {
+    await tab.goto(`/orders?detail=${id}`)
+    await tab
+      .getByRole('dialog', { name: `Order ${id}`, exact: true })
+      .getByRole('button', { name: 'Edit order', exact: true })
+      .click()
+    return tab.getByRole('dialog', { name: 'Edit order', exact: true })
+  }
+  const [first, second] = await Promise.all([openEditor(page), openEditor(secondTab)])
+  await second.getByLabel('City', { exact: true }).fill('Busan')
+  await first.getByLabel('Order status', { exact: true }).click()
+  await page.getByRole('option', { name: 'Shipped', exact: true }).click()
+  await first.getByRole('button', { name: 'Save changes' }).click()
+  await expect(first).toBeHidden()
+
+  const save = second.getByRole('button', { name: 'Save changes' })
+  await save.click()
+  const review = second.getByRole('button', { name: 'Review latest order' })
+  await expect(review).toBeVisible()
+  await expect(save).toBeDisabled()
+  await expect(second.getByLabel('City', { exact: true })).toHaveValue('Busan')
+
+  await review.click()
+  await expect(second.getByLabel('Order status', { exact: true })).toHaveText(/Shipped/)
+  await expect(second.getByLabel('City', { exact: true })).toHaveValue('Busan')
+  await save.click()
+  await expect(second).toBeHidden()
+
+  await page.reload()
+  const latest = page.getByRole('dialog', { name: `Order ${id}`, exact: true })
+  await expect(latest).toContainText('Busan')
+  await expect(latest.getByRole('region', { name: 'Change history' })).toContainText(
+    'Processing → Shipped',
+  )
+  await expect(latest.getByRole('region', { name: 'Change history' })).not.toContainText(
+    'Shipped → Processing',
+  )
+  await secondTab.close()
+})
+
 test('creates, edits and deletes an order with protected drafts and persisted totals', async ({
   page,
 }, testInfo) => {
@@ -1176,4 +1226,79 @@ test('corrects the order URL after deleting the only row on the last server page
   await expect(page.getByText('Showing 1–6 of 6 orders', { exact: true })).toBeVisible()
   await page.reload()
   await expect(page.getByText('Showing 1–6 of 6 orders', { exact: true })).toBeVisible()
+})
+
+test('accepts one concurrent order write per revision across two tabs', async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop',
+    'The storage transaction is independent of viewport.',
+  )
+  const otherTab = await context.newPage()
+  const tabs = [page, otherTab]
+  const path = '/api/orders/ORD-1042'
+  // Each tab starts its own real mock handler and reads the same record before either writes.
+  await Promise.all(
+    tabs.map(async (tab) => {
+      await tab.goto('/settings')
+      await expect(tab.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
+    }),
+  )
+
+  type OrderSnapshot = Record<string, unknown> & {
+    revision: number
+    customer: { name: string; email: string }
+    status: string
+    city: string
+    history: { field: string; from: string | null; to: string }[]
+  }
+  const readOrder = (tab: Page) =>
+    tab.evaluate(async (path) => {
+      const response = await fetch(path)
+      if (!response.ok) throw new Error(`Read failed with HTTP ${String(response.status)}`)
+      return (await response.json()) as OrderSnapshot
+    }, path)
+  const snapshots = await Promise.all(tabs.map(readOrder))
+  expect(snapshots[1]).toEqual(snapshots[0])
+  expect(snapshots[0]).toMatchObject({ revision: 1, status: 'Processing', history: [] })
+
+  const edits = [
+    { status: 'Shipped', city: 'Daejeon' },
+    { status: 'Delivered', city: 'Seattle' },
+  ]
+  const results = await Promise.all(
+    tabs.map((tab, index) =>
+      tab.evaluate(
+        async ({ path, snapshot, edit }) => {
+          const { customer, date, payment, country, shipping, items, revision } = snapshot
+          const response = await fetch(path, {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json', 'if-match': `"${String(revision)}"` },
+            body: JSON.stringify({
+              customer: { name: customer.name, email: customer.email },
+              date,
+              payment,
+              country,
+              shipping,
+              items,
+              ...edit,
+            }),
+          })
+          return response.status
+        },
+        { path, snapshot: snapshots[index], edit: edits[index] },
+      ),
+    ),
+  )
+  expect([...results].sort()).toEqual([200, 412])
+  const winner = edits[results.indexOf(200)]
+  const stored = await Promise.all(tabs.map(readOrder))
+  expect(stored[1]).toEqual(stored[0])
+  expect(stored[0]).toMatchObject({
+    ...winner,
+    revision: 2,
+    history: [{ field: 'status', from: 'Processing', to: winner.status }],
+  })
 })

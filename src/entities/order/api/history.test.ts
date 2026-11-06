@@ -30,11 +30,15 @@ describe('demo order change history', () => {
       { field: 'payment', occurredAt: timestamp, from: null, to: input.payment },
     ])
     timestamp = '2026-11-05T10:01:00.000Z'
-    const updated = await adapter.update(created.id, {
-      ...input,
-      status: 'Shipped',
-      payment: 'Refunded',
-    })
+    const updated = await adapter.update(
+      created.id,
+      {
+        ...input,
+        status: 'Shipped',
+        payment: 'Refunded',
+      },
+      created.revision,
+    )
     expect(updated.history).toEqual([
       ...created.history,
       { field: 'status', occurredAt: timestamp, from: input.status, to: 'Shipped' },
@@ -43,25 +47,30 @@ describe('demo order change history', () => {
     const reopened = createDemoOrderAdapter({ storage, delayMs: 0 })
     expect((await reopened.detail(created.id)).history).toEqual(updated.history)
 
-    const edited = await reopened.update(created.id, {
-      ...orderInputSchema.parse(updated),
-      city: 'Busan',
-    })
-    expect(edited.history).toEqual(updated.history)
-    expect((await reopened.update(created.id, orderInputSchema.parse(edited))).history).toEqual(
-      updated.history,
+    const edited = await reopened.update(
+      created.id,
+      {
+        ...orderInputSchema.parse(updated),
+        city: 'Busan',
+      },
+      updated.revision,
     )
+    expect(edited.history).toEqual(updated.history)
+    expect(
+      (await reopened.update(created.id, orderInputSchema.parse(edited), edited.revision)).history,
+    ).toEqual(updated.history)
   })
 
   it('starts legacy records with no history and records only changes made now', async () => {
-    const { history, ...legacy } = orderSchema.parse(sampleOrders[0])
+    const { revision, history, ...legacy } = orderSchema.parse(sampleOrders[0])
+    expect(revision).toBe(1)
     expect(history).toEqual([])
     expect(sampleOrders.every((order) => order.history.length === 0)).toBe(true)
     const storage = memoryStorage(JSON.stringify({ version: 1, orders: [legacy] }))
     const occurredAt = '2026-11-05T12:00:00.000Z'
     const adapter = createDemoOrderAdapter({ storage, delayMs: 0, now: () => new Date(occurredAt) })
-    expect((await adapter.list()).items).toEqual([{ ...legacy, history: [] }])
-    const updated = await adapter.update(legacy.id, { ...input, status: 'Shipped' })
+    expect((await adapter.list()).items).toEqual([{ ...legacy, revision: 1, history: [] }])
+    const updated = await adapter.update(legacy.id, { ...input, status: 'Shipped' }, 1)
     expect(updated.history).toEqual([
       { field: 'status', occurredAt, from: 'Processing', to: 'Shipped' },
     ])
@@ -77,15 +86,22 @@ describe('demo order change history', () => {
     const existing = orderSchema.parse(sampleOrders[0])
     const before = storage.getItem()
     await expect(
-      adapter.update(existing.id, { ...input, status: 'Shipped', items: [] }),
+      adapter.update(existing.id, { ...input, status: 'Shipped', items: [] }, existing.revision),
     ).rejects.toThrow()
-    await expect(adapter.update('missing', { ...input, status: 'Shipped' })).rejects.toMatchObject({
+    await expect(
+      adapter.update('missing', { ...input, status: 'Shipped' }, 1),
+    ).rejects.toMatchObject({
       status: 404,
     })
     expect(storage.getItem()).toBe(before)
     const delayed = createDemoOrderAdapter({ storage, delayMs: 1000 })
     const controller = new AbortController()
-    const pending = delayed.update(existing.id, { ...input, status: 'Shipped' }, controller.signal)
+    const pending = delayed.update(
+      existing.id,
+      { ...input, status: 'Shipped' },
+      existing.revision,
+      controller.signal,
+    )
     controller.abort()
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
     expect(storage.getItem()).toBe(before)
@@ -101,10 +117,14 @@ describe('demo order change history', () => {
     })
     let current = await adapter.create(input)
     for (let index = 0; index < orderLimits.history + 1; index += 1) {
-      current = await adapter.update(current.id, {
-        ...input,
-        status: index % 2 === 0 ? 'Cancelled' : 'Delivered',
-      })
+      current = await adapter.update(
+        current.id,
+        {
+          ...input,
+          status: index % 2 === 0 ? 'Cancelled' : 'Delivered',
+        },
+        current.revision,
+      )
     }
     expect(current.history).toHaveLength(orderLimits.history)
     expect(current.history[0]).toEqual({
@@ -140,7 +160,11 @@ describe('demo order change history', () => {
     const created = await adapter.create(injected)
     expect(created.history).toHaveLength(2)
     expect(created.history.every((event) => event.from === null)).toBe(true)
-    const updated = await adapter.update(created.id, { ...injected, status: 'Shipped' })
+    const updated = await adapter.update(
+      created.id,
+      { ...injected, status: 'Shipped' },
+      created.revision,
+    )
     expect(updated.history).toHaveLength(3)
     expect((await adapter.detail(created.id)).history).toEqual(updated.history)
   })

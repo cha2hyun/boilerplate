@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createDemoProjectAdapter, PROJECT_STORAGE_KEY } from './demo'
 import { seedProjects } from './seed'
 
@@ -20,20 +20,27 @@ const input = {
 }
 
 describe('persistent demo adapter', () => {
-  it('persists create, edit and delete across independent adapter instances', async () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('persists create, edit and delete across instances without secure-context UUIDs', async () => {
+    vi.stubGlobal('crypto', { getRandomValues: crypto.getRandomValues.bind(crypto) })
     const storage = memoryStorage()
     const firstSession = createDemoProjectAdapter({
       storage,
       delayMs: 0,
-      createId: () => 'prj_test',
       now: () => new Date('2026-11-03T10:00:00.000Z'),
     })
     const created = await firstSession.create(input)
-    expect(created).toMatchObject({ ...input, id: 'prj_test', progress: 0 })
+    expect(created).toMatchObject({ ...input, progress: 0 })
+    expect(created.id).toMatch(/^prj_/)
     expect(created.owner.email).toBe('alex@example.com')
 
     const secondSession = createDemoProjectAdapter({ storage, delayMs: 0 })
     expect(await secondSession.list()).toHaveLength(seedProjects.length + 1)
+    const secondProject = await secondSession.create(input)
+    expect(secondProject.id).not.toBe(created.id)
     await secondSession.update(created.id, { ...input, name: 'Ready to launch', status: 'paused' })
 
     const thirdSession = createDemoProjectAdapter({ storage, delayMs: 0 })
@@ -43,6 +50,7 @@ describe('persistent demo adapter', () => {
       progress: 0,
     })
     await thirdSession.delete(created.id)
+    await thirdSession.delete(secondProject.id)
     expect(await firstSession.list()).toHaveLength(seedProjects.length)
     expect((await firstSession.list()).some((project) => project.id === created.id)).toBe(false)
   })

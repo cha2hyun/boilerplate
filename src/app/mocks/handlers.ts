@@ -44,13 +44,19 @@ async function adapterResponse(action: () => Promise<unknown>, status = 200) {
   } catch (error) {
     const status =
       error instanceof ApiError &&
-      (error.status === 403 || error.status === 404 || error.status === 409)
+      (error.status === 403 ||
+        error.status === 404 ||
+        error.status === 409 ||
+        error.status === 412 ||
+        error.status === 428)
         ? error.status
         : 500
     const messages: Record<number, string> = {
       403: 'This record cannot be changed.',
       404: 'Record not found.',
       409: 'The record already exists.',
+      412: 'The order was changed. Review the latest version.',
+      428: 'An order revision is required.',
     }
     return HttpResponse.json(
       { message: messages[status] ?? 'The change could not be saved.' },
@@ -161,7 +167,11 @@ export function createDemoHandlers({
       if (!input || typeof params.id !== 'string') return invalidInput()
       const id = params.id
       await delay(delayMs)
-      return adapterResponse(() => orders.update(id, input, request.signal))
+      const tag = request.headers.get('If-Match')
+      const match = tag === null ? null : /^"([1-9]\d*)"$/.exec(tag)
+      const revision = match ? Number(match[1]) : undefined
+      if (tag !== null && !Number.isSafeInteger(revision)) return invalidInput()
+      return adapterResponse(() => orders.update(id, input, revision, request.signal))
     }),
     http.delete(`${apiBaseUrl}/orders/:id`, async ({ request, params }) => {
       if (typeof params.id !== 'string') return invalidInput()

@@ -19,12 +19,16 @@ describe('order HTTP contract', () => {
       .fn<typeof fetch>()
       .mockResolvedValueOnce(Response.json({ items: [order], total: 1, page: 1, pageSize: 6 }))
       .mockResolvedValueOnce(Response.json(order, { status: 201 }))
-      .mockResolvedValueOnce(Response.json(order))
+      .mockResolvedValueOnce(Response.json({ ...order, revision: 2 }))
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
     expect((await httpOrderAdapter.list()).items).toEqual([order])
     expect(await httpOrderAdapter.create(input)).toEqual(order)
-    expect(await httpOrderAdapter.update(order.id, input)).toEqual(order)
+    expect(await httpOrderAdapter.update(order.id, input, order.revision)).toEqual({
+      ...order,
+      revision: 2,
+    })
+    expect(new Headers(fetchMock.mock.calls[2]?.[1]?.headers).get('If-Match')).toBe('"1"')
     await httpOrderAdapter.delete(order.id)
     const collection = 'https://api.example.test/v1/orders'
     expect(
@@ -91,6 +95,27 @@ describe('order HTTP contract', () => {
     expect(JSON.parse(body)).not.toHaveProperty('history')
   })
 
+  it('keeps unversioned API orders readable and refuses a blind edit', async () => {
+    const { revision, ...legacy } = orderSchema.parse(sampleOrders[0])
+    expect(revision).toBe(1)
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(Response.json(legacy))
+    vi.stubGlobal('fetch', fetch)
+    const record = await httpOrderAdapter.detail(legacy.id)
+    expect(record.revision).toBeUndefined()
+    await expect(
+      httpOrderAdapter.update(record.id, orderInputSchema.parse(record), record.revision),
+    ).rejects.toMatchObject({ status: 428 })
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats a successful PATCH without a newer revision as uncertain', async () => {
+    const record = orderSchema.parse(sampleOrders[0])
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockResolvedValue(Response.json(record)))
+    await expect(
+      httpOrderAdapter.update(record.id, orderInputSchema.parse(record), record.revision),
+    ).rejects.toMatchObject({ code: 'INVALID_RESPONSE', mayHaveSucceeded: true })
+  })
+
   it('aborts an in-flight HTTP list using the Query-provided signal', async () => {
     const controller = new AbortController()
     vi.stubGlobal(
@@ -124,7 +149,7 @@ it.each(['.', '..', ''])(
       mayHaveSucceeded: false,
     })
     await expect(
-      httpOrderAdapter.update(id, orderInputSchema.parse(sampleOrders[0])),
+      httpOrderAdapter.update(id, orderInputSchema.parse(sampleOrders[0]), 1),
     ).rejects.toMatchObject({ status: 400, mayHaveSucceeded: false })
     await expect(httpOrderAdapter.delete(id)).rejects.toMatchObject({
       status: 400,
@@ -145,6 +170,6 @@ it('treats mismatched detail IDs as invalid and a mismatched PATCH response as u
     mayHaveSucceeded: false,
   })
   await expect(
-    httpOrderAdapter.update(order.id, orderInputSchema.parse(order)),
+    httpOrderAdapter.update(order.id, orderInputSchema.parse(order), order.revision),
   ).rejects.toMatchObject({ code: 'INVALID_RESPONSE', mayHaveSucceeded: true })
 })

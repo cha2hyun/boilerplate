@@ -29,6 +29,17 @@ export default {
   created: '주문을 만들었습니다',
   updated: '주문을 수정했습니다',
   ready: '{{id}} 주문을 저장했습니다.',
+  missingRevision: '서버가 주문 버전을 제공하지 않아 편집할 수 없습니다.',
+  changed: '편집 중에 다른 변경이 저장되었습니다. 입력한 내용은 보관되어 있습니다.',
+  reviewLatest: '최신 주문 확인',
+  reviewLoading: '최신 주문을 불러오는 중…',
+  reviewed:
+    '최신 저장값과 내 변경을 폼에 반영했습니다. 겹치는 항목의 값을 선택한 뒤 폼을 확인하고 저장하세요.',
+  savedValue: '저장된 값: {{value}}',
+  mineValue: '내 입력: {{value}}',
+  useSaved: '저장된 값 사용',
+  keepMine: '내 입력 유지',
+  conflictItem: '{{name}} · {{quantity}} × USD {{unitPrice}}',
   saveError: '주문을 저장하지 못했습니다. 입력한 내용은 유지됩니다. 다시 시도해 주세요.',
   notFound: '이 주문은 더 이상 존재하지 않습니다. 창을 닫고 목록을 새로고침하세요.',
   errors: {

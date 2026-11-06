@@ -56,3 +56,34 @@ export function parseOrderForm(input: OrderFormInput) {
     })),
   })
 }
+
+export type OrderFormField = keyof OrderFormInput
+const orderFormFields = [
+  'customerName',
+  'customerEmail',
+  'date',
+  'status',
+  'payment',
+  'city',
+  'country',
+  'shipping',
+  'items',
+] as const satisfies OrderFormField[]
+
+/** An item list has no persistent line IDs, so it is reviewed as one field. */
+export function rebaseOrderForm(
+  base: OrderFormInput,
+  mine: OrderFormInput,
+  latest: OrderFormInput,
+) {
+  const draft = { ...mine }
+  const conflicts: OrderFormField[] = []
+  for (const field of orderFormFields) {
+    const original = JSON.stringify(base[field])
+    const edit = JSON.stringify(mine[field])
+    const saved = JSON.stringify(latest[field])
+    if (edit === original) Object.assign(draft, { [field]: latest[field] })
+    else if (saved !== original && edit !== saved) conflicts.push(field)
+  }
+  return { draft, conflicts }
+}
