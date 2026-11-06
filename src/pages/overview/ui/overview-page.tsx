@@ -277,9 +277,17 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
           </Button>
         </HStack>
         <ProjectTable
-          search={{ ...projectTableSearchDefaults, sort: search.sort, order: search.order }}
-          onSearchChange={({ sort = search.sort, order = search.order }, options) => {
-            onSearchChange({ sort, order }, options)
+          search={{
+            ...projectTableSearchDefaults,
+            sort: search.sort,
+            order: search.order,
+            detail: search.detail,
+          }}
+          onSearchChange={(
+            { sort = search.sort, order = search.order, detail = search.detail },
+            options,
+          ) => {
+            onSearchChange({ sort, order, detail }, options)
           }}
           projects={projects.data ?? []}
           hasData={projects.data !== undefined}
