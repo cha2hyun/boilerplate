@@ -25,6 +25,7 @@ export default defineConfig({
     watch: { ignored: ['**/playwright-report/**', '**/test-results/**', '**/coverage/**'] },
   },
   build: {
+    manifest: true,
     sourcemap: false,
     rolldownOptions: {
       output: {

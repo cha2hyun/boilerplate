@@ -1,5 +1,6 @@
-import { test as base, type Route } from '@playwright/test'
+import { test as base, expect, type Page, type Route } from '@playwright/test'
 import path from 'node:path'
+import { createPageErrorTracker } from './page-errors.js'
 
 export { expect } from '@playwright/test'
 export type { Locator, Page } from '@playwright/test'
@@ -21,7 +22,21 @@ export const fontCdnBaseUrl = 'https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dis
 export const test = base.extend<{
   exchangeRateMock: ExchangeRateMock
   fontCdnRequests: string[]
+  pageErrors: ReturnType<typeof createPageErrorTracker>
 }>({
+  pageErrors: [
+    async ({ context }, use) => {
+      const tracker = createPageErrorTracker()
+      const observe = (page: Page) => page.on('pageerror', tracker.record)
+      context.pages().forEach(observe)
+      context.on('page', observe)
+      await use(tracker)
+      context.off('page', observe)
+      context.pages().forEach((page) => page.off('pageerror', tracker.record))
+      expect(tracker.unexpected, 'Unexpected browser page errors').toEqual([])
+    },
+    { auto: true },
+  ],
   fontCdnRequests: [
     async ({ context }, use) => {
       const requests: string[] = []

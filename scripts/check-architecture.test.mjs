@@ -324,7 +324,7 @@ test('allows generated UI primitives but blocks consumer bypasses', () => {
       'shared/ui/button.tsx',
       `
     import { Slot } from '@radix-ui/react-slot'
-    const Button = () => <button style={{ color: 'inherit' }}>Save</button>
+    const Button = () => <button>Save</button>
   `,
     ),
     [],
@@ -339,6 +339,33 @@ test('allows generated UI primitives but blocks consumer bypasses', () => {
   `,
     ),
     ['ui-primitive', 'ui-library', 'ui-library'],
+  )
+})
+
+test('new shared UI files do not inherit native-control, primitive, or style exemptions', () => {
+  const source = `
+    import { Slot } from 'radix-ui'
+    export const CustomButton = () => <><button style={{ padding: 8 }}>Save</button><style>{'.x{}'}</style><div role="button" /></>
+  `
+  for (const file of ['shared/ui/custom-button.tsx', 'shared/ui/nested/button.tsx']) {
+    assert.deepEqual(rules(file, source), [
+      'ui-primitive',
+      'shadcn-control',
+      'inline-style',
+      'custom-css',
+      'shadcn-control',
+    ])
+  }
+  assert.deepEqual(
+    rules('shared/ui/button.tsx', 'export const Button = () => <button style={{ padding: 8 }} />'),
+    ['inline-style'],
+  )
+  assert.deepEqual(
+    rules(
+      'shared/ui/chart.tsx',
+      'export const Chart = () => <div style={{ color: "var(--chart-1)" }}><style>{""}</style></div>',
+    ),
+    [],
   )
 })
 

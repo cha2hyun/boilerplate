@@ -4,6 +4,12 @@ import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { staticUiValues } from './static-ui-values.mjs'
 import {
+  inlineStyleFiles,
+  nativeControlFiles,
+  primitiveImportFiles,
+  styleElementFiles,
+} from './ui-exceptions.mjs'
+import {
   checkSearchEntrypoint,
   checkSearchRuntimeGraph,
   isSearchEntrypoint,
@@ -389,10 +395,10 @@ export function checkFile(filename, contents) {
         line,
       )
     }
-    if (!isUi && primitives.test(specifier)) {
+    if (!primitiveImportFiles.has(file) && primitives.test(specifier)) {
       report(
         'ui-primitive',
-        'Radix/Base UI primitive는 shared/ui의 shadcn 컴포넌트에서만 가져오세요.',
+        'Radix/Base UI primitive는 scripts/ui-exceptions.mjs에서 승인한 UI 파일만 가져올 수 있습니다.',
         line,
       )
     }
@@ -642,14 +648,14 @@ export function checkFile(filename, contents) {
           }
         }
       }
-      if (!isUi && tags.some((name) => nativeControls.has(name))) {
+      if (!nativeControlFiles.has(file) && tags.some((name) => nativeControls.has(name))) {
         report(
           'shadcn-control',
           `<${tag}> 대신 shared/ui의 shadcn 컴포넌트를 사용하세요.`,
           location(source, node),
         )
       }
-      if (!isUi && tags.includes('style'))
+      if (!styleElementFiles.has(file) && tags.includes('style'))
         report('custom-css', '<style> 대신 Tailwind 유틸리티를 사용하세요.', location(source, node))
       for (const attribute of values.attributes(node)) {
         const value = values.resolve(attribute.value)
@@ -690,7 +696,7 @@ export function checkFile(filename, contents) {
           }
         }
         if (colorProperties.has(attribute.name)) inspectColor(attribute.value, attribute.node)
-        if (!isUi && attribute.name === 'style') {
+        if (!inlineStyleFiles.has(file) && attribute.name === 'style') {
           report(
             'inline-style',
             'inline style 대신 Tailwind 유틸리티를 사용하세요.',
@@ -698,7 +704,7 @@ export function checkFile(filename, contents) {
           )
         }
         if (
-          !isUi &&
+          !nativeControlFiles.has(file) &&
           tags.some((name) => /^[a-z]/.test(name)) &&
           attribute.name === 'role' &&
           value &&
