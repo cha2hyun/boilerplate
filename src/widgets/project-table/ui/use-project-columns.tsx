@@ -29,6 +29,7 @@ import { ProjectStatusBadge } from './project-status-badge'
 interface ProjectColumnsOptions {
   compact: boolean
   actionTriggerRef: RefObject<HTMLElement | null>
+  onView: (project: Project) => void
   onEdit: (project: Project) => void
   onDelete: (project: Project) => void
 }
@@ -36,6 +37,7 @@ interface ProjectColumnsOptions {
 export function useProjectColumns({
   compact,
   actionTriggerRef,
+  onView,
   onEdit,
   onDelete,
 }: ProjectColumnsOptions) {
@@ -106,10 +108,10 @@ export function useProjectColumns({
             <div className="min-w-0 flex-1">
               <Button
                 variant="link"
+                data-project-detail-id={row.original.id}
                 className="h-auto max-w-full justify-start truncate p-0 text-left font-medium text-foreground"
-                onClick={(event) => {
-                  actionTriggerRef.current = event.currentTarget
-                  onEdit(row.original)
+                onClick={() => {
+                  onView(row.original)
                 }}
               >
                 {row.original.name}
@@ -256,6 +258,6 @@ export function useProjectColumns({
         enableGlobalFilter: false,
       },
     ],
-    [compact, t, formatNumber, formatDate, actionTriggerRef, onEdit, onDelete],
+    [compact, t, formatNumber, formatDate, actionTriggerRef, onView, onEdit, onDelete],
   )
 }

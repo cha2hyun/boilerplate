@@ -63,7 +63,11 @@ test('validates, creates, edits and deletes a project with persistence across re
 
   await page.reload()
   await page.getByRole('button', { name: 'Launch planning', exact: true }).click()
+  const details = page.getByRole('dialog', { name: 'Launch planning', exact: true })
   const editDialog = page.getByRole('dialog', { name: 'Edit project' })
+  await expect(details).toContainText('Align the team around our next launch.')
+  await expect(editDialog).toBeHidden()
+  await details.getByRole('button', { name: 'Edit project', exact: true }).click()
   await expect(editDialog.getByLabel('Description')).toHaveValue(
     'Align the team around our next launch.',
   )
@@ -72,6 +76,12 @@ test('validates, creates, edits and deletes a project with persistence across re
   await page.getByRole('option', { name: 'Paused', exact: true }).click()
   await editDialog.getByRole('button', { name: 'Save changes', exact: true }).click()
   await expect(editDialog).toBeHidden()
+  const updatedDetails = page.getByRole('dialog', { name: updatedName, exact: true })
+  await expect(updatedDetails).toContainText('Paused')
+  await expect(
+    updatedDetails.getByRole('button', { name: 'Edit project', exact: true }),
+  ).toBeFocused()
+  await updatedDetails.getByRole('button', { name: 'Close', exact: true }).click()
   await expect(page.getByRole('button', { name: updatedName, exact: true })).toBeFocused()
   await expect(page.getByRole('row').filter({ hasText: updatedName })).toContainText('Paused')
 
@@ -105,6 +115,114 @@ test('validates, creates, edits and deletes a project with persistence across re
   await page.reload()
   await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: updatedName, exact: true })).toHaveCount(0)
+})
+
+test('opens a recent project in a detail sheet before editing on the overview', async ({
+  page,
+  context,
+}) => {
+  await page.goto('/?period=7')
+  const trigger = page.getByRole('button', { name: 'Website redesign', exact: true })
+  await trigger.click()
+  const details = page.getByRole('dialog', { name: 'Website redesign', exact: true })
+  const editor = page.getByRole('dialog', { name: 'Edit project', exact: true })
+  await expect(details).toContainText('A fresh digital home for the next chapter of our brand.')
+  await expect(details).toContainText('Olivia Rhye')
+  await expect(details).toContainText('olivia@example.com')
+  await expect(editor).toBeHidden()
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/' &&
+      JSON.parse(url.searchParams.get('period') ?? 'null') === '7' &&
+      url.searchParams.get('detail') === 'prj_website',
+  )
+
+  const [shared] = await Promise.all([
+    context.waitForEvent('page'),
+    details.getByRole('link', { name: 'Open detail in a new tab', exact: true }).click(),
+  ])
+  await expect(shared).toHaveURL(
+    (url) =>
+      url.pathname === '/projects' &&
+      url.searchParams.get('detail') === 'prj_website' &&
+      !url.searchParams.has('period'),
+  )
+  await expect(shared.getByRole('dialog', { name: 'Website redesign', exact: true })).toBeVisible()
+  await shared.close()
+  await page.bringToFront()
+
+  const edit = details.getByRole('button', { name: 'Edit project', exact: true })
+  await edit.click()
+  await editor.getByLabel('Project name', { exact: true }).fill('Unpublished draft')
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
+  const discard = page.getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true })
+  await discard.getByRole('button', { name: 'Keep editing', exact: true }).click()
+  await expect(editor.getByLabel('Project name', { exact: true })).toHaveValue('Unpublished draft')
+  await editor.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await discard.getByRole('button', { name: 'Discard changes', exact: true }).click()
+  await expect(editor).toBeHidden()
+  await expect(edit).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(details).toBeHidden()
+  await expect(trigger).toBeFocused()
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/' &&
+      JSON.parse(url.searchParams.get('period') ?? 'null') === '7' &&
+      !url.searchParams.has('detail'),
+  )
+})
+
+test('restores project details from history and direct links independently of list filters', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop',
+    'The route and browser history contract is shared.',
+  )
+  const list = '/projects?q=Phoenix&sort=progress&pageSize=16'
+  await page.goto(list)
+  const name = page.getByRole('button', { name: 'Mobile app launch', exact: true })
+  await name.click()
+  const details = page.getByRole('dialog', { name: 'Mobile app launch', exact: true })
+  await expect(details).toBeVisible()
+  const openedUrl = new URL(page.url())
+  expect(openedUrl.searchParams.get('detail')).toBe('prj_mobile')
+  expect(openedUrl.searchParams.get('q')).toBe('Phoenix')
+  expect(openedUrl.searchParams.get('sort')).toBe('progress')
+  expect(openedUrl.searchParams.get('pageSize')).toBe('16')
+  await details.getByRole('button', { name: 'Edit project', exact: true }).click()
+  const editor = page.getByRole('dialog', { name: 'Edit project', exact: true })
+  await editor.getByLabel('Description').fill('An unsaved history draft')
+  await page.evaluate(() => window.history.back())
+  const discard = page.getByRole('alertdialog', { name: 'Discard unsaved changes?', exact: true })
+  await discard.getByRole('button', { name: 'Keep editing', exact: true }).click()
+  await expect(editor.getByLabel('Description')).toHaveValue('An unsaved history draft')
+  await expect(page).toHaveURL(openedUrl.toString())
+  await page.evaluate(() => window.history.back())
+  await discard.getByRole('button', { name: 'Discard changes', exact: true }).click()
+  await expect(editor).toBeHidden()
+  await expect(details).toBeHidden()
+  await expect(page).toHaveURL(
+    (url) => !url.searchParams.has('detail') && url.searchParams.get('q') === 'Phoenix',
+  )
+  await page.goForward()
+  await expect(details).toBeVisible()
+  await page.reload()
+  await expect(details).toBeVisible()
+
+  await page.goto('/projects?q=no-match&detail=prj_mobile')
+  await expect(details).toContainText('Phoenix Baker')
+  await details.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(page.getByText('No matching projects', { exact: true })).toBeVisible()
+  await page.goto('/projects?q=no-match&detail=nonexistent')
+  const unavailable = page.getByRole('dialog')
+  await expect(unavailable).toContainText('This project could not be found.')
+  await unavailable.getByRole('button', { name: 'Back to list', exact: true }).click()
+  await expect(unavailable).toBeHidden()
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get('q') === 'no-match' && !url.searchParams.has('detail'),
+  )
 })
 
 test('searches owners and projects, filters status, resets empty results, and changes visible columns', async ({
@@ -278,6 +396,10 @@ test('keeps an edit open and explains the error when another tab deletes the pro
 }) => {
   await page.goto('/projects')
   await page.getByRole('button', { name: 'Website redesign', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Website redesign', exact: true })
+    .getByRole('button', { name: 'Edit project', exact: true })
+    .click()
   const editDialog = page.getByRole('dialog', { name: 'Edit project' })
   await editDialog.getByLabel('Project name', { exact: true }).fill('A stale edit')
 

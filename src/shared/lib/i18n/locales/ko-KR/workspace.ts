@@ -17,6 +17,9 @@ const workspace = {
     deleteProject: '프로젝트 삭제',
   },
   projects: {
+    details: '프로젝트 상세',
+    updatedOn: '최근 수정일 {{date}}',
+    missing: '프로젝트를 찾을 수 없습니다.',
     showSummary: '요약 펼치기',
     hideSummary: '요약 접기',
     total: '전체 프로젝트',
