@@ -66,20 +66,24 @@ export function ProjectTableToolbar({
     <CardHeader className="border-b px-5 py-5 md:px-6">
       <HStack justify="between" wrap className="gap-3">
         <VStack align="stretch" className="min-w-0 flex-1 gap-1">
-          <HStack asChild className="h-6 gap-2 text-base">
-            <CardTitle>
-              <span className="truncate">{t(compact ? 'table.recent' : 'table.all')}</span>
-              <Badge
-                variant="secondary"
-                className="h-5 min-w-6 shrink-0 justify-center font-normal tabular-nums"
-              >
-                {formatNumber(projectCount)}
-              </Badge>
+          <HStack asChild wrap className="min-h-6 gap-2 text-base">
+            <CardTitle asChild>
+              <h2>
+                <span className="min-w-0 wrap-anywhere">
+                  {t(compact ? 'table.recent' : 'table.all')}
+                </span>
+                <Badge
+                  variant="secondary"
+                  className="h-5 min-w-6 shrink-0 justify-center font-normal tabular-nums"
+                >
+                  {formatNumber(projectCount)}
+                </Badge>
+              </h2>
             </CardTitle>
           </HStack>
-          <HStack asChild className="h-8 gap-2">
+          <HStack asChild wrap className="min-h-8 gap-2">
             <CardDescription aria-live="polite">
-              <span className="min-w-0 flex-1 truncate">
+              <span className="min-w-0 flex-1 wrap-anywhere">
                 {showRefreshError
                   ? t('table.refreshError')
                   : compact

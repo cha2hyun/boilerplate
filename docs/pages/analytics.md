@@ -42,3 +42,5 @@ PageHeader의 기간 선택 → 조회 날짜 안내 → KPI → 방문 추이�
 - 기간 변경 → 모든 지표/차트/표 갱신과 URL 복원: [분석 E2E](../../e2e/analytics-inbox.spec.ts)의 `analytics period updates the metrics, charts, and traffic tables together`.
 - 캐시 재방문·재조회 중 기존 데이터와 카드 공간: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Analytics keeps card geometry and cached data through real demo requests`. 같은 파일의 `Analytics recovers a cold read error and preserves cached content after a refresh failure`는 최초 오류→재시도와 재조회 실패 시 기존 숫자·내용 보존→복구를 확인합니다. `Analytics distinguishes a successful empty response from loading and errors`는 0 집계·빈 audience/device/source/page를 오류·로딩과 구분합니다.
 - 무관한 URL 필드가 페이지 상태에 남지 않음: [조회 테스트](../../src/pages/analytics/model/search.test.ts)의 `defaults omitted parameters and excludes unrelated URL state`.
+
+주요 카드의 섹션 제목은 `CardTitle asChild`와 h2로 구성합니다. KPI 값은 heading으로 노출하지 않으며 제목 계층의 기준과 검증은 [접근성 계약](../design/accessibility.md)을 따릅니다.

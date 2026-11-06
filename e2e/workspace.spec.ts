@@ -1122,6 +1122,9 @@ test('recovers from an unknown route and returns focus after closing a component
 }) => {
   await page.goto('/a-page-that-does-not-exist')
   await expect(page.getByText('404 · PAGE NOT FOUND', { exact: true })).toBeVisible()
+  await expect(page.locator('#main-content').getByRole('heading', { level: 1 })).toHaveText(
+    "Let's get you back on track.",
+  )
   await page.getByRole('link', { name: 'Back to overview', exact: true }).click()
   await expect(page).toHaveURL('/')
   await expect(page.getByRole('heading', { name: 'Overview', level: 1, exact: true })).toBeVisible()

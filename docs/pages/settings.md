@@ -50,3 +50,5 @@ PageHeader → 일반/외관 탭입니다. 일반에는 이름 입력·compact �
 - 초안 유지·폐기·원복·저장 이후 해제와 일반 탭 초점 복구: 같은 설정 테스트의 `settings unsaved input`. 실제 앱 탐색과 브라우저 기록·새로고침: [입력 보호 E2E](../../e2e/unsaved-changes.spec.ts)의 `keeps settings drafts when navigation is cancelled and discards only on confirmation`, `protects settings against browser history and reload without trapping a saved form`.
 - 테마 지속과 shell 유지: [workspace E2E](../../e2e/workspace.spec.ts)의 `persists the theme and keeps the shell stable through command palette navigation`. 저장 경계의 복구는 [store 테스트](../../src/features/workspace-preferences/model/store.test.ts)를 확인합니다.
 - 작은 화면과 확대 텍스트의 버튼 경계·키보드 도달: 같은 workspace E2E의 `keeps support-page actions, tabs, and example text within narrow content areas`.
+
+주요 카드의 섹션 제목은 `CardTitle asChild`와 h2로 구성합니다. KPI 값은 heading으로 노출하지 않으며 제목 계층의 기준과 검증은 [접근성 계약](../design/accessibility.md)을 따릅니다.

@@ -41,3 +41,5 @@ PageHeader와 외부 UI 문서 → 컴포넌트/토큰/타이포그래피 탭입
 - 화면 구간별 헤더와 탐색: 같은 파일의 `keeps page titles and header badges consistent through responsive sidebar navigation`. 링크 동작의 단위 근거는 [링크 정책 테스트](../../src/shared/lib/link-policy.test.ts)입니다.
 - 토스트 종류·진행 초기화·체험 입력 비지속성 전체는 현재 개별 자동 검사가 없습니다. 해당 예제 변경 시 상호작용을 수동 확인하고 기존 검사가 증명하는 범위와 구분합니다.
 - 작은 화면·확대 텍스트의 탭 이동과 PC 카드 경계: 같은 workspace E2E의 `keeps support-page actions, tabs, and example text within narrow content areas`, `aligns paired component example card edges on desktop`.
+
+주요 카드의 섹션 제목은 `CardTitle asChild`와 h2로 구성합니다. KPI 값은 heading으로 노출하지 않으며 제목 계층의 기준과 검증은 [접근성 계약](../design/accessibility.md)을 따릅니다.

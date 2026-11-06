@@ -66,7 +66,9 @@ export function RevenueChart({
       aria-busy={isLoading}
     >
       <CardHeader className="gap-1 has-data-[slot=card-action]:grid-cols-1 sm:has-data-[slot=card-action]:grid-cols-[1fr_auto]">
-        <CardTitle>{t('revenue.title')}</CardTitle>
+        <CardTitle asChild>
+          <h2>{t('revenue.title')}</h2>
+        </CardTitle>
         <CardDescription>{t('revenue.description')}</CardDescription>
         <CardAction className="col-start-1 row-span-1 row-start-3 mt-3 w-full justify-self-stretch sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:w-auto sm:justify-self-end">
           <Select

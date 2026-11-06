@@ -50,3 +50,5 @@ PC에서 나란히 놓인 매출·활동 카드는 상단·하단·푸터 구분
 - 기간과 요약 정렬은 독립적으로 유효성 검사: [스키마 테스트](../../src/pages/overview/model/search.test.ts)의 `composes revenue period and recent project sorting independently`.
 - 최초 로딩·캐시 재방문·재조회 중 카드 공간과 기존 데이터를 유지: [캐시 E2E](../../e2e/query-cache.spec.ts)의 `Overview keeps card geometry and cached data through real demo requests`. 같은 파일의 `Overview recovers a cold read error and preserves cached content after a refresh failure`는 최초 오류→재시도와 재조회 실패 시 기존 숫자·내용 보존→복구를 확인합니다. `Overview distinguishes a successful empty response from loading and errors`는 빈 분석 응답과 빈 프로젝트 저장소에서 결측 KPI·빈 차트·활동·프로젝트를 확인합니다.
 - 기간 변경이 KPI·활동에 전파되지 않는 범위와 생성 뒤 두 페이지의 반영은 관련 소유 코드와 함께 검토합니다. 위 테스트 이름만으로 이 모든 의미가 자동 검증됐다고 보고하지 않습니다.
+
+주요 카드의 섹션 제목은 `CardTitle asChild`와 h2로 구성합니다. KPI 값은 heading으로 노출하지 않으며 제목 계층의 기준과 검증은 [접근성 계약](../design/accessibility.md)을 따릅니다.

@@ -366,3 +366,134 @@ test('keeps the collapsed navigation scrollable in a short landscape viewport', 
   await expect(page).toHaveURL('/settings')
   await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible()
 })
+
+test('exposes page and section headings without promoting metric values to headings', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'desktop', 'Document semantics do not depend on viewport.')
+  for (const [route, title, sections] of [
+    ['/', 'Overview', ['Revenue overview', 'Recent activity']],
+    [
+      '/analytics',
+      'Analytics',
+      ['Audience overview', 'Sessions by device', 'Traffic sources', 'Top pages'],
+    ],
+    ['/projects', 'Projects', ['All projects']],
+    ['/orders', 'Orders', ['All orders']],
+    ['/customers', 'Customers', ['Customer directory']],
+    ['/settings', 'Settings', ['Workspace preferences']],
+  ] as const) {
+    await page.goto(route)
+    const main = page.locator('#main-content')
+    await expect(main.getByRole('heading', { level: 1 })).toHaveText(title)
+    for (const section of sections) {
+      await expect(
+        main.getByRole('heading', { level: 2, name: new RegExp(`^${section}`) }),
+      ).toBeVisible()
+    }
+    await expect(main.locator('[data-metric-card]').getByRole('heading')).toHaveCount(0)
+  }
+})
+
+for (const [locale, width, show, hide, description, result] of [
+  [
+    'en-US',
+    412,
+    'Show summary',
+    'Hide summary',
+    'Your team’s work, organized in one place.',
+    'Showing 1–6 of 6 projects',
+  ],
+  [
+    'ko-KR',
+    320,
+    '요약 펼치기',
+    '요약 접기',
+    '팀의 작업을 한곳에서 관리하세요.',
+    '전체 프로젝트 6개 중 1–6개 표시',
+  ],
+] as const) {
+  test(`keeps project summaries optional and management instructions complete at 200% text (${locale})`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'mobile',
+      'The narrow-screen list composition is mobile-specific.',
+    )
+    await page.setViewportSize({ width, height: 915 })
+    await page.addInitScript((locale) => {
+      localStorage.setItem(
+        'blueprint-locale-preferences',
+        JSON.stringify({ state: { locale, currency: 'USD' }, version: 1 }),
+      )
+    }, locale)
+    await page.goto('/projects')
+    await expect(page.locator('html')).toHaveAttribute('lang', locale)
+    await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
+    const toggle = page.getByRole('button', { name: show, exact: true })
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await expect(page.locator('[data-metric-card]:visible')).toHaveCount(0)
+    await toggle.click()
+    await expect(page.locator('[data-metric-card]:visible')).toHaveCount(3)
+    await page.getByRole('button', { name: hide, exact: true }).click()
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = '200%'
+    })
+    for (const label of [description, result]) {
+      const text = page.getByText(label, { exact: true })
+      await expect(text).toBeVisible()
+      const bounds = await text.evaluate((element) => ({
+        width: element.clientWidth,
+        contentWidth: element.scrollWidth,
+        height: element.clientHeight,
+        contentHeight: element.scrollHeight,
+      }))
+      expect(bounds.width, label).toBeGreaterThan(0)
+      expect(bounds.height, label).toBeGreaterThan(0)
+      expect(bounds.contentWidth, label).toBeLessThanOrEqual(bounds.width + 1)
+      expect(bounds.contentHeight, label).toBeLessThanOrEqual(bounds.height + 1)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    )
+  })
+}
+
+test('keeps compact customer identity and actions visible while scrolling a narrow table', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'mobile',
+    'A narrow table requires a compact pinned identifier.',
+  )
+  for (const width of [320, 412]) {
+    await page.setViewportSize({ width, height: 915 })
+    await page.goto('/customers')
+    const region = page.getByRole('region', { name: 'Customers table', exact: true })
+    const identity = page.getByRole('button', { name: 'View customer Olivia Rhye', exact: true })
+    await expect(identity).toBeVisible()
+    const row = identity.locator('xpath=ancestor::tr')
+    const first = row.getByRole('cell').first()
+    const last = row.getByRole('cell').last()
+    await region.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth
+    })
+    await expect.poll(() => region.evaluate((element) => element.scrollLeft)).toBeGreaterThan(0)
+    const [frame, name, actions] = await Promise.all([
+      region.boundingBox(),
+      first.boundingBox(),
+      last.boundingBox(),
+    ])
+    if (!frame || !name || !actions) throw new Error('The customer table layout is missing.')
+    expect(name.x).toBeGreaterThanOrEqual(frame.x - 1)
+    expect(name.width).toBeLessThanOrEqual(140)
+    expect(name.x + name.width + 60).toBeLessThanOrEqual(actions.x)
+    expect(actions.x + actions.width).toBeLessThanOrEqual(frame.x + frame.width + 1)
+    await identity.click()
+    await expect(
+      page.getByRole('dialog').getByRole('heading', { name: 'Olivia Rhye', exact: true }),
+    ).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(identity).toBeFocused()
+  }
+})

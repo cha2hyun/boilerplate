@@ -40,6 +40,8 @@ PageHeader의 새 고객 → 전체 고객 요약(모바일 기본 접힘) → �
 - 조합: [화면](../../src/pages/customers/ui/customers-page.tsx)은 Query·URL·편집/삭제 창·초점을, [목록](../../src/pages/customers/ui/customers-list.tsx)은 필터·표·페이지 도구를, [상세](../../src/pages/customers/ui/customer-details-sheet.tsx)는 상세와 수정 진입을 소유합니다.
 - 임시 상태: 화면의 생성·수정·삭제 대상과 초점 대상, [모바일 요약](../../src/pages/customers/ui/customers-summary.tsx)의 펼침 여부, [편집 기능](../../src/features/customer-editor/ui/customer-editor-dialog.tsx)의 입력·검증·미저장 보호입니다. [정렬 계산](../../src/pages/customers/model/sample-customers.ts)과 공통 [국제화](../i18n.md)가 숫자·통화 표시 근거입니다.
 
+모바일 고객 식별 열은 128px로 줄여 avatar를 숨기고, 이름·이메일과 오른쪽 작업 열을 함께 고정합니다. 태블릿부터 기존 224px와 avatar를 복원합니다. 가로 스크롤 중에도 대상을 확인하며 상세에서 전문을 읽습니다.
+
 ## 수용 기준
 
 - 고객 생성·수정 모달의 가입일 입력은 일반 입력과 같은 높이·너비를 유지합니다. 빈 값/입력된 값 모두 가로 넘침 없이 저장 버튼까지 세로로 접근해야 합니다. 아래 CRUD E2E가 실제 치수와 입력부터 Dialog까지의 스크롤 너비를 검사하고 [폼 조합](../design/compositions.md#폼)이 공통 규칙을 소유합니다.
@@ -55,3 +57,5 @@ PageHeader의 새 고객 → 전체 고객 요약(모바일 기본 접힘) → �
 
 - 페이지 크기·상세 직접 링크·새로고침·history와 미저장 편집 폐기·없는 ID 회복·모바일 요약: [상거래 E2E](../../e2e/commerce.spec.ts)의 `customers restores shared details and page size through reload and history`.
 - [selector 테스트](../../src/pages/customers/model/selectors.test.ts)는 페이지 크기·줄어든 목록의 페이지 보정·입력 배열 보존을 검증합니다. 삭제된 상세는 오류 설명 뒤 명시적 목록 복귀로 종료합니다.
+
+- [접근성 E2E](../../e2e/accessibility.spec.ts)의 `keeps compact customer identity and actions visible while scrolling a narrow table`는 320/412px에서 끝까지 스크롤해도 고객 식별·작업 열이 보이고 가운데 데이터 공간이 남는지 확인합니다. 이름으로 상세 열기와 닫기 후 초점 복귀도 검증합니다.

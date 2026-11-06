@@ -194,7 +194,9 @@ export function OverviewPage({ search, onSearchChange }: OverviewPageProps) {
           aria-busy={isLoading}
         >
           <CardHeader>
-            <CardTitle>{t('overview.activity')}</CardTitle>
+            <CardTitle asChild>
+              <h2>{t('overview.activity')}</h2>
+            </CardTitle>
             <CardDescription>{t('overview.activityDescription')}</CardDescription>
           </CardHeader>
           <VStack asChild align="stretch" className="h-88 gap-2 overflow-y-auto">
