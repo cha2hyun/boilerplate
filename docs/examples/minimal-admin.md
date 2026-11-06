@@ -36,7 +36,7 @@ export const Route = createFileRoute('/')({
 | 제품 이름·브라우저 저장 | [제품 구성](../../src/shared/config/product.ts)의 제품명·링크·고유 저장 namespace                                                                                                                                   | 제거한 seed/키의 import까지 찾아 정리합니다. 원본 사이트나 다른 제품의 localStorage 전체를 지우지 않습니다.                                                                                                                                                                                                                                                                                         |
 | 검증                    | 주문 목록→상세→편집, 저장 실패·입력 보호, 설정 저장·초점·키보드, 샘플 표시와 404                                                                                                                                    | [workspace](../../e2e/workspace.spec.ts)·[commerce](../../e2e/commerce.spec.ts)·[query-cache](../../e2e/query-cache.spec.ts) 등 여러 경로를 한 파일에서 검증하므로 파일째 삭제하지 않습니다. 제거한 경로의 시나리오만 정리하고 유지한 기능을 대체 시나리오에 연결합니다. [E2E 범주](../../package.json), [search 공개 경로 예외](../../scripts/search-entrypoints.mjs)와 시각 기준도 다시 맞춥니다. |
 
-포크에서 `rg -n '/(projects|analytics|customers|inbox|components|foundations)' src e2e scripts docs/pages`로 남은 경로 참조를 검토하세요. 라이브러리 패키지명·설명용 예시 같은 검색 결과까지 일괄 삭제하지 않습니다.
+포크에서 `rg -n '/(projects|analytics|customers|inbox|components|foundations|login|users|account)' src e2e scripts docs/pages`로 남은 경로 참조를 검토하세요. 라이브러리 패키지명·설명용 예시 같은 검색 결과까지 일괄 삭제하지 않습니다.
 
 ## 3. 다음 도메인을 넣는 순서: 반품 요청 기록
 

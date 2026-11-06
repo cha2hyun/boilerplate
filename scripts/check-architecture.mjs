@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import colors from 'tailwindcss/colors'
 import ts from 'typescript'
 import { staticUiValues } from './static-ui-values.mjs'
 import {
@@ -43,12 +44,36 @@ const controlRoles = new Set([
 const unsupportedLibraries =
   /^(?:styled-components|@emotion\/|@stitches\/|@linaria\/|goober(?:\/|$)|jss(?:\/|$)|@mui\/|antd(?:\/|$)|@chakra-ui\/|@mantine\/)/
 const primitives = /^(?:@radix-ui\/|radix-ui(?:\/|$)|@base-ui\/)/
-const paletteUtility =
-  /(?:^|[\s:])(?:bg|text|border|ring|outline|fill|stroke|shadow|accent|caret|decoration|divide|from|via|to)-(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(?:50|[1-9]00|950)(?:\b|\/)/
-const literalColorUtility =
-  /(?:bg|text|border|ring|outline|fill|stroke|shadow|accent|caret|decoration|divide|from|via|to)-\[(?:#|(?:rgb|hsl|oklch|oklab|lab|lch|color)\()/
-const fixedNeutralUtility =
-  /(?:^|[\s:!])(?:bg|text|border|ring|outline|fill|stroke|shadow|accent|caret|decoration|divide|from|via|to)-(?:black|white)(?:$|[\s/!])/
+const paletteColors = new Set(
+  Object.entries(colors).flatMap(([family, shades]) =>
+    typeof shades === 'object' ? Object.keys(shades).map((shade) => `${family}-${shade}`) : [],
+  ),
+)
+const colorUtility =
+  /^(?:bg|text(?:-shadow)?|border(?:-[xytrblse])?|ring(?:-offset)?|inset-ring|outline|fill|stroke|(?:inset-|drop-)?shadow|accent|caret|decoration|divide|from|via|to|placeholder)-(.+)$/
+const colorProperty = /^\[(?:color|background|[a-z][\w-]*-color|fill|stroke):(.+)\]$/
+// CSS named colors have fixed values; currentColor, system colors and transparent do not.
+const namedColors = new Set(
+  `
+  aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown
+  burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan
+  darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid
+  darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet
+  deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro
+  ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki
+  lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow
+  lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray
+  lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine
+  mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise
+  mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab
+  orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff
+  peru pink plum powderblue purple rebeccapurple red rosybrown royalblue saddlebrown salmon sandybrown
+  seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue
+  tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen
+`
+    .trim()
+    .split(/\s+/),
+)
 const unsupportedWeightUtility =
   /(?:^|[\s:!])font-(?:thin|extralight|light|bold|extrabold|black)(?:$|[\s!])|font-(?:\[[^\]]*|\([^)]*)|\[(?:font-weight|font-variation-settings):/
 const colorProperties = new Set([
@@ -59,8 +84,6 @@ const colorProperties = new Set([
   'backgroundColor',
   'borderColor',
 ])
-const fixedColorValue =
-  /^(?:#|(?:rgb|hsl|oklch|oklab|lab|lch|color)\(|(?:black|white|red|blue|green|yellow|orange|purple|gray|grey)$)/i
 const normalize = (value) => value.split(path.sep).join('/')
 const testFilePattern = /(?:^|\/)(?:__tests__|__fixtures__)\/|\.(?:test|spec)\.[cm]?[jt]sx?$/
 const classHelpers = new Set(['cn', 'clsx', 'classnames', 'classNames'])
@@ -82,6 +105,24 @@ const pageHeaderProps = new Set(['title', 'description', 'badgeLabel', 'actions'
 const headerActionDirectory = 'widgets/app-shell/ui/header-actions/'
 const headerActionModule = `${headerActionDirectory}header-action-button`
 const headerActionStyleProps = new Set(['variant', 'size', 'className', 'style'])
+
+function isFixedColor(value) {
+  return (
+    namedColors.has(value.toLowerCase()) ||
+    /^(?:#|(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color)\()/i.test(value)
+  )
+}
+
+function hasFixedUtilityColor(name, isUi) {
+  const property = colorProperty.exec(name)
+  if (property) return isFixedColor(property[1])
+  const value = colorUtility.exec(name)?.[1]
+  if (!value) return false
+  const literal = /^\[(?:color:)?(.+?)\](?:\/.+)?$/.exec(value)
+  if (literal) return isFixedColor(literal[1])
+  const color = value.split('/', 1)[0]
+  return paletteColors.has(color) || (!isUi && (color === 'white' || color === 'black'))
+}
 
 function importsRuntimeValue(node) {
   if (ts.isImportTypeNode(node) || node.isTypeOnly) return false
@@ -206,8 +247,8 @@ function classHelperName(node, values) {
   )
 }
 
-function classUtilities(node, values) {
-  return classStrings(node, values).flatMap((value) =>
+function classUtilities(strings) {
+  return strings.flatMap((value) =>
     value.split(/\s+/).map((token) => {
       let depth = 0
       let utilityStart = 0
@@ -374,14 +415,7 @@ export function checkFile(filename, contents) {
     if (!node || checkedClasses.has(node)) return
     checkedClasses.add(node)
     const strings = classStrings(node, values)
-    if (
-      strings.some(
-        (value) =>
-          paletteUtility.test(value) ||
-          literalColorUtility.test(value) ||
-          (!isUi && fixedNeutralUtility.test(value)),
-      )
-    ) {
+    if (classUtilities(strings).some(({ name }) => hasFixedUtilityColor(name, isUi))) {
       report(
         'design-token',
         '고정 색상 대신 bg-background, text-muted-foreground 등 shadcn 의미 토큰을 사용하세요.',
@@ -401,7 +435,7 @@ export function checkFile(filename, contents) {
     node = values.resolve(node)
     if (!node || checkedColors.has(node)) return
     checkedColors.add(node)
-    if (classStrings(node, values).some((value) => fixedColorValue.test(value))) {
+    if (classStrings(node, values).some(isFixedColor)) {
       report(
         'design-token',
         '차트와 SVG 색상에도 의미 토큰을 사용하세요.',
@@ -474,7 +508,7 @@ export function checkFile(filename, contents) {
       )
       return
     }
-    if (sourceLevel < 0) return
+    if (sourceLevel < 0 && !sourceEntrypoints.has(file)) return
 
     if (targetLevel < sourceLevel) {
       report(
@@ -754,7 +788,7 @@ export function checkFile(filename, contents) {
           const className = jsxAttributeValue(ancestor.openingElement, 'className')
           if (
             className &&
-            classUtilities(className, values).some(
+            classUtilities(classStrings(className, values)).some(
               ({ name, variants }) =>
                 /^(?:text-|font-|leading-|tracking-|\[(?:font|line-height|letter-spacing))/.test(
                   name,
@@ -791,7 +825,7 @@ export function checkFile(filename, contents) {
         if (attribute.name === 'className') inspectClasses(attribute.value, attribute.node)
         if (['config', 'style'].includes(attribute.name)) inspectColorObject(attribute.value)
         if (!isUi && !isTest && attribute.name === 'className') {
-          const utilities = classUtilities(value, values)
+          const utilities = classUtilities(classStrings(value, values))
           if (
             tags.includes('div') &&
             utilities.some(

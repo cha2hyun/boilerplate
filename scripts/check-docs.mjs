@@ -3,7 +3,7 @@ import { readFile, readdir, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { changedFiles } from './ci-scope.mjs'
-import { inlineLinks, proseOnly } from './markdown-links.mjs'
+import { inlineLinks, markdownHeadingAnchors, proseOnly } from './markdown-links.mjs'
 
 export async function documentationFiles(root) {
   const roots = (await readdir(root)).filter((file) => file.endsWith('.md'))
@@ -18,8 +18,20 @@ export async function documentationFiles(root) {
 
 export async function checkDocumentation(root, files) {
   const issues = []
+  const documents = new Map()
+  async function documentAt(filename) {
+    if (!documents.has(filename)) {
+      const markdown = await readFile(filename, 'utf8')
+      documents.set(filename, {
+        prose: proseOnly(markdown),
+        anchors: markdownHeadingAnchors(markdown),
+      })
+    }
+    return documents.get(filename)
+  }
   for (const file of files) {
-    const prose = proseOnly(await readFile(path.join(root, file), 'utf8'))
+    const filename = path.resolve(root, file)
+    const { prose } = await documentAt(filename)
     const targets = inlineLinks(prose, file, issues).map(({ target }) => target)
     // README previews use HTML picture/img tags as well as Markdown images.
     for (const match of prose.matchAll(
@@ -29,27 +41,33 @@ export async function checkDocumentation(root, files) {
     }
     for (const target of targets) {
       const unescaped = target.replace(/\\([!"#$%&'()*+,\-./:;<=>?@[\]\\^_`{|}~])/g, '$1')
-      if (/^(?:[a-z][a-z0-9+.-]*:|\/\/|#)/i.test(unescaped)) continue
-      let decoded
+      if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(unescaped)) continue
+      const hash = unescaped.indexOf('#')
+      const resource = hash < 0 ? unescaped : unescaped.slice(0, hash)
+      let pathname
+      let heading
       try {
-        decoded = decodeURIComponent(unescaped.split(/[?#]/, 1)[0])
+        pathname = decodeURIComponent(resource.split('?', 1)[0])
+        heading = hash < 0 ? '' : decodeURIComponent(unescaped.slice(hash + 1))
       } catch {
         issues.push(`${file}: invalid URL encoding in link ${target}.`)
         continue
       }
-      const resolved = path.resolve(root, path.dirname(file), decoded)
+      const resolved = pathname ? path.resolve(path.dirname(filename), pathname) : filename
       const relative = path.relative(root, resolved)
-      if (
-        !decoded ||
-        path.isAbsolute(decoded) ||
-        relative === '..' ||
-        relative.startsWith(`..${path.sep}`)
-      ) {
+      if (path.isAbsolute(pathname) || relative === '..' || relative.startsWith(`..${path.sep}`)) {
         issues.push(`${file}: local link must stay inside the repository: ${target}.`)
         continue
       }
       try {
-        await stat(resolved)
+        const info = await stat(resolved)
+        if (
+          heading &&
+          info.isFile() &&
+          /\.md$/i.test(resolved) &&
+          !(await documentAt(resolved)).anchors.has(heading)
+        )
+          issues.push(`${file}: missing Markdown heading in link ${target}.`)
       } catch (error) {
         if (!['ENOENT', 'ENOTDIR'].includes(error.code)) throw error
         issues.push(`${file}: missing local link target ${target}.`)
@@ -66,7 +84,10 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const issues = await checkDocumentation(root, files)
   for (const issue of issues) console.error(issue)
   if (issues.length) process.exitCode = 1
-  else console.log(`Documentation links passed: ${files.length} files (local file targets only).`)
+  else
+    console.log(
+      `Documentation links passed: ${files.length} files (local paths and Markdown headings).`,
+    )
   if (process.argv.includes('--changed-format')) {
     const event = JSON.parse(await readFile(process.env.GITHUB_EVENT_PATH, 'utf8'))
     const changed = changedFiles(process.env.GITHUB_EVENT_NAME, event)

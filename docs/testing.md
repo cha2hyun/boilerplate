@@ -73,7 +73,7 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 WebKit smoke는 주문 날짜 입력·짧은 모바일 Dialog의 행동 도달, 미저장 확인과 초점 복귀, 표 내부 가로 스크롤·모바일 탐색을 확인합니다. 실제 Safari 앱·iPhone 하드웨어·OS 날짜 선택기의 검증을 뜻하지 않습니다. 브라우저 job은 계속 core/samples 2개이며 같은 공식 이미지의 Chromium과 WebKit 중 core는 두 엔진, samples는 Chromium만 실행합니다. 두 엔진도 같은 job의 worker 2개 한도를 공유합니다.
 
-한 파일/화면 크기를 선택해야 하는 경우:
+로컬 E2E는 Playwright가 현재 작업 트리의 preview를 포트 4173에 직접 띄웁니다. 이 포트에 기존 서버가 있으면 검사를 중단합니다. 대상 빌드를 준비하고 포트를 비운 뒤 파일이나 화면 크기를 선택하세요.
 
 ```sh
 # 해당 변경의 production build가 있을 때만 실행
@@ -93,7 +93,7 @@ Playwright는 worker 2개, CI에서만 실패당 재시도 1회를 사용합니�
 
 `quality` job은 frozen lockfile로 설치하고 정적 검사/가드레일/단위 테스트를 실행한 뒤 production build를 한 번만 만듭니다. `production-dist` artifact를 업로드하면 `core`, `samples` 브라우저 job이 같은 결과물을 내려받습니다. 각 화면 크기를 별도 job으로 쪼개지 않으며 브라우저 job은 최대 2개가 동시에 실행됩니다. 각 job의 worker 2개와 합쳐 최대 4개 브라우저 테스트 worker가 동작합니다.
 
-CI workflow는 모든 PR의 opened/synchronize/reopened와 main push에서 시작합니다. `changes`가 문서 전용으로 확인하면 quality/browser를 생략하고 최종 `CI Gate`를 실행합니다. 코드·설정·알 수 없는 경로의 변경에는 전체 검사를 실행합니다. feature branch push만으로 중복 실행하지 않으며 같은 ref의 새 실행이 시작되면 진행 중인 이전 실행을 취소합니다. 분류·실패 처리·보호 설정은 [CI Gate](ci-gate.md)가 소유합니다.
+CI workflow는 모든 PR의 opened/synchronize/reopened와 main push에서 시작합니다. `changes`가 문서 전용으로 확인하면 quality/browser를 생략하고 최종 `CI Gate`를 실행합니다. 코드·설정·알 수 없는 경로의 변경에는 전체 검사를 실행합니다. feature branch push만으로 중복 실행하지 않으며 같은 이벤트·ref·수동 범주의 새 실행이 시작되면 진행 중인 이전 실행을 취소합니다. main의 수동 실행과 push 검사는 독립적으로 진행됩니다. 분류·실패 처리·보호 설정은 [CI Gate](ci-gate.md)가 소유합니다.
 
 PR 제목은 별도 `PR Title` workflow가 opened/edited/synchronize/reopened에서 검사합니다. 제목을 고치면 그 검사만 갱신되며 전체 단위/E2E가 다시 실행되지 않습니다. 이 경량 job은 checkout, 의존성 설치, 빌드 없이 PR 메타데이터만 읽습니다. 타입/subject는 pinned semantic-PR action, 100자 제한/앞뒤 공백은 작은 Node 검사로 검증합니다. 허용 타입은 `commitlint.config.cjs`와 일치시킵니다. fork PR도 다루기 위해 읽기 전용 `pull_request_target`을 사용하며 PR 소스를 checkout하거나 실행하지 않습니다. 해당 workflow는 기본 브랜치에 먼저 존재해야 동작합니다.
 
@@ -109,7 +109,7 @@ Sidebar 공간 전환은 `workspace.spec.ts`의 desktop/tablet 회귀가 실제 
 
 브라우저 runner는 `ubuntu-24.04`이고, 두 job은 [Playwright 공식 Noble 이미지](https://playwright.dev/docs/docker)의 동일한 digest를 사용합니다. 이미지에는 브라우저와 OS 라이브러리가 있어 매번 apt·브라우저 설치를 반복하지 않습니다. 패키지는 계속 frozen lockfile에서 설치합니다. `pnpm check:browser-image`는 정확한 `@playwright/test` 버전과 이미지 태그/distro/SHA-256 고정을 검사합니다. 버전 갱신 시 공식 MCR manifest의 digest를 확인해 함께 교체합니다. CI Playwright는 10분에 종료해 보고서를 만들고, job은 준비·artifact 시간을 포함해 15분 한도입니다. 기준은 같은 Linux 환경에서 검토한 PNG만 사용하며 자동 갱신하지 않습니다. 새 브라우저 job·중복 빌드는 추가하지 않습니다. 전체 언어·테마·화면 조합이나 보조기술 준수 전체를 증명하는 검사는 아닙니다.
 
-문서 전용 changes job은 `pnpm dlx`로 저장소에 명시된 정확한 Prettier 하나만 준비하고 변경 Markdown의 포맷을 검사합니다. 앱 의존성 전체 설치·빌드·테스트는 실행하지 않습니다. `pnpm check:docs`는 루트/`docs` Markdown의 로컬 파일 링크와 소개 이미지 경로를 검사하고, `check:page-specs`는 라우트별 문서의 수용 기준 구조를 검사합니다. 외부 URL 응답·제목 anchor·자연어 의미는 검증 대상이 아닙니다. 자연어 기획과 구현의 의미가 같은지는 해당 코드·행동 테스트·리뷰가 확인합니다.
+문서 전용 changes job은 `pnpm dlx`로 저장소에 명시된 정확한 Prettier 하나만 준비하고 변경 Markdown의 포맷을 검사합니다. 앱 의존성 전체 설치·빌드·테스트는 실행하지 않습니다. `pnpm check:docs`는 루트/`docs` Markdown의 로컬 파일 링크, `#`~`######` 제목으로 이동하는 Markdown 절 링크와 소개 이미지 경로를 검사하고, `check:page-specs`는 라우트별 문서의 수용 기준 구조를 검사합니다. 외부 URL 응답, 코드 파일 줄 번호, 직접 작성한 HTML 앵커와 자연어 의미는 별도 검토 대상입니다. 자연어 기획과 구현의 의미가 같은지는 해당 코드·행동 테스트·리뷰가 확인합니다.
 
 ## 초기 JavaScript 예산
 

@@ -116,7 +116,7 @@ Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이�
 | `pnpm check:e2e-categories`      | E2E 범주의 누락·중복·없는 스펙 경로 검사                     |
 | `pnpm check:page-specs`          | 페이지 기획 누락·중복·필수 항목·로컬 링크 검사               |
 | `pnpm check:browser-image`       | CI 브라우저 이미지와 설치된 Playwright 버전·고정 digest 검사 |
-| `pnpm check:docs`                | Markdown 로컬 링크 대상 검사                                 |
+| `pnpm check:docs`                | Markdown 로컬 파일과 절 링크 검사                            |
 | `pnpm check:bundle-budget`       | 빌드 후 초기 정적 JS의 raw/gzip 예산 검사                    |
 | `pnpm test:guardrails`           | 구조 검사기, 경로별 HTML, E2E 범주 회귀 테스트               |
 | `pnpm format` / `pnpm lint`      | 포맷 적용 / 린트 검사                                        |

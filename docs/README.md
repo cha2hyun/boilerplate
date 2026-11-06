@@ -15,7 +15,7 @@
 | 로딩·skeleton·숫자 모션          | [로딩과 모션](loading-and-motion.md)                                    | 해당 Query 소비 화면과 모션 기능                                                |
 | 캐시·새로고침·mutation 반영      | [Query 캐시](query-cache.md)                                            | `src/entities/*/api`, QueryClient                                               |
 | 필터·정렬·기간·URL 복원          | [URL 조회 상태](url-state.md)                                           | `src/app/routes`, 해당 `pages/widgets`의 조회 스키마와 UI                       |
-| 폼 초안·이탈 확인·저장 중 보호   | [미저장 입력 보호](unsaved-changes.md)                                  | 공통 입력 보호 hook/확인 조합, Settings, 프로젝트·주문·고객 편집 feature        |
+| 폼 초안·이탈 확인·저장 중 보호   | [미저장 입력 보호](unsaved-changes.md)                                  | 공통 입력 보호 hook/확인 조합, Settings, 프로젝트·주문·고객·구성원 편집 feature |
 | 앱 오류 복구·보고·개인정보 경계  | [오류 처리](error-handling.md)                                          | `src/app/error-handling`, `src/shared/lib/error-reporting`, 앱 진입점           |
 | API·응답·데모 저장               | [API 계약](api-contract.md)                                             | `src/entities/*`, `src/shared/api`                                              |
 | 테스트·CI·최소 로컬 재현         | [테스트 정책](testing.md)                                               | `package.json`, `e2e`, `.github/workflows`                                      |
