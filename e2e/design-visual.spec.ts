@@ -164,7 +164,7 @@ test.describe('approved design compositions', () => {
     }
   })
 
-  test('renders readable chart axes and avatar initials in both themes', async ({
+  test('renders chart series, readable axes and avatar initials in both themes', async ({
     page,
   }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'Shared chart styles are checked once.')
@@ -181,6 +181,31 @@ test.describe('approved design compositions', () => {
           document.documentElement.classList.toggle('dark', theme === 'dark')
           document.documentElement.classList.toggle('light', theme === 'light')
         }, theme)
+        if (route !== '/projects') {
+          const series: Record<string, string> =
+            route === '/'
+              ? { revenue: '--chart-highlight', previousRevenue: '--chart-1' }
+              : { visitors: '--chart-highlight', sessions: '--chart-3' }
+          await page.locator('svg.recharts-surface').first().hover()
+          const tooltip = page.locator('[data-slot="chart-tooltip-content"]')
+          await expect(tooltip).toBeVisible()
+          for (const [key, token] of Object.entries(series)) {
+            const expected = await page.evaluate((token) => {
+              const probe = document.createElement('span')
+              probe.style.color = `var(${token})`
+              document.body.append(probe)
+              const value = getComputedStyle(probe).color
+              probe.remove()
+              return value
+            }, token)
+            const curve = page.locator(`.recharts-area-curve[stroke="var(--color-${key})"]`)
+            const marker = page.locator(`.recharts-legend-wrapper [style*="var(--color-${key})"]`)
+            const indicator = tooltip.locator(`[style*="var(--color-${key})"]`)
+            await expect(curve).toHaveCSS('stroke', expected)
+            await expect(marker).toHaveCSS('background-color', expected)
+            await expect(indicator).toHaveCSS('background-color', expected)
+          }
+        }
         const contrasts = await ticks.evaluateAll((elements) => {
           const canvas = document.createElement('canvas')
           canvas.width = canvas.height = 1

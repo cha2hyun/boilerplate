@@ -40,7 +40,7 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
   const errorMessage = useErrorMessage()
   const { formatDate, formatNumber } = useFormatters()
   const trafficConfig = {
-    visitors: { label: t('analytics.visitors'), color: 'var(--chart-1)' },
+    visitors: { label: t('analytics.visitors'), color: 'var(--chart-highlight)' },
     sessions: { label: t('analytics.sessions'), color: 'var(--chart-3)' },
   } satisfies ChartConfig
   const deviceConfig = {
@@ -194,8 +194,8 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
                 >
                   <defs>
                     <linearGradient id="analyticsVisitors" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-visitors)" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="var(--color-visitors)" stopOpacity={0.02} />
+                      <stop offset="5%" stopColor="var(--color-visitors)" stopOpacity={0.08} />
+                      <stop offset="95%" stopColor="var(--color-visitors)" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="analyticsSessions" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="var(--color-sessions)" stopOpacity={0.2} />
