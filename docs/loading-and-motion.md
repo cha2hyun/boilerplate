@@ -18,6 +18,10 @@ Skeleton의 pulse도 `prefers-reduced-motion: reduce`에서 중단합니다. 이
 
 Dialog·메뉴·Sidebar 등의 공간 전환과 spinner의 reduced-motion 구현은 [모션](design/motion.md)을 따릅니다.
 
+### 프로필 이미지
+
+[공통 프로필 아바타](../src/shared/ui/profile-avatar.tsx)는 사진을 불러오는 동안만 같은 크기의 스켈레톤을 표시합니다. 이미지가 없거나 요청이 실패하면 이니셜을 바로 표시하고, 사용할 이름도 없으면 기본 사용자 모양을 표시합니다. 같은 URL의 데이터를 다시 조회하는 동안 이미 보이는 사진을 가리지 않습니다. 아바타 옆 텍스트나 메뉴 버튼의 접근성 이름이 인물을 설명하므로 장식 이미지를 중복 낭독하지 않습니다.
+
 ## 숫자 모션은 선택적으로 300ms 동안 실행한다
 
 `@/features/number-motion`의 `NumberDisplay`는 공통 `formatNumber`로 값을 표시하며 `animate`의 기본값은 `false`입니다. KPI, 요약 금액·비율·개수의 모션은 `animate`를 명시해서 켭니다. 이 경우 API 응답 후 최초 표시와 **캐시로 페이지에 재진입하는 경우 모두** 같은 동작을 사용합니다. 식별자, 날짜, 페이지 번호, 입력값, 모든 표 셀에 모션을 무조건 적용하지 않습니다.

@@ -17,6 +17,26 @@ function memoryStorage(initial?: string) {
 }
 
 describe('persistent demo orders', () => {
+  it('retains a stored photo on edits to the same customer and drops it for a different email', async () => {
+    const seed = sampleOrders[0]
+    if (!seed) throw new Error('Order seed missing')
+    const order = {
+      ...seed,
+      customer: { ...seed.customer, avatarUrl: '/photos/order-customer.png' },
+    }
+    const storage = memoryStorage(JSON.stringify({ version: 1, orders: [order] }))
+    const adapter = createDemoOrderAdapter({ storage, delayMs: 0 })
+    const kept = await adapter.update(order.id, { ...input, city: 'Seoul' })
+    expect(kept.customer.avatarUrl).toBe(order.customer.avatarUrl)
+    await adapter.update(order.id, {
+      ...input,
+      customer: { name: 'New customer', email: 'new@example.com' },
+    })
+    expect(
+      (await createDemoOrderAdapter({ storage, delayMs: 0 }).detail(order.id)).customer.avatarUrl,
+    ).toBeUndefined()
+  })
+
   it('persists CRUD across instances and derives initials from the edited snapshot', async () => {
     const storage = memoryStorage()
     const first = createDemoOrderAdapter({ storage, delayMs: 0, createId: () => 'ORD-test' })

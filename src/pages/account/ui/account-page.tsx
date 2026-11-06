@@ -6,8 +6,9 @@ import { Alert, AlertDescription } from '@/shared/ui/alert'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { PageHeader } from '@/shared/ui/page-header'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { VStack } from '@/shared/ui/stack'
+import { HStack, VStack } from '@/shared/ui/stack'
 
 export function AccountPage({ userId }: { userId: string }) {
   const { t } = useTranslation('workspace')
@@ -29,16 +30,25 @@ export function AccountPage({ userId }: { userId: string }) {
         </CardHeader>
         <CardContent>
           <VStack align="stretch" className="gap-4">
-            {profile.isPending && (
-              <VStack
-                align="stretch"
-                aria-busy="true"
-                aria-label={t('account.loading')}
-                className="gap-3"
-              >
-                <Skeleton className="h-6 w-1/2" />
-                <Skeleton className="h-6 w-2/3" />
-              </VStack>
+            {(user != null || profile.isPending) && (
+              <HStack className="min-w-0 gap-3" aria-busy={profile.isPending}>
+                <ProfileAvatar
+                  name={user?.name ?? ''}
+                  src={user?.avatarUrl}
+                  pending={profile.isPending}
+                  size="lg"
+                />
+                {user ? (
+                  <span className="min-w-0 font-medium wrap-anywhere">{user.name}</span>
+                ) : (
+                  <>
+                    <span role="status" className="sr-only">
+                      {t('account.loading')}
+                    </span>
+                    <Skeleton aria-hidden="true" className="h-5 w-28" />
+                  </>
+                )}
+              </HStack>
             )}
             {(profile.isError || user === null) && (
               <Alert>
@@ -60,7 +70,8 @@ export function AccountPage({ userId }: { userId: string }) {
               <dl className="grid min-w-0 gap-3 text-sm sm:grid-cols-[max-content_minmax(0,1fr)] sm:gap-x-6">
                 {(
                   [
-                    [users('fields.name'), user.name],
+                    ...(user.givenName ? [[users('fields.givenName'), user.givenName]] : []),
+                    ...(user.familyName ? [[users('fields.familyName'), user.familyName]] : []),
                     [users('fields.email'), user.email],
                     [users('fields.role'), users(`roles.${user.role}`)],
                     [users('fields.status'), users(`statuses.${user.status}`)],

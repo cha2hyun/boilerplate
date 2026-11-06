@@ -1,4 +1,6 @@
 import { Link } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { workspaceUserQueryOptions } from '@/entities/workspace-user'
 import { CircleUserRound, LogIn, LogOut } from 'lucide-react'
 import { useDemoSession } from '@/features/demo-session'
 import { env } from '@/shared/config'
@@ -9,6 +11,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/ui/dropdown-menu'
@@ -31,19 +34,35 @@ export function AccountMenu() {
       </Tooltip>
     )
   }
+  return <SignedInAccountMenu userId={session.id} />
+}
+
+function SignedInAccountMenu({ userId }: { userId: string }) {
+  const { t } = useTranslation('workspace')
+  const profile = useQuery(workspaceUserQueryOptions(userId))
+  const user = profile.data
   return (
     <DropdownMenu>
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
-            <HeaderActionButton aria-label={t('account.menu')}>
-              <CircleUserRound aria-hidden="true" />
-            </HeaderActionButton>
+            <HeaderActionButton
+              aria-label={t('account.menu')}
+              accountProfile={{
+                name: user?.name ?? '',
+                nickname: user?.nickname,
+                src: user?.avatarUrl,
+                pending: profile.isPending,
+              }}
+            />
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent>{t('account.menu')}</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end">
+        {user && (
+          <DropdownMenuLabel className="max-w-64 wrap-anywhere">{user.name}</DropdownMenuLabel>
+        )}
         <DropdownMenuItem asChild>
           <Link to="/account">
             <CircleUserRound aria-hidden="true" />

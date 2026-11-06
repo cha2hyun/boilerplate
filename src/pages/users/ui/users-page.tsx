@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@/shared/ui/empty'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { PageHeader } from '@/shared/ui/page-header'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { Skeleton } from '@/shared/ui/skeleton'
@@ -189,25 +190,28 @@ export function UsersPage({ search, onSearchChange }: UsersPageProps) {
                         key={user.id}
                         className="grid min-w-0 gap-3 py-3 md:grid-cols-[minmax(0,1fr)_minmax(6rem,.28fr)_minmax(6rem,.28fr)] md:items-center"
                       >
-                        <VStack align="start" className="min-w-0 gap-1">
-                          <HStack wrap className="min-w-0 gap-2">
-                            <Button
-                              variant="link"
-                              className="h-auto max-w-full min-w-0 justify-start p-0 text-left wrap-anywhere whitespace-normal underline underline-offset-4"
-                              onClick={(event) => {
-                                openDetails(user.id, event.currentTarget)
-                              }}
-                            >
-                              {user.name}
-                            </Button>
-                            {user.id === currentDemoUserId && (
-                              <Badge variant="outline">{t('self')}</Badge>
-                            )}
-                          </HStack>
-                          <p className="min-w-0 text-sm wrap-anywhere text-muted-foreground">
-                            {user.email}
-                          </p>
-                        </VStack>
+                        <HStack className="min-w-0 gap-3">
+                          <ProfileAvatar name={user.name} src={user.avatarUrl} />
+                          <VStack align="start" className="min-w-0 gap-1">
+                            <HStack wrap className="min-w-0 gap-2">
+                              <Button
+                                variant="link"
+                                className="h-auto max-w-full min-w-0 justify-start p-0 text-left wrap-anywhere whitespace-normal underline underline-offset-4"
+                                onClick={(event) => {
+                                  openDetails(user.id, event.currentTarget)
+                                }}
+                              >
+                                {user.name}
+                              </Button>
+                              {user.id === currentDemoUserId && (
+                                <Badge variant="outline">{t('self')}</Badge>
+                              )}
+                            </HStack>
+                            <p className="min-w-0 text-sm wrap-anywhere text-muted-foreground">
+                              {user.email}
+                            </p>
+                          </VStack>
+                        </HStack>
                         <div className="text-sm wrap-anywhere">
                           <span className="text-muted-foreground md:sr-only">
                             {t('fields.role')}{' '}

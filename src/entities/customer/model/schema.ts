@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { avatarUrlSchema } from '@/shared/lib/avatar-url'
 
 export const customerStatuses = ['Active', 'Inactive'] as const
 
@@ -17,6 +18,7 @@ export const customerSchema = z.object({
   name: z.string().min(1),
   email: z.email(),
   initials: z.string().min(1),
+  avatarUrl: avatarUrlSchema,
   status: z.enum(customerStatuses),
   city: z.string().min(1),
   country: z.string().min(1),

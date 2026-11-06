@@ -4,7 +4,7 @@ import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
 import { cn } from '@/shared/lib/utils'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { Card } from '@/shared/ui/card'
@@ -335,9 +335,13 @@ export function InboxPage({ search, onSearchChange }: InboxPageProps) {
                         {selected.subject}
                       </h2>
                       <HStack wrap className="gap-3">
-                        <Avatar className="size-9">
-                          <AvatarFallback className="text-xs">{selected.initials}</AvatarFallback>
-                        </Avatar>
+                        <ProfileAvatar
+                          name={selected.sender}
+                          src={selected.avatarUrl}
+                          initials={selected.initials}
+                          className="size-9"
+                          fallbackClassName="text-xs"
+                        />
                         <VStack align="stretch" className="min-w-0 flex-[1_1_10rem]">
                           <p className="text-sm font-medium wrap-anywhere">{selected.sender}</p>
                           <p className="text-xs wrap-anywhere text-muted-foreground">

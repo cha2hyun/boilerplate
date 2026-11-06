@@ -12,6 +12,25 @@ async function signIn(page: Page) {
   await page.getByRole('button', { name: 'Sign in', exact: true }).click()
 }
 
+const ownerAvatar = '/avatars/soohyun-chae.svg'
+
+async function expectLoadedAvatar(avatar: Locator, src: string) {
+  await expect(avatar).toHaveAttribute('data-profile-state', 'image')
+  const image = avatar.locator('img')
+  await expect(image).toBeVisible()
+  await expect(image).toHaveAttribute('alt', '')
+  await expect
+    .poll(() =>
+      image.evaluate((element: HTMLImageElement) => ({
+        src: element.currentSrc,
+        loaded: element.complete && element.naturalWidth > 0 && element.naturalHeight > 0,
+      })),
+    )
+    .toEqual({ src: new URL(src, avatar.page().url()).href, loaded: true })
+  await expect(avatar.locator('[data-slot="skeleton"]')).toHaveCount(0)
+  await expect(avatar.locator('[data-slot="avatar-fallback"]')).toHaveCount(0)
+}
+
 test('restores a protected account in this tab and requires sign-in after logout', async ({
   page,
   context,
@@ -32,9 +51,22 @@ test('restores a protected account in this tab and requires sign-in after logout
   await password.fill('Blueprint123!')
   await signIn(page)
   await expect(page).toHaveURL('/account')
-  await expect(page.getByText('admin@example.com', { exact: true })).toBeVisible()
+  await expect(page.getByRole('main').getByText('admin@example.com', { exact: true })).toBeVisible()
   await page.reload()
-  await expect(page.getByText('Alex Morgan', { exact: true })).toBeVisible()
+  const profile = page.getByRole('main')
+  await expect(profile.getByText('soohyun chae', { exact: true })).toBeVisible()
+  await expect(
+    profile
+      .locator('dt')
+      .filter({ hasText: /^First name$/ })
+      .locator('+ dd'),
+  ).toHaveText('soohyun')
+  await expect(
+    profile
+      .locator('dt')
+      .filter({ hasText: /^Last name$/ })
+      .locator('+ dd'),
+  ).toHaveText('chae')
   const another = await context.newPage()
   await another.goto('/account')
   await expect(another.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
@@ -54,7 +86,7 @@ test('restores a user deep link and keeps demo invitations and access changes on
   page,
   context,
 }) => {
-  await page.goto('/users?q=Alex&id=usr_demo')
+  await page.goto('/users?q=soohyun&id=usr_demo')
   const loginOrigin = new URL(page.url()).origin
   const attemptedEmail = 'unused@example.invalid'
   const attemptedPassword = 'unused-private-input'
@@ -86,17 +118,17 @@ test('restores a user deep link and keeps demo invitations and access changes on
     (url) =>
       url.origin === loginOrigin &&
       url.pathname === '/users' &&
-      url.searchParams.get('q') === 'Alex' &&
+      url.searchParams.get('q') === 'soohyun' &&
       url.searchParams.get('id') === 'usr_demo',
   )
-  const self = page.getByRole('dialog', { name: 'Alex Morgan' })
+  const self = page.getByRole('dialog', { name: 'soohyun chae' })
   await expect(self).toBeVisible()
   context.off('request', observeLogin)
   expect(unexpectedRequests).toEqual([])
   await expect(self.getByRole('button', { name: 'Edit access' })).toHaveCount(0)
   await self.press('Escape')
   const search = page.getByRole('searchbox', { name: 'Search users' })
-  await expect(search).toHaveValue('Alex')
+  await expect(search).toHaveValue('soohyun')
   await search.fill('')
   await page.getByRole('button', { name: 'Invite user', exact: true }).click()
   const invite = page.getByRole('dialog', { name: 'Invite user' })
@@ -148,10 +180,12 @@ test('rechecks a protected document restored after its tab session ended', async
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'The pageshow session contract is shared.')
-  for (const path of ['/account', '/users?q=Alex']) {
+  for (const path of ['/account', '/users?q=soohyun']) {
     await page.goto(path)
     await signIn(page)
-    await expect(page.getByText('admin@example.com', { exact: true })).toBeVisible()
+    await expect(
+      page.getByRole('main').getByText('admin@example.com', { exact: true }),
+    ).toBeVisible()
     // Playwright disables Chromium BFCache by default. Deliver its persisted pageshow event
     // to the still-mounted document after the same tab's other document has signed out.
     await page.evaluate(() => {
@@ -159,7 +193,7 @@ test('rechecks a protected document restored after its tab session ended', async
       window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))
     })
     await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
-    await expect(page.getByText('Alex Morgan', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('main').getByText('soohyun chae', { exact: true })).toHaveCount(0)
     expect(new URL(page.url()).searchParams.get('returnTo')).toBe(path)
   }
 })
@@ -192,11 +226,24 @@ async function checkHeaderActions(page: Page, toolbar: Locator, signedIn: boolea
     ]) {
       await expect(toolbar.getByRole('button', { name, exact: true })).toBeVisible()
     }
-    await expect(
-      signedIn
-        ? toolbar.getByRole('button', { name: 'Account menu', exact: true })
-        : toolbar.getByRole('link', { name: 'Sign in', exact: true }),
-    ).toBeVisible()
+    await expect(toolbar.locator('[data-header-account="true"]')).toHaveCount(signedIn ? 1 : 0)
+    if (signedIn) {
+      const account = toolbar.getByRole('button', { name: 'Account menu', exact: true })
+      await expect(account).toHaveAttribute('data-header-account', 'true')
+      await expect(account).toHaveAttribute('data-variant', 'ghost')
+      await expect(account).toHaveAttribute('data-size', 'icon-sm')
+      await expectLoadedAvatar(account.locator('[data-slot="avatar"]'), ownerAvatar)
+      const nickname = account.locator('[data-slot="account-nickname"]')
+      await expect(nickname).toHaveText('soohyun')
+      if (await page.evaluate(() => matchMedia('(min-width: 80rem)').matches)) {
+        await expect(nickname).toBeVisible()
+      } else {
+        await expect(nickname).toBeHidden()
+        await expect(account).toHaveText('', { useInnerText: true })
+      }
+    } else {
+      await expect(toolbar.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible()
+    }
 
     const controls = toolbar.locator(headerControls).filter({ visible: true })
     for (const control of await controls.all()) await expect(control).toHaveAccessibleName(/\S/)
@@ -208,22 +255,27 @@ async function checkHeaderActions(page: Page, toolbar: Locator, signedIn: boolea
         .map((action) => {
           const box = action.getBoundingClientRect()
           const style = getComputedStyle(action)
+          const relativeBox = (element: Element) => {
+            const rect = element.getBoundingClientRect()
+            return {
+              width: rect.width,
+              height: rect.height,
+              xOffset: rect.left + rect.width / 2 - (box.left + box.width / 2),
+              yOffset: rect.top + rect.height / 2 - (box.top + box.height / 2),
+            }
+          }
           const icons = [...action.querySelectorAll('svg')]
             .filter((svg) => svg.checkVisibility())
-            .map((svg) => {
-              const glyph = svg.getBoundingClientRect()
-              return {
-                width: glyph.width,
-                height: glyph.height,
-                xOffset: glyph.left + glyph.width / 2 - (box.left + box.width / 2),
-                yOffset: glyph.top + glyph.height / 2 - (box.top + box.height / 2),
-              }
-            })
+            .map(relativeBox)
+          const account = action.getAttribute('data-header-account') === 'true'
+          const avatar = action.querySelector('[data-slot="avatar"]')
+          const desktop = matchMedia('(min-width: 80rem)').matches
           return {
             name: action.getAttribute('aria-label') ?? action.textContent?.trim(),
-            expandedSearch:
-              action.getAttribute('data-header-search') === 'true' &&
-              matchMedia('(min-width: 80rem)').matches,
+            expandedSearch: action.getAttribute('data-header-search') === 'true' && desktop,
+            expandedAccount: account && desktop,
+            account,
+            avatar: avatar ? relativeBox(avatar) : null,
             width: box.width,
             height: box.height,
             rowOffset: box.top + box.height / 2 - (rowBox.top + rowBox.height / 2),
@@ -239,7 +291,8 @@ async function checkHeaderActions(page: Page, toolbar: Locator, signedIn: boolea
     for (const action of layout.actions) {
       const label = `${theme} ${signedIn ? 'signed in' : 'signed out'}: ${action.name}`
       expect(action.height, label).toBeCloseTo(layout.rem * (action.expandedSearch ? 2.25 : 2), 1)
-      if (action.expandedSearch) expect(action.width, label).toBeGreaterThan(layout.rem * 2)
+      if (action.expandedSearch || action.expandedAccount)
+        expect(action.width, label).toBeGreaterThan(layout.rem * 2)
       else expect(action.width, label).toBeCloseTo(layout.rem * 2, 1)
       expect(Math.abs(action.rowOffset), label).toBeLessThanOrEqual(0.5)
       expect([action.border, action.background, action.image, action.shadow], label).toEqual([
@@ -248,7 +301,18 @@ async function checkHeaderActions(page: Page, toolbar: Locator, signedIn: boolea
         'none',
         'none',
       ])
-      expect(action.icons.length, label).toBeGreaterThan(0)
+      if (action.account) {
+        expect(action.icons, label).toHaveLength(0)
+        if (!action.avatar) throw new Error(`Missing account avatar for ${label}`)
+        expect(action.avatar.width, label).toBeCloseTo(layout.rem * 1.5, 1)
+        expect(action.avatar.height, label).toBeCloseTo(layout.rem * 1.5, 1)
+        expect(Math.abs(action.avatar.yOffset), label).toBeLessThanOrEqual(0.5)
+        if (!action.expandedAccount)
+          expect(Math.abs(action.avatar.xOffset), label).toBeLessThanOrEqual(0.5)
+      } else {
+        expect(action.avatar, label).toBeNull()
+        expect(action.icons.length, label).toBeGreaterThan(0)
+      }
       for (const icon of action.icons) {
         expect(icon.width, label).toBeCloseTo(layout.rem, 1)
         expect(icon.height, label).toBeCloseTo(layout.rem, 1)
@@ -278,6 +342,92 @@ test('keeps all header actions aligned and accessible before and after sign-in',
   await expect(page.getByRole('heading', { name: 'Sign in', level: 1 })).toBeVisible()
   await signIn(page)
   await checkHeaderActions(page, toolbar, true)
-  await toolbar.getByRole('button', { name: 'Account menu', exact: true }).click()
-  await expect(page.getByRole('menuitem', { name: 'My account', exact: true })).toBeVisible()
+  await page.goto('/orders')
+  const account = toolbar.getByRole('button', { name: 'Account menu', exact: true })
+  await toolbar.getByRole('button', { name: 'Display currency', exact: true }).focus()
+  await page.keyboard.press('Tab')
+  await expect(account).toBeFocused()
+  await page.keyboard.press('Enter')
+  const myAccount = page.getByRole('menuitem', { name: 'My account', exact: true })
+  await expect(myAccount).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page).toHaveURL('/account')
+  await account.focus()
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('End')
+  await expect(page.getByRole('menuitem', { name: 'Sign out', exact: true })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
+})
+
+test('resolves a failed account image to initials and renders the next signed-in profile', async ({
+  page,
+  context,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop',
+    'Avatar loading and response identity are shared across viewports.',
+  )
+  let releaseImage!: () => void
+  const pendingImage = new Promise<void>((resolve) => {
+    releaseImage = resolve
+  })
+  let requested = false
+  await context.route(
+    (url) => url.pathname === ownerAvatar && url.search === '',
+    async (route) => {
+      requested = true
+      await pendingImage
+      await route.fulfill({
+        status: 404,
+        contentType: 'text/plain',
+        body: 'Profile image unavailable',
+      })
+    },
+  )
+  const account = page.getByRole('button', { name: 'Account menu', exact: true })
+  const avatar = account.locator('[data-slot="avatar"]')
+  try {
+    await page.goto('/account')
+    await signIn(page)
+    await expect.poll(() => requested).toBe(true)
+    await expect(account.locator('[data-slot="account-nickname"]')).toHaveText('soohyun')
+    await expect(avatar).toHaveAttribute('data-profile-state', 'loading')
+    await expect(avatar.locator('[data-slot="skeleton"]')).toBeVisible()
+    await expect(avatar.locator('[data-slot="avatar-fallback"]')).toHaveCount(0)
+  } finally {
+    releaseImage()
+  }
+  await expect(avatar).toHaveAttribute('data-profile-state', 'fallback')
+  await expect(avatar.locator('[data-slot="avatar-fallback"]')).toHaveText('SC')
+  await expect(avatar.locator('[data-slot="skeleton"]')).toHaveCount(0)
+
+  // A fresh sign-in uses a new cache, with the fetch override above the running MSW adapter.
+  await account.click()
+  await page.getByRole('menuitem', { name: 'Sign out', exact: true }).click()
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Sign in', exact: true })).toBeVisible()
+  const changedSrc = `${ownerAvatar}?profile=riley`
+  await page.evaluate((src) => {
+    const originalFetch = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      const response = await originalFetch(input, init)
+      const url = new URL(input instanceof Request ? input.url : String(input), location.href)
+      if (url.pathname !== '/api/workspace-users/usr_demo' || !response.ok) return response
+      const original = (await response.json()) as Record<string, unknown>
+      return Response.json({
+        ...original,
+        name: 'Riley Park',
+        givenName: 'Riley',
+        familyName: 'Park',
+        nickname: 'riley',
+        avatarUrl: src,
+      })
+    }
+  }, changedSrc)
+  await signIn(page)
+  await expect(account.locator('[data-slot="account-nickname"]')).toHaveText('riley')
+  await expect(page.getByRole('main')).toContainText('Riley Park')
+  await expectLoadedAvatar(avatar, changedSrc)
 })

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { avatarUrlSchema } from '@/shared/lib/avatar-url'
 
 export const workspaceRoles = ['admin', 'member', 'viewer'] as const
 export const workspaceUserStatuses = ['active', 'invited', 'suspended'] as const
@@ -6,6 +7,7 @@ export const workspaceUserStatuses = ['active', 'invited', 'suspended'] as const
 const roleSchema = z.enum(workspaceRoles)
 const statusSchema = z.enum(workspaceUserStatuses)
 const emailSchema = z.string().trim().max(254).toLowerCase().pipe(z.email())
+const profileTextSchema = z.string().trim().min(1).max(80).optional().catch(undefined)
 export const workspaceUserIdSchema = z
   .string()
   .min(1)
@@ -21,6 +23,10 @@ export const workspaceUserUpdateSchema = z.object({ role: roleSchema, status: st
 export const workspaceUserSchema = z.object({
   id: workspaceUserIdSchema,
   name: z.string().trim().min(1),
+  givenName: profileTextSchema,
+  familyName: profileTextSchema,
+  nickname: profileTextSchema,
+  avatarUrl: avatarUrlSchema,
   email: emailSchema,
   role: roleSchema,
   status: statusSchema,
@@ -40,9 +46,15 @@ export type WorkspaceUserUpdate = z.infer<typeof workspaceUserUpdateSchema>
 export type WorkspaceUser = z.infer<typeof workspaceUserSchema>
 
 export const currentDemoUserId = 'usr_demo'
+const givenName = 'soohyun'
+const familyName = 'chae'
 export const currentDemoUser = {
   id: currentDemoUserId,
-  name: 'Alex Morgan',
+  name: `${givenName} ${familyName}`,
+  givenName,
+  familyName,
+  nickname: givenName,
+  avatarUrl: '/avatars/soohyun-chae.svg',
   email: 'admin@example.com',
   role: 'admin',
   status: 'active',

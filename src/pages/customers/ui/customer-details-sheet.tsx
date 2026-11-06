@@ -6,7 +6,7 @@ import {
   useLocalePreferences,
   useTranslation,
 } from '@/shared/lib/i18n'
-import { Avatar, AvatarFallback } from '@/shared/ui/avatar'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/ui/card'
 import { Separator } from '@/shared/ui/separator'
@@ -112,9 +112,13 @@ export function CustomerDetailsSheet({
               </RouterTextLink>
             </HStack>
             <HStack className="gap-3">
-              <Avatar className="size-12 shrink-0">
-                <AvatarFallback className="font-medium">{customer.initials}</AvatarFallback>
-              </Avatar>
+              <ProfileAvatar
+                name={customer.name}
+                src={customer.avatarUrl}
+                initials={customer.initials}
+                className="size-12 shrink-0"
+                fallbackClassName="font-medium"
+              />
               <VStack align="start" className="min-w-0 gap-1.5">
                 <p className="wrap-anywhere text-muted-foreground">{customer.email}</p>
                 <CustomerStatusBadge status={customer.status} />

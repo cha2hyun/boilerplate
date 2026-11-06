@@ -19,7 +19,6 @@ const persistedSchema = z
       users.some(
         (user) =>
           user.id === currentDemoUserId &&
-          user.name === currentDemoUser.name &&
           user.email === currentDemoUser.email &&
           user.role === currentDemoUser.role &&
           user.status === currentDemoUser.status,
@@ -88,8 +87,22 @@ export function createDemoWorkspaceUserAdapter(options: DemoOptions = {}): Works
       if (raw === null) persist(memory)
       else {
         try {
-          const parsed = persistedSchema.parse(JSON.parse(raw))
-          memory = parsed.users
+          const { users } = persistedSchema.parse(JSON.parse(raw))
+          // A seed profile change should upgrade only the owner, never discard invited members.
+          const outdatedOwner = users.some(
+            (user) =>
+              user.id === currentDemoUserId &&
+              (user.name !== currentDemoUser.name ||
+                user.givenName !== currentDemoUser.givenName ||
+                user.familyName !== currentDemoUser.familyName ||
+                user.nickname !== currentDemoUser.nickname ||
+                user.avatarUrl !== currentDemoUser.avatarUrl),
+          )
+          if (outdatedOwner) {
+            persist(users.map((user) => (user.id === currentDemoUserId ? currentDemoUser : user)))
+          } else {
+            memory = users
+          }
         } catch {
           persist(seedWorkspaceUsers)
         }

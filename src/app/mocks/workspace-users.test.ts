@@ -95,6 +95,40 @@ describe('workspace users HTTP and read cache', () => {
     await client.invalidateQueries({ queryKey: workspaceUserKeys.all })
     expect(await client.query(workspaceUsersQueryOptions())).toHaveLength(5)
   })
+  it('reads the canonical owner profile and keeps older or missing-photo members usable', async () => {
+    expect(await client.query(workspaceUserQueryOptions(currentDemoUser.id))).toMatchObject({
+      name: 'soohyun chae',
+      givenName: 'soohyun',
+      familyName: 'chae',
+      nickname: 'soohyun',
+      avatarUrl: '/avatars/soohyun-chae.svg',
+    })
+    const member = {
+      id: 'legacy-user',
+      name: 'Other Member',
+      email: 'other@example.com',
+      role: 'member',
+      status: 'active',
+    }
+    server.use(
+      http.get(collection, () =>
+        HttpResponse.json([
+          member,
+          {
+            ...member,
+            id: 'missing-photo',
+            email: 'another@example.com',
+            nickname: 'Another',
+            avatarUrl: '//invalid.example/picture',
+          },
+        ]),
+      ),
+    )
+    const users = await client.query(workspaceUsersQueryOptions())
+    expect(users[0]).toEqual(member)
+    expect(users[1]?.nickname).toBe('Another')
+    expect(users[1]?.avatarUrl).toBeUndefined()
+  })
   it('rejects malformed inputs, returns 404 for missing records and never treats invalid lists as empty', async () => {
     expect(
       (await send(collection, 'POST', { name: 'Invalid', email: 'bad', role: 'owner' })).status,

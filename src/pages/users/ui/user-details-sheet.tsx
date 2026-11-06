@@ -6,10 +6,11 @@ import {
   type WorkspaceUser,
 } from '@/entities/workspace-user'
 import { useTranslation } from '@/shared/lib/i18n'
+import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/shared/ui/sheet'
 import { Skeleton } from '@/shared/ui/skeleton'
-import { VStack } from '@/shared/ui/stack'
+import { HStack, VStack } from '@/shared/ui/stack'
 import { UserStatusBadge } from './user-status-badge'
 import { UsersQueryAlert } from './users-query-alert'
 
@@ -36,7 +37,16 @@ export function UserDetailsSheet({ id, onClose, onCloseAutoFocus, onEdit }: Deta
         onCloseAutoFocus={onCloseAutoFocus}
       >
         <SheetHeader className="border-b p-6 pr-12">
-          <SheetTitle className="wrap-anywhere">{user?.name ?? t('details')}</SheetTitle>
+          <HStack className="min-w-0 gap-3">
+            {(user != null || query.isPending) && (
+              <ProfileAvatar
+                name={user?.name ?? ''}
+                src={user?.avatarUrl}
+                pending={query.isPending}
+              />
+            )}
+            <SheetTitle className="min-w-0 wrap-anywhere">{user?.name ?? t('details')}</SheetTitle>
+          </HStack>
           <SheetDescription>{t('detailHint')}</SheetDescription>
         </SheetHeader>
         <VStack align="stretch" className="min-w-0 gap-5 px-6 pb-6">

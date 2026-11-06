@@ -20,6 +20,40 @@ function storageWith(initial: string | null = null) {
 }
 
 describe('workspace member demo storage', () => {
+  it('upgrades just the version 1 owner profile and retains invitations and member access across reloads', async () => {
+    const previousOwner = {
+      id: 'usr_demo',
+      name: 'Alex Morgan',
+      email: 'admin@example.com',
+      role: 'admin',
+      status: 'active',
+    }
+    const invited = {
+      id: 'existing-invite',
+      name: 'Riley Park',
+      email: 'riley@example.com',
+      role: 'member',
+      status: 'invited',
+    }
+    const edited = {
+      id: 'usr_jordan',
+      name: 'Jordan Lee',
+      email: 'jordan@example.com',
+      role: 'admin',
+      status: 'suspended',
+      avatarUrl: '/photos/jordan.png',
+    }
+    const storage = storageWith(
+      JSON.stringify({ version: 1, users: [invited, previousOwner, edited] }),
+    )
+    const write = vi.spyOn(storage, 'setItem')
+    const expected = [invited, currentDemoUser, edited]
+    expect(await createDemoWorkspaceUserAdapter({ storage }).list()).toEqual(expected)
+    expect(JSON.parse(storage.getItem() ?? 'null')).toEqual({ version: 1, users: expected })
+    expect(await createDemoWorkspaceUserAdapter({ storage }).list()).toEqual(expected)
+    expect(write).toHaveBeenCalledTimes(1)
+  })
+
   it('creates a pending record and restores an edit across sessions without secure-context UUIDs', async () => {
     vi.stubGlobal('crypto', {
       getRandomValues: globalThis.crypto.getRandomValues.bind(globalThis.crypto),

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { avatarUrlSchema } from '@/shared/lib/avatar-url'
 
 export const orderStatuses = ['Processing', 'Shipped', 'Delivered', 'Cancelled'] as const
 export const orderPaymentStatuses = ['Paid', 'Pending', 'Refunded'] as const
@@ -59,7 +60,12 @@ export const orderSchema = orderInputSchema.extend({
   // Existing API responses and browser records have no fabricated historical events.
   history: z.array(orderHistoryEntrySchema).max(orderLimits.history).default([]),
   // Server-owned content may be longer than the limits for a new editor submission.
-  customer: z.object({ name: z.string().min(1), email: z.email(), initials: z.string().min(1) }),
+  customer: z.object({
+    name: z.string().min(1),
+    email: z.email(),
+    initials: z.string().min(1),
+    avatarUrl: avatarUrlSchema,
+  }),
   city: z.string(),
   country: z.string(),
   items: z
