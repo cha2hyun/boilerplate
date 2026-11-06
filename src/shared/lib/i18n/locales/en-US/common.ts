@@ -1,4 +1,8 @@
 export default {
+  demoStorage: {
+    sessionOnly:
+      'Some demo changes are kept only in this tab because browser storage is unavailable. They may be lost when you reload or close this tab.',
+  },
   breadcrumb: 'breadcrumb',
   sidebar: 'Sidebar',
   sidebarDescription: 'Displays the mobile sidebar.',

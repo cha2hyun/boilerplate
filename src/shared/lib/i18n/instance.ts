@@ -11,7 +11,7 @@ export const i18nReady = i18n.use(initReactI18next).init({
   fallbackLng: 'en-US',
   load: 'currentOnly',
   defaultNS: 'common',
-  ns: ['common', 'workspace', 'admin', 'examples'],
+  ns: Object.keys(resources['en-US']),
   initAsync: false,
   returnNull: false,
   interpolation: { escapeValue: false },

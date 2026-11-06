@@ -8,7 +8,7 @@ Overview·Analytics·Orders·Customers는 MSW가 실제 fetch에 목업 응답�
 
 ## 미리보기
 
-2026-11-05의 `2ba2bb6` production 데모 번들에서 캡처했습니다. 기능·탐색·정보 구조가 바뀌면 해당 커밋의 번들에서 소개 이미지도 갱신합니다. Overview 미리보기는 밝은 테마와 어두운 테마에 맞춰 표시됩니다.
+2026-11-06에 커밋 `b8fe73e`의 production 데모 번들에서 캡처했습니다. 기능·탐색·정보 구조가 바뀌면 해당 커밋의 번들에서 소개 이미지도 갱신합니다. Overview 미리보기는 밝은 테마와 어두운 테마에 맞춰 표시됩니다. [캡처에 사용한 Actions 실행](https://github.com/cha2hyun/boilerplate/actions/runs/42138337131)
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/overview-dark.png" />
@@ -45,7 +45,7 @@ Vite가 출력하는 로컬 주소에서 확인하세요. 기본 포트는 `5173
 
 개발 모드에서는 오른쪽 아래 **TanStack Devtools** 버튼 하나로 Query와 Router 패널을 전환합니다. [공식 플러그인 방식](https://tanstack.com/devtools/latest/docs/quick-start)을 사용하며 `import.meta.env.DEV` 경계에서 지연 로드하므로 production 진입 코드에는 포함하지 않습니다.
 
-페이지별 제목/OG/Twitter 메타는 하나의 registry로 관리하며, 빌드 시 경로마다 메타가 들어간 정적 HTML shell을 만듭니다. React 화면은 CSR로 실행합니다. 공유 이미지의 절대 URL과 canonical을 만들려면 배포 전에 `VITE_SITE_URL`에 실제 공개 origin을 설정하세요. 파비콘·모바일 북마크 아이콘과 호스팅 경로 규칙은 [메타데이터 가이드](docs/seo.md)에 정리했습니다.
+관리자 경로는 공개 origin을 설정해도 기본 `noindex`이며, 공개할 경로만 별도 `publicIndexablePaths`에 지정합니다. 페이지별 제목/OG/Twitter 메타는 하나의 registry로 관리하며, 빌드 시 경로마다 메타가 들어간 정적 HTML shell을 만듭니다. React 화면은 CSR로 실행합니다. 공유 이미지의 절대 URL과 canonical을 만들려면 배포 전에 `VITE_SITE_URL`에 실제 공개 origin을 설정하세요. 파비콘·모바일 북마크 아이콘과 호스팅 경로 규칙은 [메타데이터 가이드](docs/seo.md)에 정리했습니다.
 
 ```dotenv
 VITE_DATA_SOURCE=demo
@@ -80,44 +80,47 @@ VITE_API_BASE_URL=/api
 
 ## 샘플 페이지
 
-| 메뉴                  | 제공하는 흐름                                             |
-| --------------------- | --------------------------------------------------------- |
-| Overview / Projects   | 기간별 요약, 프로젝트 생성·수정·삭제, 검색·필터           |
-| Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지        |
-| Orders                | 주문 생성·수정·삭제, 상태 탭·검색·정렬, 주문 상세 Sheet   |
-| Customers             | 고객 생성·수정·삭제, 상태 필터·검색·정렬, 고객 상세 Sheet |
-| Inbox                 | 검색, 읽음/읽지 않음, 보관·복원, 메시지 상세              |
-| Components / Settings | shadcn 구성 요소·토큰·폰트, 테마와 워크스페이스 설정      |
-| Foundations           | 디자인 규칙, HStack/VStack 조합, 문구·국제화·피드백 예시  |
+| 메뉴                  | 제공하는 흐름                                                     |
+| --------------------- | ----------------------------------------------------------------- |
+| Overview / Projects   | 기간별 요약, 프로젝트 생성·수정·삭제, 검색·필터                   |
+| Analytics             | 기간 선택, 방문/기기 차트, 유입 경로와 인기 페이지                |
+| Orders                | 서버 조회 계약의 검색·정렬·페이지, 별도 상세·요약, 생성·수정·삭제 |
+| Customers             | 고객 생성·수정·삭제, 상태 필터·검색·정렬, 고객 상세 Sheet         |
+| Inbox                 | 검색, 읽음/읽지 않음, 보관·복원, 메시지 상세                      |
+| Components / Settings | shadcn 구성 요소·토큰·폰트, 테마와 워크스페이스 설정              |
+| Foundations           | 디자인 규칙, HStack/VStack 조합, 문구·국제화·피드백 예시          |
 
-주문/고객은 HTTP 목업을 통해 생성·수정·삭제하고 브라우저 저장소에 보존합니다. 저장소를 사용할 수 없으면 현재 세션에서만 유지됩니다. 고객 구매 이력과 주문의 고객 정보는 독립된 샘플이며 서로 연쇄 변경하지 않습니다. 받은편지함 변경은 페이지를 떠나면 초기화됩니다. 실제 메일 발송이나 결제 기능은 없습니다. 모바일(768px 미만)은 사이드바 drawer, 태블릿(768–1279px)은 기본 아이콘 탐색, PC(1280px 이상)는 펼친 사이드바를 사용합니다. 접힌 로고·메뉴는 같은 중심선을 사용합니다. 설정은 Resources 메뉴에서 엽니다. 저장한 워크스페이스 이름은 첫 탐색 그룹 제목에 즉시 반영되며 하단 프로필·워크스페이스 전환 블록은 표시하지 않습니다.
+주문/고객은 HTTP 목업을 통해 생성·수정·삭제하고 브라우저 저장소에 보존합니다. 저장소를 사용할 수 없으면 현재 탭의 메모리에서만 유지되며 셸에서 새로고침·종료 시 사라질 수 있음을 안내합니다. 고객 구매 이력과 주문의 고객 정보는 독립된 샘플이며 서로 연쇄 변경하지 않습니다. 받은편지함 변경은 페이지를 떠나면 초기화됩니다. 실제 메일 발송이나 결제 기능은 없습니다. 모바일(768px 미만)은 사이드바 drawer, 태블릿(768–1279px)은 기본 아이콘 탐색, PC(1280px 이상)는 펼친 사이드바를 사용합니다. 접힌 로고·메뉴는 같은 중심선을 사용합니다. 설정은 Resources 메뉴에서 엽니다. 저장한 워크스페이스 이름은 첫 탐색 그룹 제목에 즉시 반영되며 하단 프로필·워크스페이스 전환 블록은 표시하지 않습니다.
 
 Foundations는 기존 shadcn·Pretendard·색상 규칙을 설명하는 페이지입니다. HStack/VStack은 교차축 중앙 정렬을 기본으로 하는 공통 레이아웃 컴포넌트입니다. 직접 작성한 행·열 배치는 [레이아웃 규칙](docs/design/layout.md)에 따라 Stack으로 통일합니다.
 
 ## 명령
 
-| 명령                             | 용도                                              |
-| -------------------------------- | ------------------------------------------------- |
-| `pnpm dev`                       | 로컬 개발 서버                                    |
-| `pnpm build` / `pnpm preview`    | 타입 검사 및 정적 번들 / 로컬 빌드 확인           |
-| `pnpm check`                     | 로컬 정적 검사: 포맷, 린트, 타입, 구조, E2E 범주  |
-| `pnpm check:ci`                  | Actions용 정적 검사, 가드레일/단위 테스트, 빌드   |
-| `pnpm test` / `pnpm test:watch`  | 단위/컴포넌트 테스트 / watch                      |
-| `pnpm test:coverage`             | 테스트 커버리지 리포트                            |
-| `pnpm test:e2e`                  | Playwright 브라우저 테스트 (`pnpm build` 후 실행) |
-| `pnpm check:architecture`        | FSD, shadcn 컨트롤, 스타일/토큰 규칙 검사         |
-| `pnpm check:unit-categories`     | 단위 테스트의 누락·중복 범주·미지원 이름 검사     |
-| `pnpm check:e2e-categories`      | E2E 범주의 누락·중복·없는 스펙 경로 검사          |
-| `pnpm check:page-specs`          | 페이지 기획 누락·중복·필수 항목·로컬 링크 검사    |
-| `pnpm test:guardrails`           | 구조 검사기, 경로별 HTML, E2E 범주 회귀 테스트    |
-| `pnpm format` / `pnpm lint`      | 포맷 적용 / 린트 검사                             |
-| `pnpm ui:add <component>`        | 설정된 shadcn registry에서 컴포넌트 추가          |
-| `pnpm ui:mcp` / `pnpm check:mcp` | shadcn MCP 서버 / 실제 도구 연결 점검             |
-| `pnpm assets:generate`           | SVG 소스에서 파비콘·북마크·공유 이미지 재생성     |
+| 명령                             | 용도                                                         |
+| -------------------------------- | ------------------------------------------------------------ |
+| `pnpm dev`                       | 로컬 개발 서버                                               |
+| `pnpm build` / `pnpm preview`    | 타입 검사 및 정적 번들 / 로컬 빌드 확인                      |
+| `pnpm check`                     | 로컬 정적 검사: 포맷, 린트, 타입, 구조, E2E 범주             |
+| `pnpm check:ci`                  | Actions용 정적 검사, 가드레일/단위 테스트, 빌드              |
+| `pnpm test` / `pnpm test:watch`  | 단위/컴포넌트 테스트 / watch                                 |
+| `pnpm test:coverage`             | 테스트 커버리지 리포트                                       |
+| `pnpm test:e2e`                  | Playwright 브라우저 테스트 (`pnpm build` 후 실행)            |
+| `pnpm check:architecture`        | FSD, shadcn 컨트롤, 스타일/토큰 규칙 검사                    |
+| `pnpm check:unit-categories`     | 단위 테스트의 누락·중복 범주·미지원 이름 검사                |
+| `pnpm check:e2e-categories`      | E2E 범주의 누락·중복·없는 스펙 경로 검사                     |
+| `pnpm check:page-specs`          | 페이지 기획 누락·중복·필수 항목·로컬 링크 검사               |
+| `pnpm check:browser-image`       | CI 브라우저 이미지와 설치된 Playwright 버전·고정 digest 검사 |
+| `pnpm check:docs`                | Markdown 로컬 링크 대상 검사                                 |
+| `pnpm check:bundle-budget`       | 빌드 후 초기 정적 JS의 raw/gzip 예산 검사                    |
+| `pnpm test:guardrails`           | 구조 검사기, 경로별 HTML, E2E 범주 회귀 테스트               |
+| `pnpm format` / `pnpm lint`      | 포맷 적용 / 린트 검사                                        |
+| `pnpm ui:add <component>`        | 설정된 shadcn registry에서 컴포넌트 추가                     |
+| `pnpm ui:mcp` / `pnpm check:mcp` | shadcn MCP 서버 / 실제 도구 연결 점검                        |
+| `pnpm assets:generate`           | SVG 소스에서 파비콘·북마크·공유 이미지 재생성                |
 
 전체 단위/E2E 테스트는 **GitHub Actions가 기본 실행 위치**입니다. 명시 요청이나 필요한 결함 재현이 없으면 로컬에서 전체 테스트를 실행하지 않습니다. 필요한 경우 파일·기능·화면 크기만 선택하며 [테스트 실행 정책](docs/testing.md)에 범주별 명령을 정리했습니다.
 
-CI는 production build를 한 번만 만들고 `core`·`samples` 브라우저 job이 같은 번들을 공유합니다. Chromium에서 PC·태블릿·모바일을 확인하고, core job 안에서 WebKit 모바일의 날짜 입력·입력 보호·탐색과 표 스크롤 두 smoke 시나리오를 별도로 확인합니다. 전체 시나리오를 엔진별로 반복하거나 dev 서버 테스트를 중복 실행하지 않습니다. 브라우저 job은 최대 2개, 각 worker는 2개입니다. 로컬 브라우저 재현이 필요한 경우에만 `pnpm exec playwright install chromium`으로 준비하고, WebKit smoke를 재현할 때는 `pnpm exec playwright install webkit`도 실행하세요. 모든 PR에는 최종 `CI Gate`가 생성되며 문서 전용 변경은 무거운 job을 생략합니다. 포크 후 [main 보호 설정](docs/ci-gate.md)은 원격에서 별도로 적용·확인해야 합니다.
+CI는 production build를 한 번만 만들고 초기 JS 예산을 검사한 뒤 `core`·`samples` 브라우저 job이 같은 번들을 공유합니다. 브라우저와 OS 의존성은 설치된 Playwright와 버전을 맞춘 digest 고정 이미지에서 제공하므로 각 job에서 Ubuntu 패키지를 다시 설치하지 않습니다. Chromium에서 PC·태블릿·모바일을 확인하고, core job 안에서 WebKit 모바일의 날짜 입력·입력 보호·탐색과 표 스크롤 두 smoke 시나리오를 별도로 확인합니다. 전체 시나리오를 엔진별로 반복하거나 dev 서버 테스트를 중복 실행하지 않습니다. 브라우저 job은 최대 2개, 각 worker는 2개입니다. 로컬 브라우저 재현이 필요한 경우에만 `pnpm exec playwright install chromium`으로 준비하고, WebKit smoke를 재현할 때는 `pnpm exec playwright install webkit`도 실행하세요. 모든 PR에는 최종 `CI Gate`가 생성되며 문서 전용 변경은 무거운 job을 생략합니다. 포크 후 [main 보호 설정](docs/ci-gate.md)은 원격에서 별도로 적용·확인해야 합니다.
 
 ## 구조와 문서
 
@@ -133,7 +136,7 @@ src/
 
 - [작업별 문서 지도](docs/README.md) — 필요한 책임의 문서만 선택
 - [페이지별 현재 기획과 수정 방법](docs/pages/README.md) — 목적·동작·상태·수용 기준
-- [새 제품 도입·브랜드·데모 정리](docs/new-project.md)
+- [새 제품 도입·브랜드·데모 정리](docs/new-project.md) · [셸·주문·설정만 남기는 포크 예시](docs/examples/minimal-admin.md)
 - [아키텍처와 경계](docs/architecture.md)
 - [폰트·색상·반응형 규칙](docs/design-system.md)
 - [공통 화면 조합](docs/design/compositions.md) · [시각 기준 검토](docs/design/visual-regression.md)

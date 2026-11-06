@@ -3,8 +3,13 @@ import { expect, test } from './fixtures.js'
 test('recovers an unavailable route chunk through the reload action and restores its detail URL', async ({
   page,
   context,
+  pageErrors,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Route chunk recovery is viewport independent.')
+  pageErrors.allow(
+    /^Failed to fetch dynamically imported module: http:\/\/127\.0\.0\.1:4173\/assets\/orders-[\w-]+\.js$/,
+    2,
+  )
   const isOrdersChunk = (url: URL) => /^\/assets\/orders-[^/]+\.js$/.test(url.pathname)
   const failedChunks = new Set<string>()
   let unavailable = true
@@ -51,8 +56,10 @@ test('recovers an unavailable route chunk through the reload action and restores
 
 test('recovers a provider render failure without exposing error details', async ({
   page,
+  pageErrors,
 }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'The root error boundary is viewport independent.')
+  pageErrors.allow('private@example.test?token=do-not-display')
   await page.addInitScript(() => {
     const marker = 'e2e.provider-failure-injected'
     if (sessionStorage.getItem(marker)) return

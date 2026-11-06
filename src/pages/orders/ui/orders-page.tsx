@@ -1,4 +1,9 @@
-import { ordersQueryOptions, type SampleOrder } from '@/entities/order'
+import {
+  ordersQueryOptions,
+  orderDetailQueryOptions,
+  orderSummaryQueryOptions,
+  type SampleOrder,
+} from '@/entities/order'
 import { OrderDeleteDialog, OrderEditorDialog } from '@/features/order-editor'
 import { useErrorMessage, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
@@ -8,7 +13,7 @@ import { PageHeader } from '@/shared/ui/page-header'
 import { VStack } from '@/shared/ui/stack'
 import { useQuery } from '@tanstack/react-query'
 import { Plus } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { OrdersSearch } from '../model/search'
 import { selectOrders } from '../model/selectors'
 import { OrderDetailsSheet } from './order-details-sheet'
@@ -24,12 +29,10 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
   const { t } = useTranslation('admin')
   const { t: editor } = useTranslation('orderEditor')
   const errorMessage = useErrorMessage()
-  const query = useQuery(ordersQueryOptions())
-  const { q, status, sort, page, pageSize } = search
-  const selection = useMemo(
-    () => selectOrders(query.data ?? [], { q, status, sort, page, pageSize }),
-    [query.data, q, status, sort, page, pageSize],
-  )
+  const query = useQuery(ordersQueryOptions(search))
+  const summary = useQuery(orderSummaryQueryOptions())
+  const detail = useQuery(orderDetailQueryOptions(search.detail))
+  const selection = selectOrders(query.data)
   const isLoading = query.isPending && !query.data
   const [creatingOrder, setCreatingOrder] = useState(false)
   const [editSession, setEditSession] = useState<{
@@ -44,7 +47,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
     setEditSession(record ? { record, detail: search.detail } : null)
   }
   const [deletingOrder, setDeletingOrder] = useState<SampleOrder | null>(null)
-  const selected = query.data?.find((item) => item.id === search.detail)
+  const selected = detail.data ?? undefined
   const detailTrigger = useRef<HTMLButtonElement | null>(null)
   const actionTrigger = useRef<HTMLButtonElement | null>(null)
   const savedId = useRef<string | null>(null)
@@ -57,9 +60,9 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
       !creatingOrder &&
       !editingOrder &&
       !deletingOrder &&
-      search.page > selection.pageCount
+      search.page !== query.data.page
     ) {
-      onSearchChange({ page: selection.pageCount }, { replace: true })
+      onSearchChange({ page: query.data.page }, { replace: true })
     }
   }, [
     query.isSuccess,
@@ -68,7 +71,7 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
     editingOrder,
     deletingOrder,
     search.page,
-    selection.pageCount,
+    query.data,
     onSearchChange,
   ])
 
@@ -117,15 +120,26 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
           </AlertDescription>
         </Alert>
       )}
+      {summary.isError && (
+        <Alert variant="destructive">
+          <AlertTitle>{t('orders.summaryError')}</AlertTitle>
+          <AlertDescription>
+            <p>{errorMessage(summary.error)}</p>
+            <Button variant="outline" size="sm" onClick={() => void summary.refetch()}>
+              {t('common.tryAgain')}
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       <OrdersSummary
-        orders={query.data ?? []}
-        isLoading={isLoading}
-        hasData={query.data !== undefined}
+        summary={summary.data}
+        isLoading={summary.isPending && !summary.data}
+        hasData={summary.data !== undefined}
       />
       <OrdersList
         search={search}
         onSearchChange={onSearchChange}
-        orders={query.data ?? []}
+        totalOrders={summary.data?.total}
         selection={selection}
         isLoading={isLoading}
         hasLoadError={query.isError && !query.data}
@@ -142,9 +156,9 @@ export function OrdersPage({ search, onSearchChange }: OrdersPageProps) {
         open={Boolean(search.detail)}
         order={selected}
         search={search}
-        isLoading={isLoading}
-        error={query.data ? null : query.error}
-        onRetry={() => void query.refetch()}
+        isLoading={detail.isPending && !detail.data}
+        error={detail.error}
+        onRetry={() => void detail.refetch()}
         onOpenChange={(open) => {
           if (!open) onSearchChange({ detail: '' })
         }}

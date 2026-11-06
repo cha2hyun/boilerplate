@@ -4,7 +4,7 @@
 
 ## 이름, 구조, 상태
 
-- 페이지 h1은 하나이며 제목 계층과 landmark는 실제 문서 구조를 나타냅니다. 아이콘만 있는 버튼에는 작업을 설명하는 접근 가능한 이름을 제공합니다. 장식 아이콘은 `aria-hidden`으로 숨기고 Tooltip을 유일한 이름으로 사용하지 않습니다.
+- 페이지 h1은 하나이며 제목 계층과 landmark는 실제 문서 구조를 나타냅니다. 404·라우트 오류도 h1을 제공합니다. 주요 콘텐츠 섹션은 `CardTitle asChild`와 h2/h3를 조합하며, KPI 숫자나 단순 레이블은 heading으로 만들지 않습니다. 아이콘만 있는 버튼에는 작업을 설명하는 접근 가능한 이름을 제공합니다. 장식 아이콘은 `aria-hidden`으로 숨기고 Tooltip을 유일한 이름으로 사용하지 않습니다.
 - 입력은 연결된 Label을 사용합니다. placeholder는 이름을 대신하지 않습니다. 오류에는 텍스트 설명과 `aria-invalid`, 해당 설명을 가리키는 `aria-describedby`를 함께 제공합니다. 수정하면 오래된 오류와 참조를 제거하고 필요한 안내는 유지합니다.
 - 색이나 아이콘만으로 상태를 구분하지 않습니다. 로딩·오류·선택 상태의 텍스트/역할을 유지하며 동일한 결과를 여러 live region으로 반복하지 않습니다. 숫자 모션은 최종값만 접근성 트리에 제공합니다.
 
@@ -35,3 +35,7 @@ Dialog/Sheet는 제목·설명·초점 진입과 모달 안의 순환을 유지�
 차트 축 글자는 실제 SVG `.recharts-cartesian-axis-tick-value`의 computed `fill`과 카드 배경으로 대비를 확인합니다. 공통 Chart가 `muted-foreground`를 적용하며 Recharts 내부 그룹 구조가 달라져도 텍스트 자체를 대상으로 합니다. `e2e/design-visual.spec.ts`의 `renders readable chart axes and avatar initials in both themes`는 Overview·Analytics의 두 테마에서 토큰 적용과 4.5:1을 함께 확인합니다. 토큰 쌍만 통과한 결과로 실제 차트의 가독성을 대신 판단하지 않습니다.
 
 Avatar의 이니셜과 그룹 인원 수는 `bg-muted` 위에 `text-foreground`를 사용합니다. 밝은 테마의 `muted-foreground` 조합은 12px 이니셜에서 4.34:1로 부족했으므로 사용하지 않습니다. 같은 브라우저 회귀가 Overview·Projects의 실제 Avatar 텍스트와 배경 대비도 두 테마에서 확인합니다.
+
+`e2e/accessibility.spec.ts`의 `exposes page and section headings without promoting metric values to headings`는 주요 페이지의 H1/H2와 KPI 안의 heading 부재를 확인합니다. [workspace E2E](../../e2e/workspace.spec.ts)는 404 H1과 목록 귀환을 확인합니다. `keeps project summaries optional and management instructions complete at 200% text`는 한영 모바일 목록 설명과 결과 안내의 실제 넘침, 검색·선택 후 도구가 카드 바깥으로 잘리는지도 검사하고, `keeps compact customer identity and actions visible while scrolling a narrow table`는 320/412px에서 가로 스크롤 후 식별 열과 작업 열의 경계·상세 열기·초점 복귀를 확인합니다.
+
+`e2e/design-visual.spec.ts`의 `keeps rendered form boundaries and keyboard focus at three-to-one contrast`는 Input·Textarea·Select의 실제 조상 배경과 반투명 배경/포커스 링을 합성하여 light/dark의 3:1 기준을 검사합니다. 포커스는 실제 Tab으로 진입합니다. 장식적인 카드 구분선과 비활성 컨트롤은 이 입력 경계 계약과 구분합니다.

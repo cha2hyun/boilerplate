@@ -17,7 +17,7 @@
 
 ## 기준 이미지와 갱신
 
-- `e2e/visual-baselines/linux/<project>/`의 PNG가 Actions Ubuntu 24.04 + lockfile의 Chromium 기준입니다. Playwright/OS/폰트 변경도 시각 변경으로 검토합니다.
+- `e2e/visual-baselines/linux/<project>/`의 PNG가 Ubuntu 24.04 러너에서 고정 Playwright Noble 이미지와 lockfile의 Chromium으로 비교하는 기준입니다. Playwright/OS/폰트 변경도 시각 변경으로 검토합니다.
 - 기본 `updateSnapshots: 'none'`으로 누락된 기준이나 이미지 차이를 실패 처리합니다. CI에서 기준 이미지를 자동 갱신하거나 commit하지 않습니다.
 - 최초 기준 또는 의도된 변경은 실패 artifact `playwright-core`의 해당 `*-actual.png`를 확인합니다. 기존 기준이 있으면 expected/actual/diff를 함께 비교하고, 문제 원인을 먼저 판단합니다.
 - 확인한 actual만 대응하는 기준 경로에 저장하고, 변경 의도·화면 크기·검토 결과를 PR에 남깁니다. 변경되지 않아야 할 영역의 차이가 있으면 코드부터 고칩니다.
@@ -31,3 +31,5 @@
 같은 검사는 Overview·Projects의 Avatar 이니셜도 실제 computed color와 배경으로 확인합니다. 이니셜은 `muted` 배경 위 `foreground`를 사용하며, 12px 글자에서 4.5:1을 충족해야 합니다.
 
 2026-11-05 Orders 태블릿 기준은 `2ba2bb6`의 [Linux CI actual](https://github.com/cha2hyun/boilerplate/actions/runs/42036048774)에서 expected/actual/diff를 검토해 갱신했다. 핵심 7열, 오른쪽 고정 작업, 페이지 크기 선택과 결과 수, 이니셜 대비 변경을 승인했으며 필터·탭·행 높이는 유지한다. 허용 픽셀 수는 변경하지 않았다.
+
+2026-11-06에는 `b8fe73e`의 [Linux CI actual과 diff](https://github.com/cha2hyun/boilerplate/actions/runs/42138337131/job/127633210139)를 기존 기준과 비교했다. 태블릿 주문 표에서는 검색·정렬·페이지 컨트롤의 외곽선(1,360픽셀), 데스크톱 프로젝트 오류 폼에서는 설명·상태·취소 컨트롤 외곽선(2,152픽셀)이 달라졌다. 문구·행·오류 위치와 크기는 그대로이며 두 번의 캡처 결과가 일치했다. 컨트롤을 배경과 구분하는 의도대로 두 actual만 반영했고, 다른 기준과 허용 픽셀 수는 유지했다.

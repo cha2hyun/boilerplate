@@ -174,7 +174,9 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
       <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>{t('analytics.audience')}</CardTitle>
+            <CardTitle asChild>
+              <h2>{t('analytics.audience')}</h2>
+            </CardTitle>
             <CardDescription>
               {t('analytics.audienceHint', { days: formatNumber(Number(period)) })}
             </CardDescription>
@@ -248,7 +250,9 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
         </Card>
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>{t('analytics.deviceSessions')}</CardTitle>
+            <CardTitle asChild>
+              <h2>{t('analytics.deviceSessions')}</h2>
+            </CardTitle>
             <CardDescription>{t('analytics.deviceHint')}</CardDescription>
           </CardHeader>
           <CardContent>
@@ -345,7 +349,9 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
       <div className="grid gap-5 xl:grid-cols-2">
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>{t('analytics.trafficSources')}</CardTitle>
+            <CardTitle asChild>
+              <h2>{t('analytics.trafficSources')}</h2>
+            </CardTitle>
             <CardDescription>{t('analytics.sourcesHint')}</CardDescription>
           </CardHeader>
           <CardContent className="h-60 overflow-y-auto">
@@ -413,7 +419,9 @@ export function AnalyticsPage({ search, onSearchChange }: AnalyticsPageProps) {
         </Card>
         <Card className="min-w-0 shadow-xs" aria-busy={isLoading}>
           <CardHeader>
-            <CardTitle>{t('analytics.topPages')}</CardTitle>
+            <CardTitle asChild>
+              <h2>{t('analytics.topPages')}</h2>
+            </CardTitle>
             <CardDescription>{t('analytics.pagesHint')}</CardDescription>
           </CardHeader>
           <CardContent className="h-60 overflow-y-auto">

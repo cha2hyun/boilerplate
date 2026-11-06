@@ -7,7 +7,12 @@ const initialTime = new Date('2026-11-04T00:00:00Z').getTime()
 const pages = [
   { name: 'Overview', route: '/', endpoint: '/api/analytics', cards: 7 },
   { name: 'Analytics', route: '/analytics', endpoint: '/api/traffic?period=30', cards: 8 },
-  { name: 'Orders', route: '/orders', endpoint: '/api/orders', cards: 5 },
+  {
+    name: 'Orders',
+    route: '/orders',
+    endpoint: '/api/orders?q=&status=all&sort=newest&page=1&pageSize=6',
+    cards: 5,
+  },
   { name: 'Customers', route: '/customers', endpoint: '/api/customers', cards: 5 },
 ] as const
 

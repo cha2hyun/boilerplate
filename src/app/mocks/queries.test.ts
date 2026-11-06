@@ -9,6 +9,9 @@ import {
   createDemoOrderAdapter,
   orderKeys,
   ordersQueryOptions,
+  orderDetailQueryOptions,
+  orderSummaryQueryOptions,
+  orderListDefaults,
   sampleOrders,
 } from '@/entities/order'
 import { getSampleTraffic, trafficKeys, trafficQueryOptions } from '@/entities/traffic'
@@ -52,6 +55,9 @@ afterAll(() => {
   server.events.removeAllListeners()
 })
 
+const orderListPath = '/api/orders?q=&status=all&sort=newest&page=1&pageSize=6'
+const firstOrderPage = { items: sampleOrders.slice(0, 6), total: 12, page: 1, pageSize: 6 }
+
 function deferred<Value>() {
   let resolve!: (value: Value) => void
   const promise = new Promise<Value>((complete) => {
@@ -71,12 +77,12 @@ describe('demo HTTP queries and Query cache', () => {
 
     expect(analytics.kpis.length).toBeGreaterThan(0)
     expect(traffic.days).toHaveLength(14)
-    expect(orders).toEqual(sampleOrders)
+    expect(orders).toEqual(firstOrderPage)
     expect(customers.length).toBeGreaterThan(0)
     expect(requests.toSorted()).toEqual([
       '/api/analytics',
       '/api/customers',
-      '/api/orders',
+      orderListPath,
       '/api/traffic?period=14',
     ])
 
@@ -121,14 +127,14 @@ describe('demo HTTP queries and Query cache', () => {
 
     expect(requests.filter((path) => path === '/api/traffic?period=7')).toHaveLength(2)
     expect(requests.filter((path) => path === '/api/traffic?period=30')).toHaveLength(2)
-    expect(requests.filter((path) => path === '/api/orders')).toHaveLength(1)
+    expect(requests.filter((path) => path === orderListPath)).toHaveLength(1)
   })
 
   it('fetches again when cached data has passed its freshness window', async () => {
     await client.query(ordersQueryOptions())
     vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 60_001)
     await client.query(ordersQueryOptions())
-    expect(requests).toEqual(['/api/orders', '/api/orders'])
+    expect(requests).toEqual([orderListPath, orderListPath])
   })
 
   it('aborts a canceled request and does not cache its late response', async () => {
@@ -138,7 +144,7 @@ describe('demo HTTP queries and Query cache', () => {
       http.get('http://localhost/api/orders', async ({ request }) => {
         started.resolve(request.signal)
         await release.promise
-        return HttpResponse.json(sampleOrders)
+        return HttpResponse.json(firstOrderPage)
       }),
     )
 
@@ -289,14 +295,21 @@ describe('demo commerce HTTP mutations', () => {
       })
       expect(updatedResponse.status).toBe(200)
       expect(await updatedResponse.json()).toMatchObject({ id: created.id, ...update })
-      const records = (await (await sendJson(endpoint, 'GET')).json()) as { id: string }[]
+      const payload: unknown = await (
+        await sendJson(endpoint === 'orders' ? `${endpoint}?pageSize=24` : endpoint, 'GET')
+      ).json()
+      const records = (
+        endpoint === 'orders' ? (payload as { items: { id: string }[] }).items : payload
+      ) as { id: string }[]
       expect(records.find(({ id }) => id === created.id)).toMatchObject(update)
       expect(records).toHaveLength(13)
 
       const removed = await sendJson(`${endpoint}/${created.id}`, 'DELETE')
       expect(removed.status).toBe(204)
       expect(await removed.text()).toBe('')
-      expect(await (await sendJson(endpoint, 'GET')).json()).toHaveLength(12)
+      const remaining: unknown = await (await sendJson(endpoint, 'GET')).json()
+      if (endpoint === 'orders') expect(remaining).toMatchObject({ total: 12 })
+      else expect(remaining).toHaveLength(12)
       expect((await sendJson(`${endpoint}/${created.id}`, 'PATCH', input)).status).toBe(404)
       expect((await sendJson(`${endpoint}/${created.id}`, 'DELETE')).status).toBe(404)
     },
@@ -317,4 +330,58 @@ describe('demo commerce HTTP mutations', () => {
       expect(await (await sendJson(endpoint, 'GET')).json()).toEqual(before)
     },
   )
+})
+
+describe('server order query contracts', () => {
+  it('keeps filters and pages in separate keys while detail and summary remain independent', async () => {
+    const first = await client.query(ordersQueryOptions())
+    const secondParams = { ...orderListDefaults, page: 2 }
+    const second = await client.query(ordersQueryOptions(secondParams))
+    const filteredParams = {
+      ...orderListDefaults,
+      q: 'olivia@example.com',
+      status: 'Processing' as const,
+    }
+    const filtered = await client.query(ordersQueryOptions(filteredParams))
+    const detail = await client.query(orderDetailQueryOptions('ORD-1042'))
+    const summary = await client.query(orderSummaryQueryOptions())
+    expect(first.items).toHaveLength(6)
+    expect(second.items).toHaveLength(6)
+    expect(second.items.some((order) => order.id === 'ORD-1042')).toBe(false)
+    expect(detail?.id).toBe('ORD-1042')
+    expect(filtered).toMatchObject({ total: 1, page: 1 })
+    expect(summary.total).toBe(12)
+    const count = requests.length
+    await client.query(ordersQueryOptions(secondParams))
+    expect(requests).toHaveLength(count)
+    await expect(client.query(orderDetailQueryOptions('missing-order'))).resolves.toBeNull()
+  })
+  it('allows a stored order named summary without intercepting the aggregate endpoint', async () => {
+    const fixture = { ...sampleOrders[0], id: 'summary' }
+    server.use(
+      ...createDemoHandlers({
+        orders: createDemoOrderAdapter({
+          storage: {
+            getItem: () => JSON.stringify({ version: 1, orders: [fixture] }),
+            setItem: () => undefined,
+          },
+          delayMs: 0,
+        }),
+        delayMs: 0,
+      }),
+    )
+    expect((await client.query(orderDetailQueryOptions('summary')))?.id).toBe('summary')
+    expect((await client.query(orderSummaryQueryOptions())).total).toBe(1)
+  })
+  it('rejects invalid query input at HTTP and returns a clamped page after deletion', async () => {
+    for (const search of ['page=-1', 'page=2.5', 'pageSize=500', 'sort=unknown', 'status=unknown'])
+      expect((await fetch(`http://localhost/api/orders?${search}`)).status).toBe(400)
+    const lastPage = await client.query(ordersQueryOptions({ ...orderListDefaults, page: 999 }))
+    expect(lastPage).toMatchObject({ page: 2, total: 12 })
+    for (const order of lastPage.items) await sendJson(`orders/${order.id}`, 'DELETE')
+    await client.invalidateQueries({ queryKey: orderKeys.all })
+    const corrected = await client.query(ordersQueryOptions({ ...orderListDefaults, page: 2 }))
+    expect(corrected).toMatchObject({ page: 1, total: 6 })
+    expect(corrected.items).toHaveLength(6)
+  })
 })

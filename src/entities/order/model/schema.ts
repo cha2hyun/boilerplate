@@ -84,3 +84,49 @@ export type OrderInput = z.infer<typeof orderInputSchema>
 export type OrderStatus = SampleOrder['status']
 export type OrderPaymentStatus = SampleOrder['payment']
 export type OrderHistoryEntry = z.infer<typeof orderHistoryEntrySchema>
+
+export const orderSortValues = ['newest', 'oldest', 'highest', 'lowest'] as const
+export const orderListParamsSchema = z.object({
+  q: z.string().max(200).default(''),
+  status: z.enum(['all', ...orderStatuses]).default('all'),
+  sort: z.enum(orderSortValues).default('newest'),
+  page: z.number().int().min(1).max(100_000).default(1),
+  pageSize: z.union([z.literal(6), z.literal(12), z.literal(24)]).default(6),
+})
+export const orderListDefaults = orderListParamsSchema.parse({})
+export const orderPageSchema = z
+  .object({
+    items: ordersSchema,
+    total: z.number().int().nonnegative(),
+    page: z.number().int().min(1).max(100_000),
+    pageSize: z.union([z.literal(6), z.literal(12), z.literal(24)]),
+  })
+  .refine(
+    (result) => {
+      const pageCount = Math.max(1, Math.ceil(result.total / result.pageSize))
+      return (
+        result.page <= pageCount &&
+        result.items.length ===
+          Math.min(result.pageSize, Math.max(0, result.total - (result.page - 1) * result.pageSize))
+      )
+    },
+    { message: 'Page metadata and item count must agree.' },
+  )
+export const orderSummarySchema = z
+  .object({
+    total: z.number().int().nonnegative(),
+    counts: z.object({
+      Processing: z.number().int().nonnegative(),
+      Shipped: z.number().int().nonnegative(),
+      Delivered: z.number().int().nonnegative(),
+      Cancelled: z.number().int().nonnegative(),
+    }),
+  })
+  .refine(
+    (summary) =>
+      Object.values(summary.counts).reduce((sum, count) => sum + count, 0) === summary.total,
+    { message: 'Order status counts must sum to the total.' },
+  )
+export type OrderListParams = z.infer<typeof orderListParamsSchema>
+export type OrderPage = z.infer<typeof orderPageSchema>
+export type OrderSummary = z.infer<typeof orderSummarySchema>

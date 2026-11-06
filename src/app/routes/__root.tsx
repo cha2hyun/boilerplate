@@ -18,7 +18,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       <Card className="mx-auto my-16 max-w-md text-center">
         <CardHeader>
           <CardDescription>{t('route.notFound')}</CardDescription>
-          <CardTitle className="text-2xl">{t('route.backTitle')}</CardTitle>
+          <CardTitle className="text-2xl" asChild>
+            <h1>{t('route.backTitle')}</h1>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <Button asChild>
@@ -34,7 +36,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       <Card className="m-8 max-w-lg">
         <CardHeader>
           <TriangleAlert className="text-destructive" />
-          <CardTitle>{t('route.errorTitle')}</CardTitle>
+          <CardTitle asChild>
+            <h1>{t('route.errorTitle')}</h1>
+          </CardTitle>
           <CardDescription>{t('route.errorDescription')}</CardDescription>
         </CardHeader>
         <CardContent>

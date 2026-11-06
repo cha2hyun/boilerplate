@@ -76,7 +76,9 @@ export function CustomersList({
   return (
     <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
       <CardHeader className="px-5">
-        <CardTitle className="text-base">{t('customers.directory')}</CardTitle>
+        <CardTitle className="text-base" asChild>
+          <h2>{t('customers.directory')}</h2>
+        </CardTitle>
         <CardDescription>{t('customers.directoryHint')}</CardDescription>
       </CardHeader>
       <VStack asChild align="stretch" className="min-w-0 gap-4 px-0">
@@ -153,7 +155,7 @@ export function CustomersList({
           {isLoading || visibleCustomers.length ? (
             <div className="h-120 min-w-0 border-y">
               <Table
-                className="min-w-[896px] table-fixed"
+                className="min-w-[800px] table-fixed md:min-w-[896px]"
                 containerProps={{
                   role: 'region',
                   'aria-label': t('customers.table'),
@@ -164,7 +166,7 @@ export function CustomersList({
                 }}
               >
                 <colgroup>
-                  <col className="w-[224px]" />
+                  <col className="w-[128px] md:w-[224px]" />
                   <col className="w-[104px]" />
                   <col className="w-[144px]" />
                   <col className="w-[88px]" />
@@ -174,7 +176,9 @@ export function CustomersList({
                 </colgroup>
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="pl-5">{t('common.customer')}</TableHead>
+                    <TableHead className="sticky left-0 z-10 border-r bg-muted pl-5">
+                      {t('common.customer')}
+                    </TableHead>
                     <TableHead>{t('common.status')}</TableHead>
                     <TableHead>{t('customers.location')}</TableHead>
                     <TableHead className="text-right">{t('customers.orders')}</TableHead>
@@ -198,9 +202,9 @@ export function CustomersList({
                       ))
                     : visibleCustomers.map((customer) => (
                         <TableRow key={customer.id} className="group/customer-row h-18">
-                          <TableCell className="py-2 pl-5">
+                          <TableCell className="sticky left-0 z-10 border-r bg-card py-2 pl-5 group-hover/customer-row:bg-muted">
                             <HStack className="min-w-0 gap-3">
-                              <Avatar className="size-8 shrink-0">
+                              <Avatar className="hidden size-8 shrink-0 md:flex">
                                 <AvatarFallback className="text-xs font-medium">
                                   {customer.initials}
                                 </AvatarFallback>

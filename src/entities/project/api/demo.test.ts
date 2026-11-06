@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createDemoProjectAdapter, PROJECT_STORAGE_KEY } from './demo'
 import { seedProjects } from './seed'
 
@@ -80,7 +80,9 @@ describe('persistent demo adapter', () => {
   })
 
   it('keeps mutations working when storage is unavailable', async () => {
+    const onStorageUnavailable = vi.fn()
     const adapter = createDemoProjectAdapter({
+      onStorageUnavailable,
       storage: {
         getItem: () => {
           throw new DOMException('Access denied', 'SecurityError')
@@ -94,10 +96,13 @@ describe('persistent demo adapter', () => {
     })
     await adapter.create(input)
     expect((await adapter.list()).map((project) => project.id)).toContain('prj_memory')
+    expect(onStorageUnavailable).toHaveBeenCalledTimes(1)
   })
 
   it('does not lose a mutation when writing to storage exceeds its quota', async () => {
+    const onStorageUnavailable = vi.fn()
     const adapter = createDemoProjectAdapter({
+      onStorageUnavailable,
       storage: {
         getItem: () => null,
         setItem: () => {
@@ -109,6 +114,7 @@ describe('persistent demo adapter', () => {
     })
     await adapter.create(input)
     expect((await adapter.list()).map((project) => project.id)).toContain('prj_quota')
+    expect(onStorageUnavailable).toHaveBeenCalledTimes(1)
   })
 
   it('cancels a delayed mutation before writing any data', async () => {

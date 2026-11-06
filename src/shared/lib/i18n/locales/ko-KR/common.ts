@@ -1,6 +1,10 @@
 import type en from '../en-US/common'
 type TranslationShape<T> = { [K in keyof T]: T[K] extends string ? string : TranslationShape<T[K]> }
 export default {
+  demoStorage: {
+    sessionOnly:
+      '브라우저에 저장할 수 없어 일부 데모 변경은 이 탭에서만 유지됩니다. 새로고침하거나 탭을 닫으면 변경이 사라질 수 있습니다.',
+  },
   breadcrumb: '현재 위치',
   sidebar: '사이드바',
   sidebarDescription: '모바일 탐색 메뉴입니다.',

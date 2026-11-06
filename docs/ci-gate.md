@@ -7,9 +7,9 @@
 - `changes`는 전체 Git 이력을 읽고 PR은 merge base부터 head, push는 before부터 after까지 비교합니다. rename은 이전·이후 경로 모두 확인합니다.
 - 루트 `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `THIRD_PARTY_NOTICES.md`와 `docs/` 아래 Markdown 파일만 변경됐을 때 문서 전용으로 판단합니다.
 - 새 경로·설정·코드 변경, 빈 비교 결과, 이력 부족, 수동 실행은 전체 검사 대상입니다. 분류 실패는 성공으로 바꾸지 않습니다.
-- 코드 변경은 quality의 정적·가드레일·단위·빌드와 core/samples 브라우저 검사가 모두 성공해야 합니다. production 번들은 한 번 만들고 두 브라우저 job에서 공유합니다.
+- 코드 변경은 quality의 정적·가드레일·단위·빌드·초기 JS 예산과 core/samples 브라우저 검사가 모두 성공해야 합니다. production 번들은 한 번 만들고 두 브라우저 job에서 공유합니다.
 - 브라우저 테스트가 첫 실행에 실패하고 재시도에만 성공해도 CI는 실패합니다. `failOnFlakyTests`가 이를 강제하며 같은 실패 artifact에 trace·스크린샷·보고서를 남깁니다. 재시도 성공을 정상 성공으로 바꾸지 않습니다.
-- 문서 전용 변경은 quality/browser를 생략하고, 설치·빌드 없이 changes에서 페이지 기획 누락·필수 항목·로컬 링크를 검사한 뒤 gate를 실행합니다. 코드 변경에서는 같은 검사를 `pnpm check`가 실행합니다.
+- 문서 전용 변경은 quality/browser를 생략하고, changes에서 앱 전체 설치 없이 정확한 Prettier 한 개로 변경 Markdown의 포맷, 루트/`docs`의 로컬 파일 링크, 페이지 기획 누락·필수 항목을 검사한 뒤 gate를 실행합니다. 문서 삭제 시 변경되지 않은 문서의 끊긴 링크도 잡습니다. 코드 변경에서는 같은 검사를 `pnpm check`가 실행합니다.
 - gate는 `always()`로 의존 job 종료 후 결과를 확인합니다. 코드 변경에서 실패·취소·skip·누락된 결과는 실패입니다. 문서 전용일 때만 두 무거운 job의 skip을 허용합니다.
 - 수동 `all/core/samples` 결과는 `Manual CI result`로 표시합니다. 선택한 범주만 검증하며 PR의 `CI Gate`를 대신하지 않습니다.
 

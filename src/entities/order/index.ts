@@ -1,6 +1,8 @@
 export {
   orderKeys,
   ordersQueryOptions,
+  orderDetailQueryOptions,
+  orderSummaryQueryOptions,
   useCreateOrder,
   useUpdateOrder,
   useDeleteOrder,
@@ -15,6 +17,11 @@ export {
   orderPaymentStatuses,
   orderLimits,
   orderHistoryEntrySchema,
+  orderListParamsSchema,
+  orderListDefaults,
+  orderPageSchema,
+  orderSummarySchema,
+  orderSortValues,
 } from './model/schema'
 export type {
   SampleOrder,
@@ -22,4 +29,9 @@ export type {
   OrderPaymentStatus,
   OrderInput,
   OrderHistoryEntry,
+  OrderListParams,
+  OrderPage,
+  OrderSummary,
 } from './model/schema'
+
+export { orderSubtotal, orderTotal } from './model/list'

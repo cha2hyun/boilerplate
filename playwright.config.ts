@@ -7,6 +7,8 @@ export default defineConfig({
   failOnFlakyTests: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: 2,
+  // Finish with a report before the 15-minute job deadline (including setup/upload).
+  globalTimeout: process.env.CI ? 10 * 60 * 1000 : undefined,
   snapshotPathTemplate: '{testDir}/visual-baselines/{platform}/{projectName}/{arg}{ext}',
   updateSnapshots: 'none',
   reporter: [['list'], ['html', { open: 'never' }]],

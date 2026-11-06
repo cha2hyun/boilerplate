@@ -1,23 +1,21 @@
-import { type SampleOrder } from '@/entities/order'
+import { type OrderSummary } from '@/entities/order'
 import { NumberDisplay } from '@/features/number-motion'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { MetricCard } from '@/shared/ui/metric-card'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { CheckCheck, Clock3, Package, Truck } from 'lucide-react'
-import { useId, useMemo, useState } from 'react'
+import { useId, useState } from 'react'
 
 import { cn } from '@/shared/lib/utils'
 
-import { summarizeOrders } from '../model/selectors'
-
 const countFormat = { maximumFractionDigits: 0 }
 export function OrdersSummary({
-  orders,
+  summary,
   isLoading,
   hasData,
 }: {
-  orders: SampleOrder[]
+  summary: OrderSummary | undefined
   isLoading: boolean
   hasData: boolean
 }) {
@@ -25,29 +23,29 @@ export function OrdersSummary({
   const { formatNumber } = useFormatters()
   const [expanded, setExpanded] = useState(false)
   const summaryId = useId()
-  const counts = useMemo(() => summarizeOrders(orders), [orders])
+  const counts = summary?.counts
   const summaries = [
     {
       title: t('orders.summary.total'),
-      value: orders.length,
+      value: summary?.total ?? 0,
       description: t('orders.summary.range'),
       Icon: Package,
     },
     {
       title: t('orders.status.Processing'),
-      value: counts.Processing,
+      value: counts?.Processing ?? 0,
       description: t('orders.summary.processing'),
       Icon: Clock3,
     },
     {
       title: t('orders.status.Shipped'),
-      value: counts.Shipped,
+      value: counts?.Shipped ?? 0,
       description: t('orders.summary.shipped'),
       Icon: Truck,
     },
     {
       title: t('orders.status.Delivered'),
-      value: counts.Delivered,
+      value: counts?.Delivered ?? 0,
       description: t('orders.summary.delivered'),
       Icon: CheckCheck,
     },
@@ -58,7 +56,7 @@ export function OrdersSummary({
       <HStack justify="between" wrap className="gap-2 md:hidden">
         <p className="text-sm text-muted-foreground">
           {hasData
-            ? t('orders.count', { total: formatNumber(orders.length) })
+            ? t('orders.count', { total: formatNumber(summary?.total ?? 0) })
             : t(isLoading ? 'orders.loading' : 'orders.loadError')}
         </p>
         <Button

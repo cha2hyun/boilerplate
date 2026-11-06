@@ -95,7 +95,9 @@ export function ComponentsPage() {
         <TabsContent value="components" className="mt-6 grid grid-cols-1 gap-5 xl:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.linksTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.linksTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.linksDescription')}</CardDescription>
             </CardHeader>
             <HStack asChild wrap className="gap-x-6 gap-y-3 text-sm">
@@ -110,7 +112,9 @@ export function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.actionsTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.actionsTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.actionsDescription')}</CardDescription>
             </CardHeader>
             <HStack asChild wrap className="gap-3">
@@ -155,7 +159,9 @@ export function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.statusTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.statusTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.statusDescription')}</CardDescription>
             </CardHeader>
             <VStack asChild align="stretch" className="gap-6">
@@ -185,7 +191,9 @@ export function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.inputsTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.inputsTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.inputsDescription')}</CardDescription>
             </CardHeader>
             <VStack asChild align="stretch" className="gap-5">
@@ -218,7 +226,9 @@ export function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.feedbackTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.feedbackTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.feedbackDescription')}</CardDescription>
             </CardHeader>
             <VStack asChild align="stretch" className="gap-5">
@@ -272,7 +282,9 @@ export function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.progressTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.progressTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.progressDescription')}</CardDescription>
             </CardHeader>
             <VStack asChild align="stretch" className="gap-4">
@@ -301,7 +313,9 @@ export function ComponentsPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.loadingTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.loadingTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.loadingDescription')}</CardDescription>
             </CardHeader>
             <HStack asChild className="gap-4">
@@ -318,7 +332,9 @@ export function ComponentsPage() {
         <TabsContent value="tokens" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>{t('components.colorsTitle')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('components.colorsTitle')}</h2>
+              </CardTitle>
               <CardDescription>{t('components.colorsDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
@@ -346,7 +362,9 @@ export function ComponentsPage() {
           <TabsContent value="typography">
             <Card>
               <CardHeader>
-                <CardTitle>{t('components.weightsTitle')}</CardTitle>
+                <CardTitle asChild>
+                  <h2>{t('components.weightsTitle')}</h2>
+                </CardTitle>
                 <CardDescription>{t('components.weightsDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-6 xl:grid-cols-3">

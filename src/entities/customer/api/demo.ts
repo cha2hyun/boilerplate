@@ -11,6 +11,7 @@ const persistedSchema = z.object({ version: z.literal(1), customers: customersSc
 type StorageAdapter = Pick<Storage, 'getItem' | 'setItem'>
 
 interface DemoOptions {
+  onStorageUnavailable?: () => void
   storage?: StorageAdapter | null
   delayMs?: number
   createId?: () => string
@@ -40,13 +41,26 @@ export function createDemoCustomerAdapter(options: DemoOptions = {}): CustomerAd
   const createId = options.createId ?? (() => `cus_${crypto.randomUUID()}`)
   const latency = options.delayMs ?? 280
 
+  let reportedUnavailable = false
+  function fallBackToMemory() {
+    storage = null
+    if (reportedUnavailable) return
+    reportedUnavailable = true
+    try {
+      options.onStorageUnavailable?.()
+    } catch {
+      // A status observer must not prevent the in-memory fallback.
+    }
+  }
+  if (!storage) fallBackToMemory()
+
   function persist(customers: SampleCustomer[]) {
     memory = customersSchema.parse(customers)
     try {
       storage?.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify({ version: 1, customers: memory }))
     } catch {
       // Restricted storage and quota errors still permit an in-memory demo session.
-      storage = null
+      fallBackToMemory()
     }
   }
 
@@ -57,7 +71,7 @@ export function createDemoCustomerAdapter(options: DemoOptions = {}): CustomerAd
     try {
       raw = storage.getItem(CUSTOMER_STORAGE_KEY)
     } catch {
-      storage = null
+      fallBackToMemory()
       return customersSchema.parse(memory)
     }
 

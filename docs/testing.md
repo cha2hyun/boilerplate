@@ -4,17 +4,17 @@
 
 ## 기본 명령과 실행 위치
 
-| 명령                    | 범위                                                              | 기본 실행 위치      |
-| ----------------------- | ----------------------------------------------------------------- | ------------------- |
-| `pnpm check`            | 포맷, ESLint, 타입, FSD/UI/토큰 및 단위/E2E 범주 정적 검사        | 로컬                |
-| `pnpm check:page-specs` | 페이지 기획 누락·중복·필수 섹션·로컬 링크 정적 검사               | 로컬 / 문서 전용 CI |
-| `pnpm check:ci`         | 정적 검사 + 가드레일 테스트 + 전체 단위 테스트 + production build | Actions quality job |
-| `pnpm test:unit`        | 전체 Vitest 범주                                                  | Actions             |
-| `pnpm test:guardrails`  | 아키텍처 검사기, 경로별 HTML, E2E 범주 회귀 테스트                | Actions             |
-| `pnpm test:e2e:core`    | 워크스페이스/프로젝트/조회 캐시와 카드 치수                       | Actions core job    |
-| `pnpm test:e2e:samples` | 샘플 운영 페이지                                                  | Actions samples job |
+| 명령                    | 범위                                                        | 기본 실행 위치      |
+| ----------------------- | ----------------------------------------------------------- | ------------------- |
+| `pnpm check`            | 포맷, ESLint, 타입, FSD/UI/토큰 및 단위/E2E 범주 정적 검사  | 로컬                |
+| `pnpm check:page-specs` | 페이지 기획 누락·중복·필수 섹션·로컬 링크 정적 검사         | 로컬 / 문서 전용 CI |
+| `pnpm check:ci`         | 정적 검사 + 가드레일/단위 + production build + 초기 JS 예산 | Actions quality job |
+| `pnpm test:unit`        | 전체 Vitest 범주                                            | Actions             |
+| `pnpm test:guardrails`  | 아키텍처 검사기, 경로별 HTML, E2E 범주 회귀 테스트          | Actions             |
+| `pnpm test:e2e:core`    | 워크스페이스/프로젝트/조회 캐시와 카드 치수                 | Actions core job    |
+| `pnpm test:e2e:samples` | 샘플 운영 페이지                                            | Actions samples job |
 
-`pnpm test`는 `test:unit`의 기존 호환 명령입니다. `test:watch`, `test:coverage`는 필요할 때 직접 선택하는 도구이며 기본 CI/로컬 검사에 추가하지 않습니다. `pnpm check`는 테스트나 production build를 실행하지 않습니다.
+`pnpm test`는 `test:unit`의 기존 호환 명령입니다. `test:watch`, `test:coverage`는 필요할 때 직접 선택하는 도구이며 기본 CI/로컬 검사에 추가하지 않습니다. `pnpm check`는 테스트나 production build를 실행하지 않습니다. 선택 실행인 coverage는 entities/features/shared API에 더해 공통 포맷·저장·조회 도구, hooks, app provider·오류 복구도 포함합니다. 미검증 분기를 찾는 용도이며 전체 제품 커버리지나 필수 백분율을 뜻하지 않습니다.
 
 E2E 파일은 `tsconfig.e2e.json`이 소유하며 루트 TypeScript 참조를 통해 `pnpm typecheck`에 포함됩니다. Playwright 실행과 별개로 Node/DOM 타입을 검사하고 ESLint의 `no-floating-promises`로 비동기 동작과 assertion의 누락된 `await`를 확인합니다. 이 정적 검사는 브라우저를 실행하지 않습니다.
 
@@ -60,6 +60,8 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 
 모든 브라우저 스펙은 `e2e/fixtures.ts`를 사용합니다. fixture는 외부 Frankfurter 요청과 Pretendard CDN 요청을 `BrowserContext.route`로 고정하여 CI가 외부 공급자 가용성에 의존하지 않도록 합니다. 실패 테스트는 같은 경로를 해당 테스트 안에서 재정의합니다. 폰트는 버전을 고정한 `pretendard` 개발 의존성의 원본 CSS·WOFF2·WOFF를 CDN URL과 CORS 헤더 그대로 응답하며, 잘못된 버전·경로는 실패합니다. 기존 workspace 검사에서 CDN stylesheet/subset 요청과 한글·영문 glyph 및 400/500/600만 로드되는지 확인합니다. 이는 CDN 가용성 검사가 아니므로 폰트 변경 시 실제 CDN의 HTTP/CORS와 원본 파일 일치를 별도로 확인합니다. 실제 앱에는 자체 호스팅 Pretendard fallback이나 환율 목업을 추가하지 않으며 개발/배포 앱은 CDN과 공개 API를 직접 호출합니다. 외부 통합 변경 때 실제 응답/CORS 확인과 단위 테스트의 스키마/오류/캐시 검증을 함께 수행합니다.
 
+공통 fixture는 context에 열린 모든 페이지의 예기치 않은 `pageerror`를 해당 테스트 실패로 처리합니다. 복구 시나리오는 직접 주입한 오류의 정확한 메시지/청크 경로와 최대 횟수만 테스트 안에서 허용합니다. 모든 console 메시지를 오류로 취급하거나 다른 테스트에 예외를 상속하지 않습니다.
+
 외부 요청 fixture는 같은 테스트 context를 공유합니다. 종료 시 `context.unrouteAll({ behavior: 'wait' })`로 진행 중인 응답이 끝난 뒤 interception을 해제합니다. 폰트 파일을 읽는 중에 기본 `unroute`로 마지막 handler를 제거하면 요청이 먼저 계속 처리되어 뒤늦은 `fulfill`과 충돌할 수 있습니다.
 
 | Playwright project | viewport    | 입력/환경                                  |
@@ -69,7 +71,7 @@ pnpm test:unit:ui src/app/providers/theme-provider.test.tsx -t 'system'
 | `mobile`           | 412 × 915   | Chromium 모바일                            |
 | `webkit-mobile`    | 390 × 844   | WebKit 모바일 에뮬레이션, 전용 smoke 2개만 |
 
-WebKit smoke는 주문 날짜 입력·짧은 모바일 Dialog의 행동 도달, 미저장 확인과 초점 복귀, 표 내부 가로 스크롤·모바일 탐색을 확인합니다. 실제 Safari 앱·iPhone 하드웨어·OS 날짜 선택기의 검증을 뜻하지 않습니다. 브라우저 job은 계속 core/samples 2개이며 core만 Chromium과 WebKit을 설치하고 samples는 Chromium만 설치합니다. 두 엔진도 같은 job의 worker 2개 한도를 공유합니다.
+WebKit smoke는 주문 날짜 입력·짧은 모바일 Dialog의 행동 도달, 미저장 확인과 초점 복귀, 표 내부 가로 스크롤·모바일 탐색을 확인합니다. 실제 Safari 앱·iPhone 하드웨어·OS 날짜 선택기의 검증을 뜻하지 않습니다. 브라우저 job은 계속 core/samples 2개이며 같은 공식 이미지의 Chromium과 WebKit 중 core는 두 엔진, samples는 Chromium만 실행합니다. 두 엔진도 같은 job의 worker 2개 한도를 공유합니다.
 
 한 파일/화면 크기를 선택해야 하는 경우:
 
@@ -105,9 +107,15 @@ main에는 `CI Gate`와 `Conventional PR title`을 GitHub Actions 제공 필수 
 
 Sidebar 공간 전환은 `workspace.spec.ts`의 desktop/tablet 회귀가 실제 `requestAnimationFrame`으로 측정합니다. 40자 워크스페이스 이름의 펼친 전체 표시를 유지하고, 접기·펼치기·중간 반전에서 아이콘 X 정렬, Y의 끝점 범위와 단조 이동, 그룹 안의 행 간격, sidebar gap과 본문 위치를 확인합니다. 중간 너비가 실제로 관측돼야 하며 CSS 전환 시간을 복제한 고정 sleep이나 애니메이션을 끈 스크린샷으로 대신하지 않습니다. `accessibility.spec.ts`는 진행 중인 Sidebar 전환에서 reduced motion을 켰을 때 최종 위치로 정착하고 초점을 유지하는지도 확인합니다. 프레임 기록은 실패 분석용 첨부 자료이며 렌더링 FPS나 모든 기기의 성능 보증은 아닙니다.
 
-브라우저 runner는 `ubuntu-24.04`, 브라우저 버전은 lockfile로 고정합니다. 기준은 같은 Linux 환경에서 검토한 PNG만 사용하며 자동 갱신하지 않습니다. 새 브라우저 job·중복 빌드는 추가하지 않습니다. 전체 언어·테마·화면 조합이나 보조기술 준수 전체를 증명하는 검사는 아닙니다.
+브라우저 runner는 `ubuntu-24.04`이고, 두 job은 [Playwright 공식 Noble 이미지](https://playwright.dev/docs/docker)의 동일한 digest를 사용합니다. 이미지에는 브라우저와 OS 라이브러리가 있어 매번 apt·브라우저 설치를 반복하지 않습니다. 패키지는 계속 frozen lockfile에서 설치합니다. `pnpm check:browser-image`는 정확한 `@playwright/test` 버전과 이미지 태그/distro/SHA-256 고정을 검사합니다. 버전 갱신 시 공식 MCR manifest의 digest를 확인해 함께 교체합니다. CI Playwright는 10분에 종료해 보고서를 만들고, job은 준비·artifact 시간을 포함해 15분 한도입니다. 기준은 같은 Linux 환경에서 검토한 PNG만 사용하며 자동 갱신하지 않습니다. 새 브라우저 job·중복 빌드는 추가하지 않습니다. 전체 언어·테마·화면 조합이나 보조기술 준수 전체를 증명하는 검사는 아닙니다.
 
-문서만 바뀌어도 changes job이 `node scripts/check-page-specs.mjs`를 실행합니다. 의존성을 설치하지 않으며 필수 항목/경로의 구조를 검사합니다. 자연어 기획과 구현의 의미가 같은지는 해당 코드·행동 테스트·리뷰가 확인합니다.
+문서 전용 changes job은 `pnpm dlx`로 저장소에 명시된 정확한 Prettier 하나만 준비하고 변경 Markdown의 포맷을 검사합니다. 앱 의존성 전체 설치·빌드·테스트는 실행하지 않습니다. `pnpm check:docs`는 루트/`docs` Markdown의 로컬 파일 링크와 소개 이미지 경로를 검사하고, `check:page-specs`는 라우트별 문서의 수용 기준 구조를 검사합니다. 외부 URL 응답·제목 anchor·자연어 의미는 검증 대상이 아닙니다. 자연어 기획과 구현의 의미가 같은지는 해당 코드·행동 테스트·리뷰가 확인합니다.
+
+## 초기 JavaScript 예산
+
+`quality`의 한 번뿐인 빌드 직후 `pnpm check:bundle-budget`이 Vite manifest의 `index.html` 진입과 재귀적인 정적 `imports`를 읽습니다. 파일을 한 번씩만 합산하고 파일별 gzip(level 6) 합과 원본 bytes를 모두 로그에 기록합니다. manifest/청크 누락이나 어느 한도라도 초과하면 CI가 실패합니다. 동적 route·데모 MSW·CSS·폰트는 이 정적 그래프 밖입니다. 이 값은 전체 페이지 다운로드, 실제 CDN 전송량, 실행시간이 아닙니다.
+
+기준은 `539d38b`의 [main quality production artifact](https://github.com/cha2hyun/boilerplate/actions/runs/42061487415)입니다. 당시 artifact의 entry와 정적 import를 따라간 7개 JS 합은 원본 **808,877 bytes**, 파일별 gzip 합 **255,590 bytes**였습니다. 규모가 작은 기능 변경 여유 약 10%를 두어 상한을 **890,000 / 282,000 bytes**로 정했습니다. 순환·중복·누락·동적 import 제외·독립적인 두 상한은 `scripts/check-bundle-budget.test.mjs`가 검증합니다. 예산 변경은 PR에 이전/새 측정, 늘어난 파일과 변경 이유를 남깁니다. Lighthouse 단일 점수로 대체하지 않습니다.
 
 ## 선택 실행: Lighthouse
 

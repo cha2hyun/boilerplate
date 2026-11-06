@@ -17,6 +17,8 @@ const workspace = {
     deleteProject: '프로젝트 삭제',
   },
   projects: {
+    showSummary: '요약 펼치기',
+    hideSummary: '요약 접기',
     total: '전체 프로젝트',
     across: '워크스페이스 전체 기준',
     active: '진행 중인 프로젝트',

@@ -72,7 +72,9 @@ export function SettingsPage() {
           >
             <Card>
               <CardHeader>
-                <CardTitle>{t('settings.preferences')}</CardTitle>
+                <CardTitle asChild>
+                  <h2>{t('settings.preferences')}</h2>
+                </CardTitle>
                 <CardDescription>{t('settings.savedInBrowser')}</CardDescription>
               </CardHeader>
               <VStack asChild align="stretch" className="gap-6">
@@ -152,7 +154,9 @@ export function SettingsPage() {
         <TabsContent value="appearance" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>{t('settings.appearance')}</CardTitle>
+              <CardTitle asChild>
+                <h2>{t('settings.appearance')}</h2>
+              </CardTitle>
               <CardDescription>
                 {t('settings.chooseAppearance', { product: product.name })}
               </CardDescription>

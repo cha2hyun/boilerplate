@@ -30,9 +30,9 @@ export function ProjectTablePagination({
     <VStack
       align="stretch"
       justify="center"
-      className="h-24 gap-3 border-t px-5 py-4 text-sm md:h-16 md:flex-row md:items-center md:justify-between md:px-6"
+      className="min-h-24 gap-3 border-t px-5 py-4 text-sm md:min-h-16 md:flex-row md:items-center md:justify-between md:px-6"
     >
-      <p className="min-w-0 truncate text-xs text-muted-foreground" aria-live="polite">
+      <p className="min-w-0 text-xs wrap-anywhere text-muted-foreground" aria-live="polite">
         {showLoading
           ? t('table.loading')
           : showError
@@ -55,7 +55,7 @@ export function ProjectTablePagination({
                   })
                 : t('table.count', { count: 0, formattedCount: formatNumber(0) })}
       </p>
-      <HStack className="gap-4 md:gap-6">
+      <HStack wrap className="min-w-0 gap-4 md:gap-6">
         <HStack className="hidden gap-2 md:flex">
           <Label htmlFor="projects-page-size" className="text-xs font-normal text-muted-foreground">
             {t('table.rowsPerPage')}

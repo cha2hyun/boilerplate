@@ -4,7 +4,7 @@
 
 ## 페이지와 섹션
 
-페이지 최상위는 `VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6"`를 사용합니다. Settings의 `max-w-4xl`처럼 내용에 맞는 최대 너비는 유지합니다. 제목·설명·칩·주요 동작은 [PageHeader](page-headers.md), KPI 그리드는 `gap-4`, 일반 섹션 사이는 `gap-6`입니다. 페이지마다 `gap-7/8` 또는 별도 Page 래퍼를 추가하지 않습니다.
+페이지 최상위는 `VStack data-slot="page-content" align="stretch" className="min-w-0 gap-6"`를 사용합니다. Settings의 `max-w-4xl`처럼 내용에 맞는 최대 너비는 유지합니다. 제목·설명·칩·주요 동작은 [PageHeader](page-headers.md), KPI 그리드는 `gap-4`, 일반 섹션 사이는 `gap-6`입니다. 페이지마다 `gap-7/8` 또는 별도 Page 래퍼를 추가하지 않습니다. 주요 섹션 제목은 `CardTitle asChild`에 h2/h3를 전달합니다. 공통 CardTitle의 기본 div는 KPI 값처럼 제목이 아닌 용도로 유지합니다.
 
 ## 나란한 카드의 경계와 푸터
 
@@ -31,7 +31,7 @@
 ```
 
 - 기존 `Card`, `CardHeader`, `CardContent`, `CardTitle`, `CardFooter`, `HStack`, `VStack`, `Skeleton`의 조합입니다. 비즈니스 데이터·Query·formatter·환율을 소유하지 않습니다.
-- Orders/Customers는 모바일에서 전체 건수와 요약 펼치기/접기 Button을 먼저 보여 주고 MetricCard 그리드를 기본 접습니다. `aria-expanded`·`aria-controls`를 연결하고 태블릿/PC에서는 항상 기존 그리드를 표시합니다. 펼침은 페이지 수명의 임시 UI이며 모션·값·카드 내부 크기를 새로 정의하지 않습니다.
+- Projects/Orders/Customers는 모바일에서 전체 건수와 요약 펼치기/접기 Button을 먼저 보여 주고 MetricCard 그리드를 기본 접습니다. `aria-expanded`·`aria-controls`를 연결하고 태블릿/PC에서는 항상 기존 그리드를 표시합니다. 펼침은 페이지 수명의 임시 UI이며 모션·값·카드 내부 크기를 새로 정의하지 않습니다.
 - `label`, `icon`, `value`, `footer`, `loading`만으로 화면을 구성합니다. 페이지가 패딩·글자 크기·테두리·그림자를 재정의하는 `className` API는 제공하지 않습니다. `footerTestId`는 기존 비교 행 테스트의 식별자를 보존합니다.
 - 공통 바깥 기준은 `rounded-xl`, `shadow-xs`입니다. 모바일 `<768px`는 패딩 `16px`·섹션 간격 `8px`·최소 높이 `136px`, 태블릿/PC는 패딩 `20px`·간격 `12px`·최소 높이 `192px`를 사용합니다. 페이지별로 별도 밀도를 지정하지 않습니다. 레이블은 `text-xs font-medium`, 값은 `text-3xl leading-9 font-semibold tabular-nums`, footer는 `text-xs`입니다.
 - 값 영역은 모바일 최소 `36px`, 태블릿/PC 최소 `72px`, footer는 공통 최소 `32px`를 예약합니다. 모바일에서 짧은 숫자에 두 줄 높이를 비워 두지 않습니다. Skeleton과 일반 값은 같은 프레임을 사용합니다. 긴 금액·확대된 글자가 필요한 경우 자연스럽게 높이를 늘리며 고정 높이·클리핑으로 숨기지 않습니다. 이 예외와 확인 범위는 [긴 콘텐츠](content-overflow.md)를 따릅니다.
@@ -51,7 +51,7 @@
 2. 검색에는 Label 또는 명확한 접근 가능한 이름을 연결하고 Select/Tabs에 번역된 이름을 부여합니다. 변경 콜백은 페이지의 검증된 URL 검색 상태를 갱신하며 필터 변경 시 기존 페이지 초기화 동작을 유지합니다. 초기화는 기존 검색 입력으로 초점을 돌립니다. 상태 소유권은 [URL 조회 상태](../url-state.md)를 따릅니다.
 3. Orders·Customers의 넓은 표는 `Table.containerProps`에 `role="region"`, 이름, `tabIndex={0}`, `aria-busy`, 프레임 높이를 전달합니다. 실제 가로 스크롤 요소 하나에 의미와 키보드 진입점을 둡니다. Table 자체의 터치/스크롤 정책은 [레이아웃](layout.md#넓은-표와-터치-스크롤)을 따릅니다.
 4. colgroup, Skeleton 셀 수, 빈 행 colspan을 실제 열과 맞춥니다. 로딩·빈 결과·오류의 프레임과 페이지 안내 공간을 유지합니다. 숫자 정렬은 우측·`tabular-nums`, 문자열은 전체 확인 경로에 따라 줄바꿈 또는 목록 생략을 선택합니다.
-5. Orders는 필수 7열(주문 번호·고객·상태·결제·날짜·합계·작업)을 기본으로 하고 상품·배송·수량 전문은 상세에서 확인합니다. 주문 번호와 마지막 작업 열을 고정하여 작은 화면에서도 레코드 확인·수정에 접근합니다. Customers도 마지막 작업 열을 고정합니다.
+5. Orders는 필수 7열(주문 번호·고객·상태·결제·날짜·합계·작업)을 기본으로 하고 상품·배송·수량 전문은 상세에서 확인합니다. 주문 번호와 마지막 작업 열을 고정하여 작은 화면에서도 레코드 확인·수정에 접근합니다. Customers는 모바일에서 고객 식별 열을 128px로 줄이고 avatar를 숨겨 이름·이메일과 마지막 작업 열을 함께 고정합니다. 태블릿부터 식별 열은 224px와 avatar를 복원합니다. 작은 화면에서도 가운데 데이터 열을 읽을 공간을 남기고 전체 이름은 상세에서 확인합니다.
 6. 페이지 크기는 Orders/Customers의 검증된 URL 값을 사용하고 선택 시 첫 페이지로 이동합니다. 큰 페이지를 선택해도 기존 표 프레임 안에서 세로 스크롤하며 로딩 skeleton은 프레임을 채우는 대표 행 수를 유지합니다.
 7. 페이지 안내와 이동 버튼은 좁은 화면에서 쌓이는 grid를 사용합니다. Table의 데이터/상태/액션은 각 페이지와 widget에 남기며 범용 Table/Filter 프레임워크로 감싸지 않습니다.
 

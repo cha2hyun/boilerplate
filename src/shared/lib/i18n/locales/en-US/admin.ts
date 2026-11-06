@@ -20,6 +20,7 @@ export default {
     pageCount: 'Page {{current}} of {{total}}',
   },
   orders: {
+    summaryError: 'Order summary couldn’t load',
     history: {
       title: 'Change history',
       description:

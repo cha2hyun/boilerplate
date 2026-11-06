@@ -19,6 +19,7 @@ export default {
     pageCount: '{{current}} / {{total}} 페이지',
   },
   orders: {
+    summaryError: '주문 요약을 불러오지 못했어요',
     history: {
       title: '변경 기록',
       description:

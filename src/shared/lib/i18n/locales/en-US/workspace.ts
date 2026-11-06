@@ -15,6 +15,8 @@ const workspace = {
     deleteProject: 'Delete project',
   },
   projects: {
+    showSummary: 'Show summary',
+    hideSummary: 'Hide summary',
     total: 'Total projects',
     across: 'Across your workspace',
     active: 'Active projects',

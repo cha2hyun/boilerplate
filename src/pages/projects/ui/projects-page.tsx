@@ -1,5 +1,5 @@
 import { env } from '@/shared/config'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Circle, FolderKanban, Gauge, Plus } from 'lucide-react'
 import { projectsQueryOptions } from '@/entities/project'
@@ -11,7 +11,8 @@ import { ProjectEditorDialog } from '@/features/project-editor'
 import { Button } from '@/shared/ui/button'
 import { PageHeader } from '@/shared/ui/page-header'
 import { MetricCard } from '@/shared/ui/metric-card'
-import { VStack } from '@/shared/ui/stack'
+import { HStack, VStack } from '@/shared/ui/stack'
+import { cn } from '@/shared/lib/utils'
 import { ProjectTable, type ProjectTableSearch } from '@/widgets/project-table'
 
 const countFormat = { maximumFractionDigits: 0 }
@@ -26,6 +27,8 @@ export function ProjectsPage({ search, onSearchChange }: ProjectsPageProps) {
   const { t } = useTranslation('workspace')
   const { formatNumber } = useFormatters()
   const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [summaryExpanded, setSummaryExpanded] = useState(false)
+  const summaryId = useId()
   const query = useQuery(projectsQueryOptions())
   const projects = query.data ?? []
   const hasData = query.data !== undefined
@@ -84,24 +87,50 @@ export function ProjectsPage({ search, onSearchChange }: ProjectsPageProps) {
         }
       />
 
-      <div className="grid gap-4 md:grid-cols-3">
-        {summaries.map(({ title, value, format, description, Icon }) => (
-          <MetricCard
-            key={title}
-            label={title}
-            icon={Icon}
-            loading={isLoading}
-            value={
-              hasData ? (
-                <NumberDisplay animate wrap value={value} format={format} />
-              ) : (
-                <span className="text-muted-foreground">—</span>
-              )
-            }
-            footer={description}
-          />
-        ))}
-      </div>
+      <VStack align="stretch" className="gap-3">
+        <HStack justify="between" wrap className="gap-2 md:hidden">
+          <p className="text-sm text-muted-foreground">
+            {hasData
+              ? t('table.count', {
+                  count: projects.length,
+                  formattedCount: formatNumber(projects.length),
+                })
+              : t(isLoading ? 'table.loading' : 'table.unavailable')}
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            aria-expanded={summaryExpanded}
+            aria-controls={summaryId}
+            onClick={() => {
+              setSummaryExpanded((value) => !value)
+            }}
+          >
+            {t(summaryExpanded ? 'projects.hideSummary' : 'projects.showSummary')}
+          </Button>
+        </HStack>
+        <div
+          id={summaryId}
+          className={cn('gap-4 md:grid md:grid-cols-3', summaryExpanded ? 'grid' : 'hidden')}
+        >
+          {summaries.map(({ title, value, format, description, Icon }) => (
+            <MetricCard
+              key={title}
+              label={title}
+              icon={Icon}
+              loading={isLoading}
+              value={
+                hasData ? (
+                  <NumberDisplay animate wrap value={value} format={format} />
+                ) : (
+                  <span className="text-muted-foreground">—</span>
+                )
+              }
+              footer={description}
+            />
+          ))}
+        </div>
+      </VStack>
 
       <ProjectTable
         search={search}

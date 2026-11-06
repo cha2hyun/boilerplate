@@ -4,24 +4,26 @@
 
 ## HTTP 계약
 
-JSON 요청/응답을 사용하며 envelope 없이 아래 객체/배열을 반환합니다. 현재 목록 필터/정렬/페이지 나누기는 클라이언트에서 처리합니다. 서버 페이지네이션을 도입하면 Query key, API 계약, UI를 함께 변경해야 합니다.
+JSON 요청/응답을 사용합니다. 주문은 목록 페이지, ID별 상세, 필터와 독립된 전체 요약을 별도 HTTP 계약으로 조회합니다. 프로젝트·고객 목록은 기존 전체 배열 계약과 클라이언트 검색/정렬/페이지 나누기를 유지합니다.
 
-| 요청                            | 요청 body       | 성공 응답              |
-| ------------------------------- | --------------- | ---------------------- |
-| `GET /projects`                 | 없음            | `200 Project[]`        |
-| `POST /projects`                | `ProjectInput`  | `200/201 Project`      |
-| `PATCH /projects/:id`           | `ProjectInput`  | `200 Project`          |
-| `DELETE /projects/:id`          | 없음            | `204` (body 없음)      |
-| `GET /analytics`                | 없음            | `200 Analytics`        |
-| `GET /traffic?period=7\|14\|30` | 없음            | `200 Traffic`          |
-| `GET /orders`                   | 없음            | `200 SampleOrder[]`    |
-| `GET /customers`                | 없음            | `200 SampleCustomer[]` |
-| `POST /orders`                  | `OrderInput`    | `201 SampleOrder`      |
-| `PATCH /orders/:id`             | `OrderInput`    | `200 SampleOrder`      |
-| `DELETE /orders/:id`            | 없음            | `204` (body 없음)      |
-| `POST /customers`               | `CustomerInput` | `201 SampleCustomer`   |
-| `PATCH /customers/:id`          | `CustomerInput` | `200 SampleCustomer`   |
-| `DELETE /customers/:id`         | 없음            | `204` (body 없음)      |
+| 요청                                                | 요청 body       | 성공 응답                    |
+| --------------------------------------------------- | --------------- | ---------------------------- |
+| `GET /projects`                                     | 없음            | `200 Project[]`              |
+| `POST /projects`                                    | `ProjectInput`  | `200/201 Project`            |
+| `PATCH /projects/:id`                               | `ProjectInput`  | `200 Project`                |
+| `DELETE /projects/:id`                              | 없음            | `204` (body 없음)            |
+| `GET /analytics`                                    | 없음            | `200 Analytics`              |
+| `GET /traffic?period=7\|14\|30`                     | 없음            | `200 Traffic`                |
+| `GET /orders?q=…&status=…&sort=…&page=…&pageSize=…` | 없음            | `200 OrderPage`              |
+| `GET /orders/:id`                                   | 없음            | `200 SampleOrder` 또는 `404` |
+| `GET /orders/summary/counts`                        | 없음            | `200 OrderSummary`           |
+| `GET /customers`                                    | 없음            | `200 SampleCustomer[]`       |
+| `POST /orders`                                      | `OrderInput`    | `201 SampleOrder`            |
+| `PATCH /orders/:id`                                 | `OrderInput`    | `200 SampleOrder`            |
+| `DELETE /orders/:id`                                | 없음            | `204` (body 없음)            |
+| `POST /customers`                                   | `CustomerInput` | `201 SampleCustomer`         |
+| `PATCH /customers/:id`                              | `CustomerInput` | `200 SampleCustomer`         |
+| `DELETE /customers/:id`                             | 없음            | `204` (body 없음)            |
 
 경로는 `VITE_API_BASE_URL` 뒤에 연결됩니다. `PATCH`에는 현재 계약상 수정 가능한 모든 필드를 보냅니다.
 
@@ -67,11 +69,19 @@ type Analytics = {
 
 Project의 `updatedAt`은 UTC와 offset이 있는 ISO datetime을 모두 허용하며, 화면 정렬은 문자열 대신 실제 timestamp를 비교합니다. Analytics의 `revenue`는 날짜당 최대 한 항목만 허용하고 중복 날짜는 응답 검증 실패로 처리합니다. API의 배열 순서는 자유이며 entity 검증 경계에서 날짜 오름차순으로 정규화합니다. 최근 N일은 응답의 마지막 제공일을 포함한 UTC 달력 날짜 범위로 선택합니다. 누락된 날짜를 오래된 항목으로 채우거나 매출 0으로 가정하지 않으며, 고정 기준일을 가진 데모도 현재 시스템 날짜와 무관하게 같은 범위를 표시합니다.
 
-Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`, `entities/customer`의 `model/schema.ts`가 소유합니다. Traffic은 선택 기간의 일별 방문·세션·페이지뷰와 유입/페이지/기기별 요약을 반환합니다. 주문/고객은 상세 Sheet에 필요한 필드를 포함한 전체 목록이며 생성·편집·삭제를 지원합니다. 목록의 검색·정렬·페이지 나누기는 클라이언트에서 수행하며 서버 필터를 구현한 것으로 설명하지 않습니다.
+Traffic/Order/Customer의 계약은 각각 `entities/traffic`, `entities/order`, `entities/customer`의 `model/schema.ts`가 소유합니다. Traffic은 선택 기간의 일별 방문·세션·페이지뷰와 유입/페이지/기기별 요약을 반환합니다. 주문·고객은 생성·편집·삭제를 지원합니다. 고객은 상세 Sheet에 필요한 필드를 포함한 전체 목록이며 검색·정렬·페이지 나누기는 클라이언트에서 수행합니다.
 
 Traffic의 `days`는 날짜당 최대 한 항목만 허용하고 중복 날짜는 응답 검증 실패로 처리합니다. API 배열 순서는 자유이며 검증 경계에서 날짜 오름차순으로 정규화합니다. 일별 값과 기간 요약은 `visitors ≤ sessions ≤ pageViews`, 일별 이탈은 `bounces ≤ sessions`를 만족해야 합니다. 누락일을 채우거나 합계를 다시 만들지 않으며, 기간별 고유 방문자는 일별 고유 방문자의 합과 같다고 가정하지 않습니다. 0인 값과 빈 일별 배열은 허용합니다.
 
-프로젝트·주문·고객 목록의 ID는 목록 안에서 유일해야 합니다. 중복 ID를 합치거나 마지막 값으로 덮지 않고 전체 응답을 `INVALID_RESPONSE`로 거부합니다. 갱신 응답이 잘못됐을 때 이미 검증된 Query 데이터는 유지합니다.
+프로젝트·고객 목록과 각 주문 응답 페이지에서 ID는 유일해야 합니다. 중복 ID를 합치거나 마지막 값으로 덮지 않고 전체 응답을 `INVALID_RESPONSE`로 거부합니다. 갱신 응답이 잘못됐을 때 이미 검증된 Query 데이터는 유지합니다.
+
+### 주문 조회: 필터된 페이지·상세·전체 요약
+
+- 목록 파라미터: `q`(최대 200자, 기본 빈 값), `status`(`all` 기본 또는 주문 상태), `sort`(`newest` 기본, `oldest`, `highest`, `lowest`), `page`(1–100,000, 기본 1), `pageSize`(6/12/24, 기본 6)입니다. 데모 HTTP는 잘못된 값에 400을 반환합니다. 화면 URL은 별도 조회 스키마로 잘못된 값을 기본값으로 복원합니다. HTTP 어댑터는 모든 파라미터를 URL 인코딩해 보냅니다.
+- 응답 `OrderPage = { items: SampleOrder[], total: number, page: number, pageSize: 6 | 12 | 24 }`. `total`은 필터 후 전체 건수입니다. 주문 ID·고객 이름·이메일을 대소문자 무시 부분검색하고 상태와 교집합을 냅니다. 날짜 정렬은 날짜·ID 순, 금액 정렬은 USD cents 합계·ID 순으로 순서를 결정합니다. `items`에는 유효 페이지의 행만 반환합니다. 페이지당 최대 24개의 완전한 주문 레코드를 반환해 행에서 바로 편집할 수 있습니다. 상품과 이력 payload가 특히 큰 제품에서는 목록 전용 projection과 편집 전 상세 로드를 별도 계약으로 설계합니다.
+- 요청이 마지막 페이지를 넘으면 마지막 유효 페이지로 보정합니다(빈 결과는 `page: 1, total: 0, items: []`). 응답 검증은 음수·부분 정수·중복 ID, 잘못된 페이지 크기, 총계와 맞지 않는 행 수, 요청과 다른 유효 페이지를 거부합니다. 화면은 성공 응답 후에만 URL의 `page`를 replace합니다.
+- 전체 요약 `OrderSummary = { total, counts: { Processing, Shipped, Delivered, Cancelled } }`는 검색·필터와 무관합니다. 모두 음이 아닌 정수이고 `total`은 네 상태 건수의 합과 일치해야 합니다. 목록과 요약은 동시에 요청하며 하나의 실패가 다른 응답을 지우지 않습니다.
+- 상세는 필터·페이지에 상관없이 ID를 직접 조회합니다. 상세와 PATCH의 응답 ID는 요청한 ID와 일치해야 합니다. PATCH 응답 불일치는 적용됐을 수 있는 쓰기로 재조회합니다. 빈 값과 `.`·`..` 단독 ID는 경로가 상위 컬렉션으로 정규화되므로 상세/PATCH/DELETE에서 네트워크 요청 전에 거부합니다. 다른 ID는 경로 한 부분으로 인코딩합니다. 요약은 두 경로 부분을 사용하므로 저장된 `summary` ID와 충돌하지 않습니다. 상세 404는 조회된 부재로 표시합니다. 다른 실패는 오류·재시도를 표시하고, 이미 받았던 상세는 갱신 실패에도 볼 수 있습니다. 데모 MSW가 같은 읽기/쓰기 HTTP 계약을 구현합니다. `api` 모드는 서버가 이 계약을 제공해야 하며 기존 `GET /orders → SampleOrder[]` 응답은 `INVALID_RESPONSE`입니다. 실제 서버는 포함하지 않습니다.
 
 주문 입력은 `customer: { name, email }`, `date`, `status`, `payment`, `city`, `country`, `shipping`, `items: [{ name, quantity, unitPrice }]`입니다. `shipping`/`unitPrice`는 USD 정수 cents이며 상품은 최소 한 개가 필요합니다. 화면의 USD 소수 입력은 저장 전에 cents로 변환하며 빈 값·음수·지원 범위를 넘는 값은 거부합니다. 허용 상태, 길이·금액·수량·상품 개수 상한은 `orderInputSchema`가 소유합니다.
 
@@ -103,9 +113,9 @@ API는 차트 색상이나 `fill` 같은 스타일 값을 반환하지 않습니
 
 HTTP 요청은 응답 헤더와 JSON body 읽기를 합쳐 15초로 제한하며 초과 시 요청을 중단하고 `ApiError`의 `TIMEOUT`으로 전달합니다. `ApiError.mayHaveSucceeded`는 기본 `false`이며 읽기 전용(GET/HEAD)이 아닌 요청의 timeout·네트워크 실패·5xx·2xx 응답의 JSON/스키마 검증 실패에서는 `true`입니다. 응답을 받거나 해석하지 못했어도 서버 변경은 적용됐을 수 있기 때문입니다. 특히 502/504는 gateway가 upstream 응답을 정상적으로 받지 못했음을 나타내며 저장 실패나 rollback의 증거가 아닙니다. 공통 HTTP 경계에는 서버의 commit/rollback 보장 계약이 없으므로 모든 쓰기 5xx를 보수적으로 불확실하게 처리합니다. 4xx 쓰기 거부와 읽기 요청은 `mayHaveSucceeded: false`를 유지하며 HTTP 오류의 `code: HTTP_ERROR`와 원래 `status`도 보존합니다. `useErrorMessage`는 이 구조화된 값으로 언어를 바꿔도 저장 성공 가능성과 결과 재확인 안내를 유지하며 영어 오류 문자열을 해석하지 않습니다. 응답 헤더를 받은 뒤 시간이 초과되면 해당 `status`도 보존합니다. 불확실한 mutation 결과는 목록을 다시 조회해 확인하고 재시도하도록 안내하며 mutation 자체를 자동 재시도하지 않습니다. 서버 idempotency나 작업 결과 조회 계약을 구현한 것으로 간주하지 않습니다.
 
-GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취소한 요청은 timeout 오류나 별도 `ApiError`로 감싸지 않습니다. 프로젝트·주문·고객 mutation이 성공하면 진행 중인 목록 요청을 먼저 취소하고 Query 캐시를 갱신한 뒤 목록을 무효화합니다. 따라서 초기 조회가 늦게 도착해 이미 성공한 변경을 가리지 않습니다. 서버가 거부한 mutation을 성공으로 표시하지 않습니다.
+GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취소한 요청은 timeout 오류나 별도 `ApiError`로 감싸지 않습니다. 프로젝트·고객 mutation 성공은 이전 조회 취소 후 목록 캐시를 갱신하고 무효화합니다. 주문은 모든 진행 중인 주문 조회를 취소한 뒤 확정한 상세(삭제는 없음)만 기록하고 목록·요약·상세 키를 무효화합니다. 페이지 구성과 집계를 추측해 수정하지 않습니다. 따라서 초기 조회가 늦게 도착해 이미 성공한 변경을 가리지 않습니다. 서버가 거부한 mutation을 성공으로 표시하지 않습니다.
 
-프로젝트·주문·고객 mutation 결과가 불확실하면 이전 목록 요청을 취소하고 해당 도메인 Query를 무효화해 활성 목록을 재조회합니다. 확인되지 않은 응답으로 캐시를 직접 수정하거나 성공 알림을 보여주지 않으며, 원래 mutation 오류와 재확인 안내는 유지합니다. 재조회도 실패할 수 있으므로 사용자는 목록/새로고침 결과를 확인한 뒤 다시 저장해야 합니다.
+프로젝트·주문·고객 mutation 결과가 불확실하면 이전 도메인 요청을 취소하고 해당 Query를 무효화해 활성 조회를 다시 수행합니다. 확인되지 않은 응답으로 캐시를 직접 수정하거나 성공 알림을 보여주지 않으며, 원래 mutation 오류와 재확인 안내는 유지합니다. 재조회도 실패할 수 있으므로 사용자는 목록/새로고침 결과를 확인한 뒤 다시 저장해야 합니다.
 
 현재 인증 토큰 주입, refresh token 처리, 401 재인증, 권한 정책은 구현되어 있지 않습니다. 교차 출처 쿠키 인증을 선택하면 CORS, credentials, CSRF를 서버 정책과 함께 설계하고 테스트해야 합니다. 임의 토큰을 localStorage에 넣어 인증 구현을 대신하지 마세요.
 
@@ -113,7 +123,9 @@ GET 요청의 AbortSignal을 transport까지 전달합니다. 호출자가 취�
 
 데모 프로젝트는 `orbit.demo.projects.v1` localStorage 키에 `{ version: 1, projects }` 형태로 저장됩니다. 잘못된 JSON/스키마는 샘플 데이터로 복구합니다. 저장소 접근이 거부되면 메모리로 동작하며 새로고침 이후 보존을 보장하지 않습니다.
 
-주문은 `orbit.demo.orders.v1`에 `{ version: 1, orders }`, 고객은 `orbit.demo.customers.v1`에 `{ version: 1, customers }`를 저장합니다. 각 어댑터가 복원 데이터를 검증하고 저장소 실패 시 현재 세션의 메모리를 유지합니다. 이 저장소는 Query의 메모리 캐시와 별개입니다. 새로고침 후 HTTP GET이 저장 데이터를 다시 읽습니다. API 모드에서는 이 어댑터를 쓰지 않으며 실제 서버가 영속성을 소유합니다.
+주문 조회 계약이 바뀌어도 브라우저 저장 키·버전·전체 배열 형식은 바뀌지 않습니다. 주문은 `orbit.demo.orders.v1`에 `{ version: 1, orders }`, 고객은 `orbit.demo.customers.v1`에 `{ version: 1, customers }`를 저장합니다. 각 어댑터가 복원 데이터를 검증하고 저장소 실패 시 현재 세션의 메모리를 유지합니다. 이 저장소는 Query의 메모리 캐시와 별개입니다. 새로고침 후 HTTP GET이 저장 데이터를 다시 읽습니다. API 모드에서는 이 어댑터를 쓰지 않으며 실제 서버가 영속성을 소유합니다.
+
+프로젝트·주문·고객의 앱용 데모 어댑터가 저장소 초기 접근 거부, 읽기 실패 또는 쓰기 거부/용량 초과로 메모리 모드로 전환하면 공통 셸에서 세션에만 유지된다는 안내를 표시합니다. 저장 내용이나 오류 원문은 안내에 담지 않습니다. 실제 서버 응답이나 API 모드에 이 안내를 적용하지 않습니다.
 
 세 도메인 모두 저장된 목록의 중복 ID를 손상 데이터로 취급하고 기존 복구 정책에 따라 검증된 seed로 초기화합니다. 생성 ID가 기존 데이터와 충돌하면 `409`를 반환하고 기존 목록을 보존합니다. ID만 보고 서로 다른 레코드를 임의로 합치지 않습니다. 저장 키는 `shared/config/product.ts`의 `storageKeys`가 소유하며 이번 중앙화로 키 값이나 저장 버전은 바뀌지 않습니다.
 

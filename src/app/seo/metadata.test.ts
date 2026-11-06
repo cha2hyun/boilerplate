@@ -7,6 +7,41 @@ afterEach(() => {
 })
 
 describe('page metadata', () => {
+  it('keeps every admin route unindexed even when a public origin is configured', () => {
+    for (const path of [
+      '/',
+      '/projects',
+      '/analytics',
+      '/orders',
+      '/customers',
+      '/inbox',
+      '/settings',
+      '/components',
+      '/foundations',
+    ]) {
+      const tags = createPageHead(path, 'https://blueprint.example')
+      expect(tags.find(({ attributes }) => attributes.name === 'robots')?.attributes.content).toBe(
+        'noindex, nofollow',
+      )
+      expect(tags.find(({ attributes }) => attributes.rel === 'canonical')?.attributes.href).toBe(
+        `https://blueprint.example${path}`,
+      )
+    }
+  })
+
+  it('indexes only explicitly public routes and still respects development and unknown-route restrictions', () => {
+    const options = { indexablePaths: ['/foundations'] as const }
+    const robots = (path: string, origin?: string, indexable = true) =>
+      createPageHead(path, origin, { ...options, indexable }).find(
+        ({ attributes }) => attributes.name === 'robots',
+      )?.attributes.content
+    expect(robots('/Foundations/?preview=1', 'https://blueprint.example')).toBe('index, follow')
+    expect(robots('/orders', 'https://blueprint.example')).toBe('noindex, nofollow')
+    expect(robots('/missing', 'https://blueprint.example')).toBe('noindex, nofollow')
+    expect(robots('/foundations')).toBe('noindex, nofollow')
+    expect(robots('/foundations', 'http://127.0.0.1:5173', false)).toBe('noindex, nofollow')
+  })
+
   it('switches client metadata language without changing canonical URLs or accumulating tags', () => {
     const origin = 'https://blueprint.example'
     updateDocumentHead(createPageHead('/orders', origin, { locale: 'ko-KR' }))

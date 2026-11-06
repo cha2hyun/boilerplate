@@ -41,9 +41,7 @@ describe('demo order change history', () => {
       { field: 'payment', occurredAt: timestamp, from: input.payment, to: 'Refunded' },
     ])
     const reopened = createDemoOrderAdapter({ storage, delayMs: 0 })
-    expect((await reopened.list()).find((order) => order.id === created.id)?.history).toEqual(
-      updated.history,
-    )
+    expect((await reopened.detail(created.id)).history).toEqual(updated.history)
 
     const edited = await reopened.update(created.id, {
       ...orderInputSchema.parse(updated),
@@ -62,7 +60,7 @@ describe('demo order change history', () => {
     const storage = memoryStorage(JSON.stringify({ version: 1, orders: [legacy] }))
     const occurredAt = '2026-11-05T12:00:00.000Z'
     const adapter = createDemoOrderAdapter({ storage, delayMs: 0, now: () => new Date(occurredAt) })
-    expect(await adapter.list()).toEqual([{ ...legacy, history: [] }])
+    expect((await adapter.list()).items).toEqual([{ ...legacy, history: [] }])
     const updated = await adapter.update(legacy.id, { ...input, status: 'Shipped' })
     expect(updated.history).toEqual([
       { field: 'status', occurredAt, from: 'Processing', to: 'Shipped' },
@@ -120,9 +118,7 @@ describe('demo order change history', () => {
       from: 'Delivered',
       to: 'Cancelled',
     })
-    expect((await adapter.list()).find((order) => order.id === current.id)?.history).toEqual(
-      current.history,
-    )
+    expect((await adapter.detail(current.id)).history).toEqual(current.history)
   })
 
   it('ignores submitted history and keeps session history when persistence is unavailable', async () => {
@@ -146,8 +142,6 @@ describe('demo order change history', () => {
     expect(created.history.every((event) => event.from === null)).toBe(true)
     const updated = await adapter.update(created.id, { ...injected, status: 'Shipped' })
     expect(updated.history).toHaveLength(3)
-    expect((await adapter.list()).find((order) => order.id === created.id)?.history).toEqual(
-      updated.history,
-    )
+    expect((await adapter.detail(created.id)).history).toEqual(updated.history)
   })
 })

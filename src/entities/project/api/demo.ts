@@ -11,6 +11,7 @@ const persistedSchema = z.object({ version: z.literal(1), projects: projectsSche
 type StorageAdapter = Pick<Storage, 'getItem' | 'setItem'>
 
 interface DemoOptions {
+  onStorageUnavailable?: () => void
   storage?: StorageAdapter | null
   delayMs?: number
   now?: () => Date
@@ -33,13 +34,26 @@ export function createDemoProjectAdapter(options: DemoOptions = {}): ProjectAdap
   const createId = options.createId ?? (() => `prj_${crypto.randomUUID()}`)
   const latency = options.delayMs ?? 280
 
+  let reportedUnavailable = false
+  function fallBackToMemory() {
+    storage = null
+    if (reportedUnavailable) return
+    reportedUnavailable = true
+    try {
+      options.onStorageUnavailable?.()
+    } catch {
+      // A status observer must not prevent the in-memory fallback.
+    }
+  }
+  if (!storage) fallBackToMemory()
+
   function persist(projects: Project[]) {
     memory = projectsSchema.parse(projects)
     try {
       storage?.setItem(PROJECT_STORAGE_KEY, JSON.stringify({ version: 1, projects: memory }))
     } catch {
       // Restricted storage and quota errors still permit an in-memory demo session.
-      storage = null
+      fallBackToMemory()
     }
   }
 
@@ -50,7 +64,7 @@ export function createDemoProjectAdapter(options: DemoOptions = {}): ProjectAdap
     try {
       raw = storage.getItem(PROJECT_STORAGE_KEY)
     } catch {
-      storage = null
+      fallBackToMemory()
       return projectsSchema.parse(memory)
     }
 

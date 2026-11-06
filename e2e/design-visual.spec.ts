@@ -300,3 +300,112 @@ test.describe('approved design compositions', () => {
     )
   })
 })
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`keeps rendered form boundaries and keyboard focus at three-to-one contrast (${theme})`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== 'desktop',
+      'Shared control colors are checked once per theme.',
+    )
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await preparePage(page, { theme, locale: 'en-US', currency: 'USD' })
+    await page.goto('/projects')
+    await expect(page.locator('html')).toHaveClass(new RegExp(`\\b${theme}\\b`))
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en-US')
+    await page.getByRole('button', { name: 'New project', exact: true }).click()
+    const dialog = page.getByRole('dialog', { name: 'Create a project', exact: true })
+    const controls = [
+      dialog.getByRole('textbox', { name: 'Project name', exact: true }),
+      dialog.getByRole('textbox', { name: 'Description (optional)', exact: true }),
+      dialog.getByRole('combobox', { name: 'Status', exact: true }),
+    ]
+    for (const control of controls) {
+      // Set up the idle state; focus contrast below is measured after real Tab navigation.
+      await dialog.getByRole('button', { name: 'Cancel', exact: true }).focus()
+      await expect(control).not.toBeFocused()
+      const idleShadow = await control.evaluate((element) => getComputedStyle(element).boxShadow)
+      const measure = async () =>
+        control.evaluate((element) => {
+          const canvas = document.createElement('canvas')
+          canvas.width = canvas.height = 1
+          const context = canvas.getContext('2d', { willReadFrequently: true })
+          if (!context) throw new Error('Canvas color conversion is unavailable')
+          const parents: Element[] = []
+          for (let parent = element.parentElement; parent; parent = parent.parentElement)
+            parents.unshift(parent)
+          const surface = () => {
+            context.clearRect(0, 0, 1, 1)
+            for (const parent of parents) {
+              context.fillStyle = getComputedStyle(parent).backgroundColor
+              context.fillRect(0, 0, 1, 1)
+            }
+          }
+          const channels = () => Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3)
+          const luminance = (values: number[]) =>
+            values.reduce((total, value, index) => {
+              const srgb = value / 255
+              return (
+                total +
+                [0.2126, 0.7152, 0.0722][index]! *
+                  (srgb <= 0.04045 ? srgb / 12.92 : ((srgb + 0.055) / 1.055) ** 2.4)
+              )
+            }, 0)
+          const ratio = (first: number[], second: number[]) =>
+            (Math.max(luminance(first), luminance(second)) + 0.05) /
+            (Math.min(luminance(first), luminance(second)) + 0.05)
+          const style = getComputedStyle(element)
+          surface()
+          const outside = channels()
+          context.fillStyle = style.backgroundColor
+          context.fillRect(0, 0, 1, 1)
+          const inside = channels()
+          context.fillStyle = style.borderTopColor
+          context.fillRect(0, 0, 1, 1)
+          const border = channels()
+          surface()
+          context.fillStyle = style.getPropertyValue('--tw-ring-color') || 'transparent'
+          context.fillRect(0, 0, 1, 1)
+          return {
+            boundary: Math.min(ratio(border, outside), ratio(border, inside)),
+            focus: ratio(channels(), outside),
+            focusVisible: element.matches(':focus-visible'),
+          }
+        })
+      await expect
+        .poll(async () => (await measure()).boundary, {
+          message: `${theme}: unfocused input boundary`,
+        })
+        .toBeGreaterThanOrEqual(3)
+      // Reach the control with actual keyboard traversal, not programmatic focus.
+      await page.keyboard.press('Tab')
+      for (
+        let steps = 0;
+        steps < 12 && !(await control.evaluate((element) => element === document.activeElement));
+        steps += 1
+      )
+        await page.keyboard.press('Tab')
+      await expect(control).toBeFocused()
+      await expect.poll(async () => (await measure()).focusVisible).toBe(true)
+      await expect(control).not.toHaveCSS('box-shadow', idleShadow)
+      await expect
+        .poll(async () => (await measure()).focus, {
+          message: `${theme}: composited keyboard ring`,
+        })
+        .toBeGreaterThanOrEqual(3)
+      if (control === controls[0]) {
+        await control.fill('x')
+        await control.press('Enter')
+        await expect(control).toHaveAttribute('aria-invalid', 'true')
+        await expect
+          .poll(async () => (await measure()).focus, {
+            message: `${theme}: invalid field focus ring`,
+          })
+          .toBeGreaterThanOrEqual(3)
+        await control.fill('')
+      }
+    }
+    await page.keyboard.press('Escape')
+  })
+}

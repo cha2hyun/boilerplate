@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from './fixtures.js'
+import { storageKeys } from '../src/shared/config/product.js'
 
 // The browser suite consumes HTTP payloads, independently of Vite's application module graph.
 type CommerceRecord =
@@ -399,7 +400,7 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
 async function refreshCommerceResponse(
   page: Page,
   endpoint: string,
-  records: unknown,
+  records: CommerceRecord[],
   time: number,
 ) {
   // Initial requests use the real demo worker. Override only this read response to model
@@ -410,9 +411,27 @@ async function refreshCommerceResponse(
       window.fetch = (input, init) => {
         const url = input instanceof Request ? input.url : String(input)
         const method = init?.method ?? (input instanceof Request ? input.method : 'GET')
-        if (new URL(url, window.location.origin).pathname === path && method === 'GET') {
+        const requestPath = new URL(url, window.location.origin).pathname
+        if (
+          path === '/api/orders' &&
+          requestPath.startsWith(`${path}/`) &&
+          requestPath !== `${path}/summary/counts` &&
+          method === 'GET'
+        ) {
+          const record = data.find(
+            (item) => item.id === decodeURIComponent(requestPath.slice(path.length + 1)),
+          )
           return Promise.resolve(
-            new Response(JSON.stringify(data), {
+            Response.json(record ?? { message: 'Not found' }, { status: record ? 200 : 404 }),
+          )
+        }
+        if (requestPath === path && method === 'GET') {
+          const payload =
+            path === '/api/orders'
+              ? { items: data, total: data.length, page: 1, pageSize: 6 }
+              : data
+          return Promise.resolve(
+            new Response(JSON.stringify(payload), {
               headers: { 'Content-Type': 'application/json' },
             }),
           )
@@ -903,7 +922,10 @@ for (const route of ['orders', 'customers'] as const) {
       (response) => new URL(response.url()).pathname === endpoint,
     )
     await page.goto(`/${route}`)
-    const records = (await (await firstResponse).json()) as CommerceRecord[]
+    const payload: unknown = await (await firstResponse).json()
+    const records = (
+      route === 'orders' ? (payload as { items: CommerceRecord[] }).items : payload
+    ) as CommerceRecord[]
     const first = records[0]
     if (!first) throw new Error('The sample commerce response was empty.')
     const originalName = 'customer' in first ? first.customer.name : first.name
@@ -921,6 +943,8 @@ for (const route of ['orders', 'customers'] as const) {
     const details = page.getByRole('dialog')
     await expect(details).toBeVisible()
 
+    if (route === 'orders')
+      await expect(details.getByText(originalName, { exact: true })).toBeVisible()
     await refreshCommerceResponse(page, endpoint, revisedRecords, start + 61_000)
     await expect(details.getByText(name, { exact: true })).toBeVisible()
     await expect(details.getByText(email, { exact: true })).toBeVisible()
@@ -1098,3 +1122,58 @@ for (const route of ['orders', 'customers'] as const) {
     await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible()
   })
 }
+
+test('loads order pages from HTTP and restores a detail outside the current page', async ({
+  page,
+}) => {
+  const listResponse = page.waitForResponse((response) => {
+    const url = new URL(response.url())
+    return url.pathname === '/api/orders' && url.searchParams.get('page') === '2'
+  })
+  const detailResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/api/orders/ORD-1042',
+  )
+  await page.goto('/orders?page=2&detail=ORD-1042')
+  const payload = (await (await listResponse).json()) as {
+    items: { id: string }[]
+    total: number
+    page: number
+    pageSize: number
+  }
+  expect(payload).toMatchObject({ total: 12, page: 2, pageSize: 6 })
+  expect(payload.items).toHaveLength(6)
+  expect(payload.items.some((order) => order.id === 'ORD-1042')).toBe(false)
+  expect((await detailResponse).status()).toBe(200)
+  const details = page.getByRole('dialog', { name: 'Order ORD-1042', exact: true })
+  await expect(details.getByText('olivia@example.com', { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(details.getByText('olivia@example.com', { exact: true })).toBeVisible()
+  await details.getByRole('button', { name: 'Close', exact: true }).click()
+  await expect(page.getByText('Showing 7–12 of 12 orders', { exact: true })).toBeVisible()
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get('page') === '2' && !url.searchParams.has('detail'),
+  )
+})
+
+test('corrects the order URL after deleting the only row on the last server page', async ({
+  page,
+}) => {
+  await page.goto('/orders')
+  await expect(page.getByText('Showing 1–6 of 12 orders', { exact: true })).toBeVisible()
+  await page.evaluate(async (key) => {
+    const response = await fetch('/api/orders?pageSize=24')
+    const payload = (await response.json()) as { items: unknown[] }
+    localStorage.setItem(key, JSON.stringify({ version: 1, orders: payload.items.slice(0, 7) }))
+  }, storageKeys.demoOrders)
+  await page.goto('/orders?page=2')
+  await expect(page.getByText('Showing 7–7 of 7 orders', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Actions for ORD-1036', exact: true }).click()
+  await page.getByRole('menuitem', { name: 'Delete order', exact: true }).click()
+  const remove = page.getByRole('alertdialog', { name: 'Delete order?', exact: true })
+  await remove.getByRole('button', { name: 'Delete order', exact: true }).click()
+  await expect(remove).toBeHidden()
+  await expect(page).toHaveURL((url) => url.pathname === '/orders' && !url.searchParams.has('page'))
+  await expect(page.getByText('Showing 1–6 of 6 orders', { exact: true })).toBeVisible()
+  await page.reload()
+  await expect(page.getByText('Showing 1–6 of 6 orders', { exact: true })).toBeVisible()
+})
