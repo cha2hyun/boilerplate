@@ -44,12 +44,15 @@ import { httpProjectAdapter } from './http'
 | 차트 기간·검색·필터·정렬·페이지·상세 ID | TanStack Router search    | Zod 검증 후 새로고침·뒤로/앞으로·직접 링크에서 복원 |
 | 원격/샘플 조회 데이터                   | TanStack Query            | 캐시, 로딩/오류, 요청 취소, mutation 후 무효화      |
 | 워크스페이스 이름/compact mode          | Zustand                   | 서버와 독립적인 UI 환경 설정의 명시적 소유권        |
+| 표별 열 표시·순서·너비·고정·행 간격     | Zustand                   | 조회와 독립적인 브라우저 보기 설정, 스키마 검증     |
 | 언어·표시 통화                          | Zustand                   | 검증·저장하는 독립적인 UI 환경 설정                 |
 | USD/KRW 기준 환율                       | TanStack Query            | 공개 API의 검증된 원격 데이터와 공유 캐시           |
 | light/dark/system 테마                  | shadcn Vite ThemeProvider | 공식 Vite recipe 기반의 class 적용/시스템 테마 구독 |
 | 폼 입력·편집/삭제 확인창                | 해당 컴포넌트/feature     | 수명이 짧고 다른 영역에 공개할 이유가 없음          |
 
 Query 결과를 Zustand에 복제하지 않습니다. 서버 상태의 진실 공급원은 서버이며 데모에서는 API 어댑터입니다. API 응답은 Zod로 검증하고 컴포넌트에는 검증된 도메인 데이터를 전달합니다. 데이터 어댑터는 `demo`와 `api` 모드에서 같은 계약을 따릅니다. 캐시 수명·무효화·화면 갱신은 [Query 캐시](query-cache.md), 응답/페이지/정렬/저장 규칙은 [API 계약](api-contract.md)이 소유합니다.
+
+`features/table-view`는 Projects·Orders·Customers의 보기 설정만 `blueprint-table-views` 버전 1에 저장합니다. Zod로 저장 형식을 검증하고 현재 열 정의와 대조해 삭제된 ID·중복·너비 범위·잠긴 열을 정리합니다. 저장소를 사용할 수 없으면 현재 탭의 메모리에서 동작하며 실제 계정이나 다른 기기로 동기화하지 않습니다. 검색·필터·정렬·페이지는 URL에, 행 선택은 표의 임시 상태에 남습니다. [표 보기와 URL의 경계](url-state.md#표-보기-환경-설정)를 따릅니다.
 
 테마 provider는 `app/providers/theme-provider.tsx`, context와 `useTheme`는 `shared/lib/theme.ts`에 둡니다. 따라서 shared UI의 Sonner나 화면이 app 레이어를 거슬러 가져오지 않습니다. `blueprint-theme`에 `light`/`dark`/`system`만 저장하며, system 모드에서는 OS 설정 변경을 구독합니다. 배경은 공식 shadcn 토큰이 선택된 root class에 따라 바뀝니다. [테마 구현 결정](adr/003-vite-theme-provider.md)을 참고하세요.
 
@@ -65,7 +68,9 @@ shadcn 컴포넌트는 `src/shared/ui`에 두며 [shadcn의 CSS 변수 테마 �
 
 `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-primary`, `text-destructive`, `chart-*` 등 의미 토큰을 사용합니다. 검사기는 고정 색상 유틸리티(`bg-[red]`, `border-l-red-500`, `ring-offset-red-500`)와 색 속성에 직접 넣은 값(`[color:#ff0000]`)도 검출합니다. 임의 너비/그리드 값 같은 Tailwind 레이아웃 유틸리티는 허용합니다.
 
-CSS 파일은 `src/app/styles/globals.css` 하나입니다. 여기에 Tailwind import, shadcn light/dark 토큰, `@theme`, 기본 `@apply`를 둡니다. 화면별 CSS, CSS Modules, Sass, styled-components/Emotion은 사용하지 않습니다. 공식 shadcn 컴포넌트의 차트/사이드바처럼 동적 CSS 변수 또는 내부 style 태그가 필요한 생성 코드만 `shared/ui`에서 허용합니다. Radix 직접 import, native/ARIA 컨트롤, inline style, `<style>` 예외는 [검사기의 정확한 파일 목록](../scripts/ui-exceptions.mjs)을 따릅니다. `shared/ui`에 파일을 추가한 것만으로 예외가 되지 않습니다. 예를 들어 Button은 native 버튼을, Chart는 동적 색상 스타일을 사용하지만 Button에 임의 inline style은 허용되지 않습니다. 새 registry 파일이 예외를 필요로 하면 생성 출처·diff·사용 이유를 확인한 뒤 필요한 규칙의 경로만 추가하고 회귀 검사를 유지합니다. 예외 목록은 파일의 출처를 증명하거나 그 파일의 모든 코드를 승인하지 않습니다.
+CSS 파일은 `src/app/styles/globals.css` 하나입니다. 여기에 Tailwind import, shadcn light/dark 토큰, `@theme`, 기본 `@apply`를 둡니다. 화면별 CSS, CSS Modules, Sass, styled-components/Emotion은 사용하지 않습니다. 공식 shadcn 컴포넌트의 차트/사이드바처럼 동적 CSS 변수 또는 내부 style 태그가 필요한 생성 코드와 아래의 좁은 Table 확장만 `shared/ui`에서 허용합니다. Radix 직접 import, native/ARIA 컨트롤, inline style, `<style>` 예외는 [검사기의 정확한 파일 목록](../scripts/ui-exceptions.mjs)을 따릅니다. `shared/ui`에 파일을 추가한 것만으로 예외가 되지 않습니다. 예를 들어 Button은 native 버튼을, Chart는 동적 색상 스타일을 사용하지만 Button에 임의 inline style은 허용되지 않습니다. 새 registry 파일이 예외를 필요로 하면 생성 출처·diff·사용 이유를 확인한 뒤 필요한 규칙의 경로만 추가하고 회귀 검사를 유지합니다. 예외 목록은 파일의 출처를 증명하거나 그 파일의 모든 코드를 승인하지 않습니다.
+
+기존 shadcn `shared/ui/table.tsx`는 사용자가 조절한 열의 숫자 너비와 누적 고정 위치에 한해 inline style을 사용합니다. `table`·`col`의 `width`, `th`·`td`의 `left`/`right`만 이 파일 안에서 계산하며 호출부는 `columnWidths`·`layout` 같은 값 API를 전달합니다. 색상·타이포그래피·여백은 계속 의미 토큰과 Tailwind를 사용하고, 호출부 inline style·새 primitive·별도 CSS 체계는 허용하지 않습니다. 출처·대안·검사 범위는 [ADR 007](adr/007-table-view-geometry.md)을 따릅니다.
 
 Pretendard는 버전을 고정한 jsDelivr CDN에서 400/500/600 동적 subset만 불러오며 앱 번들에는 폰트를 포함하지 않습니다. 텍스트는 normal/medium/semibold만 사용하고, brand는 neutral primary와 별도 토큰으로 관리합니다. 앱 레이아웃은 md(768px)/xl(1280px)의 세 구간으로 구성하며 생성된 shadcn primitive의 기본 반응형 동작은 유지합니다. 상세 계약은 [디자인 시스템 인덱스](design-system.md)에서 해당 주제만 읽습니다. 직접 작성하는 가로/세로 배치는 `shared/ui/stack`의 HStack/VStack으로 통일하고 교차축 중앙 정렬을 기본으로 합니다. 그리드와 의미 있는 HTML, 설치된 shadcn 내부는 유지합니다. 허용 범위는 [ADR 005](adr/005-stack-layout.md), API와 정렬 예외는 [레이아웃](design/layout.md)이 소유하며 외부 레이아웃 패키지는 추가하지 않습니다. 앱 UI는 한국어/영어와 독립적인 USD/KRW 설정을 지원하며 RTL은 포함하지 않습니다. 번역·저장·환율 경계는 [언어와 표시 통화](i18n.md)를 따릅니다. 수량·금액·비율 표기는 [숫자 표시](number-formatting.md)의 공통 함수가 소유합니다. 로딩·skeleton·숫자 모션은 [로딩과 모션](loading-and-motion.md)이 소유합니다.
 

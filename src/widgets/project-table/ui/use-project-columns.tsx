@@ -136,7 +136,7 @@ export function useProjectColumns({
         accessorFn: (project) => project.owner.name,
         header: t('table.owner'),
         cell: ({ row }) => (
-          <HStack className="gap-2.5">
+          <HStack className="min-w-0 gap-2.5">
             <ProfileAvatar
               name={row.original.owner.name}
               src={row.original.owner.avatarUrl}
@@ -144,7 +144,7 @@ export function useProjectColumns({
               className="size-7"
               fallbackClassName="text-xs"
             />
-            <span className="text-sm whitespace-nowrap">{row.original.owner.name}</span>
+            <span className="min-w-0 truncate text-sm">{row.original.owner.name}</span>
           </HStack>
         ),
         enableGlobalFilter: false,

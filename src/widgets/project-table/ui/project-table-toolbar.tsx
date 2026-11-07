@@ -1,37 +1,23 @@
 import type { RefObject } from 'react'
 import type { Table } from '@tanstack/react-table'
-import { ArrowDownToLine, ListFilter, RefreshCw, Search, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowDownToLine, ListFilter, RefreshCw, Search, X } from 'lucide-react'
 import type { Project } from '@/entities/project'
+import { TableViewSettings, type TableView } from '@/features/table-view'
 import { useFormatters, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
 import { Badge } from '@/shared/ui/badge'
 import { Button } from '@/shared/ui/button'
 import { CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
 import { Input } from '@/shared/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/ui/select'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { projectTableSearchSchema, type ProjectTableSearch } from '../model/search'
 import { exportProjects } from '../lib/export-projects'
 
-const columnKeys = {
-  name: 'table.project',
-  status: 'common.status',
-  owner: 'table.owner',
-  progress: 'table.progress',
-  updatedAt: 'table.updated',
-} as const
-
 interface ProjectTableToolbarProps {
   table: Table<Project>
   compact: boolean
+  view?: TableView
   projectCount: number | undefined
   search: ProjectTableSearch
   onSearchChange: SearchChange<ProjectTableSearch>
@@ -47,6 +33,7 @@ interface ProjectTableToolbarProps {
 export function ProjectTableToolbar({
   table,
   compact,
+  view,
   projectCount,
   search,
   onSearchChange,
@@ -197,36 +184,11 @@ export function ProjectTableToolbar({
           >
             <X aria-hidden="true" /> {t('table.reset')}
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="ml-auto">
-                <SlidersHorizontal aria-hidden="true" /> {t('table.view')}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{t('table.toggleColumns')}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {table
-                .getAllColumns()
-                .filter((column) => column.getCanHide())
-                .map((column) => (
-                  <DropdownMenuCheckboxItem
-                    key={column.id}
-                    checked={column.getIsVisible()}
-                    onCheckedChange={(value) => {
-                      column.toggleVisibility(value)
-                    }}
-                    onSelect={(event) => {
-                      event.preventDefault()
-                    }}
-                  >
-                    {column.id in columnKeys
-                      ? t(columnKeys[column.id as keyof typeof columnKeys])
-                      : column.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {view && (
+            <div className="ml-auto">
+              <TableViewSettings view={view} />
+            </div>
+          )}
         </HStack>
       )}
     </CardHeader>

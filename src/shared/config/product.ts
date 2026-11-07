@@ -13,6 +13,7 @@ export const storageKeys = {
   theme: 'blueprint-theme',
   workspacePreferences: 'blueprint-preferences',
   localePreferences: 'blueprint-locale-preferences',
+  tableViews: 'blueprint-table-views',
   demoProjects: 'orbit.demo.projects.v1',
   demoOrders: 'orbit.demo.orders.v1',
   demoCustomers: 'orbit.demo.customers.v1',

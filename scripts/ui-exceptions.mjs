@@ -28,5 +28,12 @@ export const primitiveImportFiles = uiFiles([
   'tooltip',
 ])
 export const nativeControlFiles = uiFiles(['button', 'input', 'sidebar', 'textarea'])
-export const inlineStyleFiles = uiFiles(['chart', 'progress', 'sidebar', 'sonner', 'toggle-group'])
+export const inlineStyleFiles = uiFiles([
+  'chart',
+  'progress',
+  'sidebar',
+  'sonner',
+  'toggle-group',
+  'table', // Numeric column geometry only; docs/adr/007-table-view-geometry.md.
+])
 export const styleElementFiles = uiFiles(['chart'])

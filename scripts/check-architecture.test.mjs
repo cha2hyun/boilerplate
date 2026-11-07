@@ -524,6 +524,115 @@ test('rejects inline CSS and a style tag', () => {
   )
 })
 
+test('table geometry exception stays in the existing Table and grants no new controls or style tags', () => {
+  assert.deepEqual(
+    rules(
+      'shared/ui/table.tsx',
+      'export const Table = () => <table style={{ width: 960 }}><colgroup><col style={{ width: 128 }} /></colgroup><thead><tr><th style={{ left: 64 }}>Name</th></tr></thead></table>',
+    ),
+    [],
+  )
+  assert.deepEqual(
+    rules(
+      'features/table-view/ui/view.tsx',
+      'export const View = () => <div style={{ width: 128 }} />',
+    ),
+    ['inline-style'],
+  )
+  assert.deepEqual(
+    rules(
+      'shared/ui/table.tsx',
+      'export const Table = () => <><button>Resize</button><style>{""}</style></>',
+    ),
+    ['shadcn-control', 'custom-css'],
+  )
+})
+
+test('table geometry permits resolved numeric properties and conditional undefined branches', () => {
+  const source = `
+    const key = 'width'
+    const geometry = { [key]: total }
+    const attrs = { style: geometry }
+    const Col = 'col'
+    export const Table = ({ widths, layout, pin, ...props }) => <>
+      <table {...props} style={widths ? { width: widths.reduce((sum, value) => sum + value, 0) } : undefined} />
+      <table {...attrs} aria-label="Example" />
+      <Col style={geometry} />
+      <th style={pin ? { left: pin === 'left' ? layout.offset : undefined, right: pin === 'right' ? layout.offset : undefined } : undefined} />
+      <td style={pin ? { left: offset } : other ? { right: offset } : undefined} />
+    </>
+  `
+  assert.deepEqual(rules('shared/ui/table.tsx', source), [])
+})
+
+test('table geometry rejects other tags properties and opaque style objects', () => {
+  for (const source of [
+    '<table style={{ padding: 8 }} />',
+    '<table style={{ left: 8 }} />',
+    '<col style={{ width: 128, borderWidth: 1 }} />',
+    '<th style={{ width: 128 }} />',
+    '<td style={{ top: 0 }} />',
+    '<div style={{ width: 128 }} />',
+    '<TableHead style={{ left: 0 }} />',
+    '<table style={getGeometry()} />',
+    '<table style={props.style} />',
+    '<table style={{ ...props.style, width: 128 }} />',
+    '<table style={{ ...{ width: 128 } }} />',
+    '<table style={{ [property]: 128 }} />',
+    '<table style={{ get width() { return 128 } }} />',
+    '<table style={condition ? { width: 128 } : getGeometry()} />',
+    '<td style={condition ? { left: 0 } : { padding: 8 }} />',
+    '<table style={{ width: "128px" }} />',
+    '<table style={{ width: 128 }} {...props} />',
+    '<table {...{ style: { width: 128 } }} {...props} />',
+    '<table {...{ style: { padding: 8 } }} />',
+  ]) {
+    assert.deepEqual(
+      rules('shared/ui/table.tsx', `export const View = (props) => ${source}`),
+      ['table-geometry-style'],
+      source,
+    )
+  }
+  assert.deepEqual(
+    rules(
+      'shared/ui/table.tsx',
+      `const geometry = { width: 128 }; geometry.padding = 8; const view = <table style={geometry} />`,
+    ),
+    ['table-geometry-style'],
+  )
+  assert.deepEqual(
+    rules(
+      'shared/ui/table.tsx',
+      `const Element = condition ? 'table' : 'div'; const view = <Element style={{ width: 128 }} />`,
+    ),
+    ['table-geometry-style'],
+  )
+  assert.deepEqual(
+    rules('shared/ui/table.tsx', `function View(undefined) { return <table style={undefined} /> }`),
+    ['table-geometry-style'],
+  )
+})
+
+test('table geometry does not authorize inline styles in consumers or other UI files', () => {
+  for (const file of [
+    'features/table-view/ui/view.tsx',
+    'widgets/project-table/ui/table.tsx',
+    'shared/ui/table-copy.tsx',
+    'shared/ui/nested/table.tsx',
+  ]) {
+    assert.deepEqual(
+      rules(file, 'export const View = () => <table style={getGeometry()} />'),
+      ['inline-style'],
+      file,
+    )
+    assert.deepEqual(
+      rules(file, 'export const View = () => <th style={{ left: 128 }} />'),
+      ['inline-style'],
+      file,
+    )
+  }
+})
+
 test('requires semantic colors while allowing Tailwind arbitrary layout values', () => {
   assert.deepEqual(
     rules(

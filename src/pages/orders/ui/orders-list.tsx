@@ -1,21 +1,19 @@
 import { orderStatuses, type SampleOrder } from '@/entities/order'
 import {
+  TableColumnControls,
+  TableViewSettings,
+  useTableView,
+  type TableViewColumn,
+} from '@/features/table-view'
+import {
   useErrorMessage,
   useFormatters,
   useLocalePreferences,
   useTranslation,
 } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
-import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/shared/ui/dropdown-menu'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/shared/ui/empty'
 import { Input } from '@/shared/ui/input'
 import { Label } from '@/shared/ui/label'
@@ -24,25 +22,15 @@ import { Skeleton } from '@/shared/ui/skeleton'
 import { HStack, VStack } from '@/shared/ui/stack'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/shared/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/ui/tabs'
-import {
-  ArrowLeftRight,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Pencil,
-  Search,
-  Trash2,
-  X,
-} from 'lucide-react'
-import { useId } from 'react'
-import { orderSortOptions, orderTotal } from '../model/sample-orders'
+import { ArrowLeftRight, ChevronLeft, ChevronRight, Search, X } from 'lucide-react'
+import { useId, useMemo } from 'react'
+import { orderSortOptions } from '../model/sample-orders'
 import { ordersSearchDefaults, type OrdersSearch } from '../model/search'
 
 import type { RefObject } from 'react'
 import type { selectOrders } from '../model/selectors'
-import { OrderStatusBadge } from './order-status-badge'
+import { OrdersTableRow } from './orders-table-row'
 
-const orderTableColumnCount = 7
 interface OrdersListProps {
   search: OrdersSearch
   onSearchChange: SearchChange<OrdersSearch>
@@ -77,12 +65,32 @@ export function OrdersList({
 }: OrdersListProps) {
   const { t } = useTranslation('admin')
   const { t: editor } = useTranslation('orderEditor')
-  const { formatNumber, formatMoney, formatDate } = useFormatters()
+  const { formatNumber } = useFormatters()
   const currency = useLocalePreferences((state) => state.currency)
   const errorMessage = useErrorMessage()
   const { q, status, sort, pageSize } = search
   const { total: filteredTotal, pageCount, currentPage, visible: visibleOrders } = selection
   const scrollHintId = useId()
+  const columns = useMemo<TableViewColumn[]>(
+    () => [
+      {
+        id: 'id',
+        label: t('orders.order'),
+        width: 128,
+        minWidth: 128,
+        hideable: false,
+        pin: 'left',
+      },
+      { id: 'customer', label: t('common.customer'), width: 240, minWidth: 160 },
+      { id: 'status', label: t('common.status'), width: 128, minWidth: 112 },
+      { id: 'payment', label: t('orders.payment'), width: 112, minWidth: 112 },
+      { id: 'date', label: t('orders.date'), width: 144, minWidth: 144 },
+      { id: 'total', label: t('orders.total'), width: 136, minWidth: 120 },
+      { id: 'actions', label: editor('actionsColumn'), width: 64, locked: true, pin: 'right' },
+    ],
+    [t, editor],
+  )
+  const view = useTableView('orders', columns)
   const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
   const hasOrders = totalOrders === undefined ? hasFilters : totalOrders > 0
   function resetFilters() {
@@ -171,6 +179,7 @@ export function OrdersList({
                       ))}
                     </SelectContent>
                   </Select>
+                  <TableViewSettings view={view} />
                   {hasFilters && (
                     <Button variant="ghost" size="sm" onClick={resetFilters}>
                       <X aria-hidden="true" />
@@ -188,7 +197,10 @@ export function OrdersList({
                 {isLoading || visibleOrders.length ? (
                   <div className="h-124 min-w-0 border-y">
                     <Table
-                      className="min-w-[960px] table-fixed"
+                      className="table-fixed"
+                      columnWidths={view.columnWidths}
+                      density={view.density}
+                      pinnedWidth={view.pinnedWidth}
                       containerProps={{
                         tabIndex: 0,
                         role: 'region',
@@ -199,42 +211,46 @@ export function OrdersList({
                           'h-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                       }}
                     >
-                      <colgroup>
-                        <col className="w-[128px]" />
-                        <col className="w-[240px]" />
-                        <col className="w-[128px]" />
-                        <col className="w-[112px]" />
-                        <col className="w-[144px]" />
-                        <col className="w-[136px]" />
-                        <col className="w-[72px]" />
-                      </colgroup>
                       <TableHeader>
                         <TableRow className="bg-muted hover:bg-muted">
-                          <TableHead className="sticky left-0 z-10 border-r bg-muted pl-5">
-                            {t('orders.order')}
-                          </TableHead>
-                          <TableHead>{t('common.customer')}</TableHead>
-                          <TableHead>{t('common.status')}</TableHead>
-                          <TableHead>{t('orders.payment')}</TableHead>
-                          <TableHead>{t('orders.date')}</TableHead>
-                          <TableHead className="pr-5 text-right">{t('orders.total')}</TableHead>
-                          <TableHead className="sticky right-0 z-10 border-l bg-muted pr-5">
-                            <span className="sr-only">{editor('actionsColumn')}</span>
-                          </TableHead>
+                          {view.visibleColumns.map((column) => (
+                            <TableHead
+                              key={column.id}
+                              data-column-id={column.id}
+                              layout={view.getLayout(column.id)}
+                              aria-label={column.label}
+                              className={
+                                column.id === 'id'
+                                  ? 'pl-5'
+                                  : column.id === 'actions'
+                                    ? 'pr-5'
+                                    : undefined
+                              }
+                            >
+                              {column.id === 'actions' ? (
+                                <span className="sr-only">{column.label}</span>
+                              ) : (
+                                <HStack className="min-w-0 gap-1">
+                                  <span className="min-w-0 flex-1 wrap-anywhere whitespace-normal">
+                                    {column.label}
+                                  </span>
+                                  <TableColumnControls view={view} columnId={column.id} />
+                                </HStack>
+                              )}
+                            </TableHead>
+                          ))}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {isLoading
                           ? Array.from({ length: 6 }, (_, index) => (
                               <TableRow key={index} className="h-18" aria-hidden="true">
-                                {Array.from({ length: orderTableColumnCount }, (_, cell) => (
+                                {view.visibleColumns.map((column) => (
                                   <TableCell
-                                    key={cell}
-                                    className={
-                                      cell === 0
-                                        ? 'sticky left-0 z-10 border-r bg-card px-5'
-                                        : 'px-5'
-                                    }
+                                    key={column.id}
+                                    data-column-id={column.id}
+                                    layout={view.getLayout(column.id)}
+                                    className="px-5"
                                   >
                                     <Skeleton className="h-4 w-full max-w-28" />
                                   </TableCell>
@@ -242,112 +258,16 @@ export function OrdersList({
                               </TableRow>
                             ))
                           : visibleOrders.map((order) => (
-                              <TableRow
+                              <OrdersTableRow
                                 key={order.id}
-                                className="group/order-row h-18 hover:bg-muted"
-                              >
-                                <TableCell className="sticky left-0 z-10 border-r bg-card py-2 pl-5 group-hover/order-row:bg-muted">
-                                  <Button
-                                    variant="link"
-                                    className="block h-auto max-w-full truncate p-0 font-medium text-foreground"
-                                    title={order.id}
-                                    aria-label={t('orders.viewOrder', { id: order.id })}
-                                    onClick={(event) => {
-                                      onView(order.id, event.currentTarget)
-                                    }}
-                                  >
-                                    {order.id}
-                                  </Button>
-                                </TableCell>
-                                <TableCell>
-                                  <HStack className="min-w-0 gap-3">
-                                    <ProfileAvatar
-                                      name={order.customer.name}
-                                      src={order.customer.avatarUrl}
-                                      initials={order.customer.initials}
-                                      className="size-8 shrink-0"
-                                      fallbackClassName="text-xs font-medium"
-                                    />
-                                    <VStack align="stretch" className="min-w-0 flex-1">
-                                      <p
-                                        className="truncate font-medium"
-                                        title={order.customer.name}
-                                      >
-                                        {order.customer.name}
-                                      </p>
-                                      <p
-                                        className="truncate text-xs text-muted-foreground"
-                                        title={order.customer.email}
-                                      >
-                                        {order.customer.email}
-                                      </p>
-                                    </VStack>
-                                  </HStack>
-                                </TableCell>
-                                <TableCell>
-                                  <OrderStatusBadge status={order.status} />
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {t(`orders.paymentStatus.${order.payment}`)}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground">
-                                  {formatDate(order.date, { year: 'numeric' })}
-                                </TableCell>
-                                <TableCell className="pr-5 text-right font-medium wrap-anywhere whitespace-normal tabular-nums">
-                                  {formatMoney(orderTotal(order) / 100)}
-                                </TableCell>
-                                <TableCell className="sticky right-0 z-10 border-l bg-card pr-5 group-hover/order-row:bg-muted">
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        aria-label={editor('actions', { id: order.id })}
-                                        onFocus={(event) => {
-                                          actionTrigger.current = event.currentTarget
-                                        }}
-                                        onPointerDown={(event) => {
-                                          actionTrigger.current = event.currentTarget
-                                        }}
-                                      >
-                                        <MoreHorizontal aria-hidden="true" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent
-                                      align="end"
-                                      onCloseAutoFocus={(event) => {
-                                        if (hasOpenDialog) event.preventDefault()
-                                      }}
-                                    >
-                                      <DropdownMenuItem
-                                        onSelect={() => {
-                                          onView(order.id, actionTrigger.current)
-                                        }}
-                                      >
-                                        {editor('view')}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onSelect={() => {
-                                          onEdit(order)
-                                        }}
-                                      >
-                                        <Pencil aria-hidden="true" />
-                                        {editor('edit')}
-                                      </DropdownMenuItem>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        variant="destructive"
-                                        onSelect={() => {
-                                          onDelete(order)
-                                        }}
-                                      >
-                                        <Trash2 aria-hidden="true" />
-                                        {editor('remove')}
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </TableCell>
-                              </TableRow>
+                                order={order}
+                                view={view}
+                                actionTrigger={actionTrigger}
+                                hasOpenDialog={hasOpenDialog}
+                                onView={onView}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                              />
                             ))}
                         {!isLoading &&
                           Array.from(
@@ -358,7 +278,7 @@ export function OrdersList({
                                 className="h-18 hover:bg-transparent"
                                 aria-hidden="true"
                               >
-                                <TableCell colSpan={orderTableColumnCount} />
+                                <TableCell colSpan={view.visibleColumns.length} />
                               </TableRow>
                             ),
                           )}

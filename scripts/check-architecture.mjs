@@ -157,6 +157,66 @@ function knownHeaderSpread(node, values, seen = new Set()) {
   })
 }
 
+const tableGeometryProperties = new Map([
+  ['table', new Set(['width'])],
+  ['col', new Set(['width'])],
+  ['th', new Set(['left', 'right'])],
+  ['td', new Set(['left', 'right'])],
+])
+
+// This exception proves the tag/property boundary, not arbitrary runtime numeric expressions.
+function knownTableGeometry(node, tags, values, seen = new Set()) {
+  if (!tags.length || tags.some((tag) => !tableGeometryProperties.has(tag))) return false
+  node = values.resolve(node)
+  if (!node || seen.has(node)) return false
+  if (ts.isIdentifier(node) && node.text === 'undefined' && !values.binding(node)) return true
+  const next = new Set(seen).add(node)
+  if (ts.isConditionalExpression(node)) {
+    return (
+      knownTableGeometry(node.whenTrue, tags, values, next) &&
+      knownTableGeometry(node.whenFalse, tags, values, next)
+    )
+  }
+  if (!ts.isObjectLiteralExpression(node)) return false
+  // Spreads/accessors/methods could introduce properties that the object-value reader omits.
+  if (
+    node.properties.some(
+      (property) =>
+        !ts.isPropertyAssignment(property) && !ts.isShorthandPropertyAssignment(property),
+    )
+  )
+    return false
+  const properties = values.properties(node)
+  if (properties.size !== node.properties.length) return false
+  return [...properties.values()].every((property) => {
+    const value = values.resolve(property.value)
+    return (
+      tags.every((tag) => tableGeometryProperties.get(tag).has(property.name)) &&
+      !(value && ts.isStringLiteralLike(value))
+    )
+  })
+}
+
+function hasOpaqueStyleOverride(node, values) {
+  let hasStyle = false
+  let opaqueOverride = false
+  for (const attribute of node.attributes.properties) {
+    if (ts.isJsxAttribute(attribute) && attribute.name.text === 'style') {
+      hasStyle = true
+      opaqueOverride = false
+    } else if (ts.isJsxSpreadAttribute(attribute)) {
+      const known = knownHeaderSpread(attribute.expression, values)
+      if (values.properties(attribute.expression).has('style')) {
+        hasStyle = true
+        opaqueOverride = !known
+      } else if (hasStyle && !known) {
+        opaqueOverride = true
+      }
+    }
+  }
+  return opaqueOverride
+}
+
 // Follow values that can reach className, rather than arbitrary strings in conditions or callbacks.
 function classStrings(node, values, seen = new Set()) {
   node = values.resolve(node)
@@ -859,12 +919,24 @@ export function checkFile(filename, contents) {
           }
         }
         if (colorProperties.has(attribute.name)) inspectColor(attribute.value, attribute.node)
-        if (!inlineStyleFiles.has(file) && attribute.name === 'style') {
-          report(
-            'inline-style',
-            'inline style 대신 Tailwind 유틸리티를 사용하세요.',
-            location(source, attribute.node),
-          )
+        if (attribute.name === 'style') {
+          if (!inlineStyleFiles.has(file)) {
+            report(
+              'inline-style',
+              'inline style 대신 Tailwind 유틸리티를 사용하세요.',
+              location(source, attribute.node),
+            )
+          } else if (
+            file === 'shared/ui/table.tsx' &&
+            (!knownTableGeometry(attribute.value, tags, values) ||
+              hasOpaqueStyleOverride(node, values))
+          ) {
+            report(
+              'table-geometry-style',
+              'Table inline style은 table/col의 숫자 width와 th/td의 숫자 left/right만 허용합니다. 정적 객체 키와 검증 가능한 조건 분기를 사용하세요.',
+              location(source, attribute.node),
+            )
+          }
         }
         if (
           !nativeControlFiles.has(file) &&
