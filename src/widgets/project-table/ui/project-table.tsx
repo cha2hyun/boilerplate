@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-table'
 import type { Project } from '@/entities/project'
 import { ProjectDeleteDialog, ProjectEditorDialog } from '@/features/project-editor'
+import { useTableView, type TableViewColumn } from '@/features/table-view'
 import { useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
 import { Card, CardContent } from '@/shared/ui/card'
@@ -61,6 +62,19 @@ export function ProjectTable({
     () => ({ pageIndex: search.page - 1, pageSize: compact ? 5 : search.pageSize }),
     [search.page, search.pageSize, compact],
   )
+  const viewColumns = useMemo<TableViewColumn[]>(
+    () => [
+      { id: 'select', label: t('table.selectAll'), width: 64, locked: true, pin: 'left' },
+      { id: 'name', label: t('table.project'), width: 320, minWidth: 240, hideable: false },
+      { id: 'status', label: t('common.status'), width: 160, minWidth: 160 },
+      { id: 'owner', label: t('table.owner'), width: 224, minWidth: 192 },
+      { id: 'progress', label: t('table.progress'), width: 192, minWidth: 192 },
+      { id: 'updatedAt', label: t('table.updated'), width: 208, minWidth: 208 },
+      { id: 'actions', label: t('table.actions'), width: 64, locked: true, pin: 'right' },
+    ],
+    [t],
+  )
+  const view = useTableView('projects', viewColumns)
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = useState({})
   const [editSession, setEditSession] = useState<{ project: Project; detail: string } | null>(null)
@@ -112,7 +126,7 @@ export function ProjectTable({
       sorting,
       pagination,
       columnFilters,
-      columnVisibility: compact ? { ...columnVisibility, updatedAt: false } : columnVisibility,
+      ...(compact ? { columnVisibility: { ...columnVisibility, updatedAt: false } } : view.state),
       rowSelection,
       globalFilter: search.q,
     },
@@ -133,7 +147,18 @@ export function ProjectTable({
         pageSize: projectTableSearchSchema.shape.pageSize.parse(next.pageSize),
       })
     },
-    onColumnVisibilityChange: setColumnVisibility,
+    onColumnVisibilityChange: (updater) => {
+      if (compact) {
+        setColumnVisibility(updater)
+        return
+      }
+      const next = functionalUpdate(updater, view.state.columnVisibility)
+      for (const column of view.columns) {
+        if (next[column.id] !== view.state.columnVisibility[column.id]) {
+          view.setVisibility(column.id, next[column.id] !== false)
+        }
+      }
+    },
     onRowSelectionChange: setRowSelection,
     globalFilterFn: (row, _columnId, value: string) =>
       [
@@ -197,6 +222,7 @@ export function ProjectTable({
         <ProjectTableToolbar
           table={table}
           compact={compact}
+          view={compact ? undefined : view}
           projectCount={hasData ? projects.length : undefined}
           search={search}
           onSearchChange={onSearchChange}
@@ -212,6 +238,7 @@ export function ProjectTable({
           <ProjectTableViewport
             table={table}
             compact={compact}
+            view={compact ? undefined : view}
             showLoading={showLoading}
             showError={showError}
             hasFilters={hasFilters}

@@ -1,4 +1,33 @@
 export default {
+  tableView: {
+    title: 'View settings',
+    description:
+      'Changes apply immediately to this table and are saved in this browser when storage is available.',
+    density: 'Row spacing',
+    compact: 'Compact',
+    default: 'Default',
+    comfortable: 'Comfortable',
+    columns: 'Columns',
+    show: 'Show {{column}}',
+    pin: 'Pin column',
+    pinColumn: 'Pin {{column}}',
+    none: 'None',
+    left: 'Left',
+    right: 'Right',
+    width: 'Width (px)',
+    widthOf: 'Width of {{column}}',
+    earlier: 'Move {{column}} earlier',
+    later: 'Move {{column}} later',
+    move: 'Move {{column}}',
+    resize: 'Resize {{column}}',
+    moveHint:
+      'Drag to another column in the same pinned group, or use the left and right arrow keys.',
+    resizeHint: 'Drag to resize, use the arrow keys, or press Home to restore the default width.',
+    dropAt: 'Release to move to {{column}}',
+    hint: 'Columns move within their pinned group. Fixed selection and action columns stay in place. Pinning pauses when the table is too narrow to leave room for scrolling content.',
+    reset: 'Restore defaults',
+    done: 'Done',
+  },
   demoStorage: {
     sessionOnly:
       'Some demo changes are kept only in this tab because browser storage is unavailable. They may be lost when you reload or close this tab.',

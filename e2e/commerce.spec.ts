@@ -346,7 +346,7 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
         }
       })
       expect(rightEdge.right).toBeLessThanOrEqual(rightEdge.limit + 1)
-      const pinnedOrder = table.getByRole('button').first()
+      const pinnedOrder = table.getByRole('button', { name: 'View order ORD-1042', exact: true })
       const pinnedBounds = await pinnedOrder.evaluate((element) => {
         const viewport = element.closest('[data-slot="table-container"]')
         if (!viewport) throw new Error('The order has no scroll container.')
@@ -362,7 +362,7 @@ test('keeps commerce tables and detail sheets inside the viewport', async ({ pag
       await page.getByRole('menuitemradio', { name: 'Korean won (KRW)', exact: true }).click()
       await region.getByRole('button', { name: 'View customer Lana Steiner', exact: true }).click()
     } else {
-      await region.getByRole('button').first().click()
+      await region.getByRole('button', { name: 'View order ORD-1042', exact: true }).click()
     }
     const sheet = page.getByRole('dialog')
     await expect(sheet).toBeVisible()
@@ -1301,4 +1301,210 @@ test('accepts one concurrent order write per revision across two tabs', async ({
     revision: 2,
     history: [{ field: 'status', from: 'Processing', to: winner.status }],
   })
+})
+
+test('persists commerce table views independently and resets only the current table', async ({
+  page,
+}) => {
+  const ordersUrl = '/orders?q=ORD-1042&pageSize=12'
+  const customersUrl = '/customers?q=Olivia'
+  await page.goto(ordersUrl)
+  const orders = page.getByRole('region', { name: 'Orders table', exact: true })
+  const orderTable = orders.getByRole('table')
+  const orderRow = orderTable.locator('tbody tr:not([aria-hidden="true"])').first()
+  await expect(
+    orders.getByRole('button', { name: 'View order ORD-1042', exact: true }),
+  ).toBeVisible()
+  const queryBefore = new URL(page.url()).search
+  const defaultRowHeight = await orderRow.evaluate((row) => row.getBoundingClientRect().height)
+  const frameHeight = await orders.evaluate((frame) => frame.getBoundingClientRect().height)
+
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: 'View settings', exact: true })
+  await settings.getByRole('combobox', { name: 'Row spacing', exact: true }).click()
+  await page.getByRole('option', { name: 'Compact', exact: true }).click()
+  await settings.getByRole('checkbox', { name: 'Show Payment', exact: true }).uncheck()
+  const width = settings.getByRole('spinbutton', { name: 'Width of Customer', exact: true })
+  await width.fill('272')
+  await width.press('Tab')
+  await settings.getByRole('combobox', { name: 'Pin Status', exact: true }).click()
+  await page.getByRole('option', { name: 'Left', exact: true }).click()
+  await settings.getByRole('button', { name: 'Move Total earlier', exact: true }).click()
+  await settings.getByRole('button', { name: 'Done', exact: true }).click()
+
+  const expectedColumns = ['id', 'status', 'customer', 'total', 'date', 'actions']
+  const columnIds = (table: Locator) =>
+    table
+      .getByRole('columnheader')
+      .evaluateAll((headers) => headers.map((header) => header.getAttribute('data-column-id')))
+  await expect.poll(() => columnIds(orderTable)).toEqual(expectedColumns)
+  await expect
+    .poll(() =>
+      orderRow
+        .getByRole('cell')
+        .evaluateAll((cells) => cells.map((cell) => cell.getAttribute('data-column-id'))),
+    )
+    .toEqual(expectedColumns)
+  await expect(orderTable).toHaveAttribute('data-density', 'compact')
+  await expect(orderTable.getByRole('columnheader', { name: 'Payment', exact: true })).toHaveCount(
+    0,
+  )
+  await expect
+    .poll(() => orderRow.evaluate((row) => row.getBoundingClientRect().height))
+    .toBeLessThan(defaultRowHeight)
+  expect(await orders.evaluate((frame) => frame.getBoundingClientRect().height)).toBeCloseTo(
+    frameHeight,
+    0,
+  )
+  expect(new URL(page.url()).search).toBe(queryBefore)
+
+  await page.reload()
+  await expect(orderTable).toHaveAttribute('data-density', 'compact')
+  await expect.poll(() => columnIds(orderTable)).toEqual(expectedColumns)
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  await expect(
+    settings.getByRole('spinbutton', { name: 'Width of Customer', exact: true }),
+  ).toHaveValue('272')
+  await expect(settings.getByRole('combobox', { name: 'Pin Status', exact: true })).toHaveText(
+    'Left',
+  )
+  await settings.getByRole('button', { name: 'Done', exact: true }).click()
+
+  await page.goto(customersUrl)
+  const customers = page.getByRole('region', { name: 'Customers table', exact: true })
+  const customerTable = customers.getByRole('table')
+  await expect(
+    customers.getByRole('button', { name: 'View customer Olivia Rhye', exact: true }),
+  ).toBeVisible()
+  await expect(customerTable).toHaveAttribute('data-density', 'default')
+  await expect(
+    customerTable.getByRole('columnheader', { name: 'Location', exact: true }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  await settings.getByRole('combobox', { name: 'Row spacing', exact: true }).click()
+  await page.getByRole('option', { name: 'Comfortable', exact: true }).click()
+  await settings.getByRole('checkbox', { name: 'Show Location', exact: true }).uncheck()
+  await settings.getByRole('button', { name: 'Done', exact: true }).click()
+
+  await page.goto(ordersUrl)
+  await expect(orderTable).toHaveAttribute('data-density', 'compact')
+  await expect(orderTable.getByRole('columnheader', { name: 'Payment', exact: true })).toHaveCount(
+    0,
+  )
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  await settings.getByRole('button', { name: 'Restore defaults', exact: true }).click()
+  await settings.getByRole('button', { name: 'Done', exact: true }).click()
+  await expect(orderTable).toHaveAttribute('data-density', 'default')
+  await expect
+    .poll(() => columnIds(orderTable))
+    .toEqual(['id', 'customer', 'status', 'payment', 'date', 'total', 'actions'])
+  expect(new URL(page.url()).search).toBe(queryBefore)
+
+  await page.goto(customersUrl)
+  await expect(customerTable).toHaveAttribute('data-density', 'comfortable')
+  await expect(
+    customerTable.getByRole('columnheader', { name: 'Location', exact: true }),
+  ).toHaveCount(0)
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  await settings.getByRole('button', { name: 'Restore defaults', exact: true }).click()
+  await settings.getByRole('button', { name: 'Done', exact: true }).click()
+  await expect(customerTable).toHaveAttribute('data-density', 'default')
+  await expect(
+    customerTable.getByRole('columnheader', { name: 'Location', exact: true }),
+  ).toBeVisible()
+})
+
+test('moves commerce columns with a header drag and resizes them with the keyboard', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'desktop',
+    'Pointer dragging complements the settings controls covered at every viewport.',
+  )
+  await page.goto('/customers')
+  const region = page.getByRole('region', { name: 'Customers table', exact: true })
+  const table = region.getByRole('table')
+  await expect(
+    region.getByRole('button', { name: 'View customer Olivia Rhye', exact: true }),
+  ).toBeVisible()
+  await table
+    .getByRole('button', { name: 'Move Total spent', exact: true })
+    .dragTo(table.getByRole('button', { name: 'Move Orders', exact: true }))
+  await expect
+    .poll(() =>
+      table
+        .getByRole('columnheader')
+        .evaluateAll((headers) => headers.map((header) => header.getAttribute('data-column-id'))),
+    )
+    .toEqual(['customer', 'status', 'location', 'spent', 'orders', 'joined', 'actions'])
+
+  const moveOrders = table.getByRole('button', { name: 'Move Orders', exact: true })
+  await moveOrders.focus()
+  await moveOrders.press('ArrowRight')
+  await expect(moveOrders).toBeFocused()
+  await expect
+    .poll(() =>
+      table
+        .getByRole('columnheader')
+        .evaluateAll((headers) => headers.map((header) => header.getAttribute('data-column-id'))),
+    )
+    .toEqual(['customer', 'status', 'location', 'spent', 'joined', 'orders', 'actions'])
+  await moveOrders.press('ArrowLeft')
+  await expect(moveOrders).toBeFocused()
+  await expect
+    .poll(() =>
+      table
+        .getByRole('columnheader')
+        .evaluateAll((headers) => headers.map((header) => header.getAttribute('data-column-id'))),
+    )
+    .toEqual(['customer', 'status', 'location', 'spent', 'orders', 'joined', 'actions'])
+
+  const status = table.getByRole('columnheader', { name: 'Status', exact: true })
+  const previousWidth = await status.evaluate((header) => header.getBoundingClientRect().width)
+  const resize = table.getByRole('button', { name: 'Resize Status', exact: true })
+  await resize.focus()
+  await resize.press('ArrowRight')
+  await expect(resize).toBeFocused()
+  await expect
+    .poll(() => status.evaluate((header) => header.getBoundingClientRect().width))
+    .toBeGreaterThan(previousWidth)
+  const committedWidth = await status.evaluate((header) => header.getBoundingClientRect().width)
+  const savedView = await page.evaluate((key) => localStorage.getItem(key), storageKeys.tableViews)
+  const handle = await resize.boundingBox()
+  if (!handle) throw new Error('The status resize handle is missing.')
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+  await page.mouse.down()
+  try {
+    await page.mouse.move(handle.x + handle.width / 2 + 64, handle.y + handle.height / 2, {
+      steps: 4,
+    })
+    await expect
+      .poll(() => status.evaluate((header) => header.getBoundingClientRect().width))
+      .toBeGreaterThan(committedWidth)
+    // Resizing previews must not persist an unfinished pointer gesture.
+    expect(await page.evaluate((key) => localStorage.getItem(key), storageKeys.tableViews)).toBe(
+      savedView,
+    )
+    await page.keyboard.press('Escape')
+    await expect
+      .poll(() => status.evaluate((header) => header.getBoundingClientRect().width))
+      .toBeCloseTo(committedWidth, 0)
+  } finally {
+    await page.mouse.up()
+  }
+  expect(await page.evaluate((key) => localStorage.getItem(key), storageKeys.tableViews)).toBe(
+    savedView,
+  )
+  await expect(resize).toBeFocused()
+  await page.reload()
+  await expect
+    .poll(() => status.evaluate((header) => header.getBoundingClientRect().width))
+    .toBeCloseTo(committedWidth, 0)
+  await expect
+    .poll(() =>
+      table
+        .getByRole('columnheader')
+        .evaluateAll((headers) => headers.map((header) => header.getAttribute('data-column-id'))),
+    )
+    .toEqual(['customer', 'status', 'location', 'spent', 'orders', 'joined', 'actions'])
 })

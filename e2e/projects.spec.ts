@@ -260,12 +260,12 @@ test('searches owners and projects, filters status, resets empty results, and ch
   await page.getByRole('button', { name: 'Reset', exact: true }).click()
   await expect(search).toBeFocused()
 
-  await page.getByRole('button', { name: 'View', exact: true }).click()
-  await page.getByRole('menuitemcheckbox', { name: 'Owner', exact: true }).click()
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  await page.getByRole('checkbox', { name: 'Show Owner', exact: true }).click()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('columnheader', { name: 'Owner', exact: true })).toHaveCount(0)
-  await page.getByRole('button', { name: 'View', exact: true }).click()
-  await page.getByRole('menuitemcheckbox', { name: 'Owner', exact: true }).click()
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  await page.getByRole('checkbox', { name: 'Show Owner', exact: true }).click()
   await page.keyboard.press('Escape')
   await expect(page.getByRole('columnheader', { name: 'Owner', exact: true })).toBeVisible()
 
@@ -310,6 +310,112 @@ test('searches owners and projects, filters status, resets empty results, and ch
   ).toHaveAttribute('aria-sort', 'descending')
   await expect(page.getByRole('button', { name: 'Website redesign', exact: true })).toBeVisible()
   await expect(page.getByText('Page 1 of 1', { exact: true })).toBeVisible()
+})
+
+test('persists project table views and restores defaults without changing list queries', async ({
+  page,
+}) => {
+  await page.goto('/projects?q=Phoenix&sort=progress&pageSize=16')
+  const table = page.getByRole('table', { name: 'Projects', exact: true })
+  await expect(page.getByRole('button', { name: 'Mobile app launch', exact: true })).toBeVisible()
+  const queryBefore = new URL(page.url()).search
+  const defaultNameWidth = await table
+    .locator('th[data-column-id="name"]')
+    .evaluate((element) => element.getBoundingClientRect().width)
+  const defaultRowHeight = await table
+    .locator('tbody tr')
+    .first()
+    .evaluate((element) => element.getBoundingClientRect().height)
+
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: 'View settings', exact: true })
+  await settings.getByRole('checkbox', { name: 'Show Owner', exact: true }).uncheck()
+  await settings.getByRole('combobox', { name: 'Row spacing', exact: true }).click()
+  await page.getByRole('option', { name: 'Compact', exact: true }).click()
+  await settings.getByRole('combobox', { name: 'Pin Progress', exact: true }).click()
+  await page.getByRole('option', { name: 'Left', exact: true }).click()
+  await settings.getByRole('button', { name: 'Move Project later', exact: true }).click()
+  const width = settings.getByRole('spinbutton', { name: 'Width of Project', exact: true })
+  await width.fill('400')
+  await width.press('Tab')
+  await page.keyboard.press('Escape')
+  await expect(settings).toBeHidden()
+  await expect(table.getByRole('columnheader', { name: 'Owner', exact: true })).toHaveCount(0)
+  const columns = table.locator('thead th')
+  const customizedOrder = await columns.evaluateAll((headers) =>
+    headers.map((header) => header.getAttribute('data-column-id')),
+  )
+  expect(customizedOrder).toEqual(['select', 'progress', 'status', 'name', 'updatedAt', 'actions'])
+  await expect
+    .poll(() =>
+      table
+        .locator('th[data-column-id="name"]')
+        .evaluate((element) => element.getBoundingClientRect().width),
+    )
+    .toBeCloseTo(400, 0)
+  await expect
+    .poll(() =>
+      table
+        .locator('tbody tr')
+        .first()
+        .evaluate((element) => element.getBoundingClientRect().height),
+    )
+    .toBeLessThan(defaultRowHeight)
+  expect(new URL(page.url()).search).toBe(queryBefore)
+
+  await page.reload()
+  await expect(table.getByRole('columnheader', { name: 'Owner', exact: true })).toHaveCount(0)
+  await expect
+    .poll(() =>
+      columns.evaluateAll((headers) =>
+        headers.map((header) => header.getAttribute('data-column-id')),
+      ),
+    )
+    .toEqual(customizedOrder)
+  await expect
+    .poll(() =>
+      table
+        .locator('th[data-column-id="name"]')
+        .evaluate((element) => element.getBoundingClientRect().width),
+    )
+    .toBeCloseTo(400, 0)
+
+  await page.goto('/')
+  await expect(page.getByRole('button', { name: 'View settings', exact: true })).toHaveCount(0)
+  const recent = page.getByRole('table', { name: 'Recent projects', exact: true })
+  await expect(recent.getByRole('columnheader', { name: 'Owner', exact: true })).toBeVisible()
+  await expect(recent.getByRole('columnheader', { name: 'Last updated', exact: true })).toHaveCount(
+    0,
+  )
+
+  await page.goto(`/projects${queryBefore}`)
+  await page.getByRole('button', { name: 'View settings', exact: true }).click()
+  await settings.getByRole('button', { name: 'Restore defaults', exact: true }).click()
+  await page.keyboard.press('Escape')
+  await expect(table.getByRole('columnheader', { name: 'Owner', exact: true })).toBeVisible()
+  await expect
+    .poll(() =>
+      columns.evaluateAll((headers) =>
+        headers.map((header) => header.getAttribute('data-column-id')),
+      ),
+    )
+    .toEqual(['select', 'name', 'status', 'owner', 'progress', 'updatedAt', 'actions'])
+  await expect
+    .poll(() =>
+      table
+        .locator('th[data-column-id="name"]')
+        .evaluate((element) => element.getBoundingClientRect().width),
+    )
+    .toBeCloseTo(defaultNameWidth, 0)
+  await expect
+    .poll(() =>
+      table
+        .locator('tbody tr')
+        .first()
+        .evaluate((element) => element.getBoundingClientRect().height),
+    )
+    .toBeCloseTo(defaultRowHeight, 0)
+  expect(new URL(page.url()).search).toBe(queryBefore)
 })
 
 test('keeps project validation and save controls reachable in a short viewport', async ({

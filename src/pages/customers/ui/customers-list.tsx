@@ -1,6 +1,14 @@
 import { customerStatuses, type SampleCustomer } from '@/entities/customer'
+import {
+  TableColumnControls,
+  TableViewSettings,
+  useTableView,
+  type TableViewColumn,
+} from '@/features/table-view'
+import { useIsMobile } from '@/shared/hooks/use-mobile'
 import { useErrorMessage, useFormatters, useTranslation } from '@/shared/lib/i18n'
 import type { SearchChange } from '@/shared/lib/search-params'
+import { cn } from '@/shared/lib/utils'
 import { ProfileAvatar } from '@/shared/ui/profile-avatar'
 import { Button } from '@/shared/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/card'
@@ -69,9 +77,122 @@ export function CustomersList({
     visible: visibleCustomers,
   } = selection
   const hasFilters = q !== '' || status !== 'all' || sort !== 'newest'
+  const isMobile = useIsMobile()
+  const columns: TableViewColumn[] = [
+    {
+      id: 'customer',
+      label: t('common.customer'),
+      width: isMobile ? 128 : 224,
+      minWidth: 128,
+      hideable: false,
+      pin: 'left',
+    },
+    { id: 'status', label: t('common.status'), width: 104, minWidth: 96 },
+    { id: 'location', label: t('customers.location'), width: 144, minWidth: 112 },
+    { id: 'orders', label: t('customers.orders'), width: 104, minWidth: 96 },
+    { id: 'spent', label: t('customers.spent'), width: 128, minWidth: 112 },
+    { id: 'joined', label: t('customers.joined'), width: 128, minWidth: 112 },
+    { id: 'actions', label: editorT('actions'), width: 64, locked: true, pin: 'right' },
+  ]
+  const view = useTableView('customers', columns)
+  const cellClasses: Record<string, string> = {
+    customer: 'py-2 pl-5',
+    location: 'wrap-anywhere whitespace-normal text-muted-foreground',
+    orders: 'text-right wrap-anywhere whitespace-normal tabular-nums',
+    spent: 'text-right font-medium wrap-anywhere whitespace-normal tabular-nums',
+    joined: 'wrap-anywhere whitespace-normal text-muted-foreground',
+    actions: 'pr-5',
+  }
   function resetFilters() {
     onSearchChange({ ...customersSearchDefaults, pageSize, detail: search.detail })
     requestAnimationFrame(() => searchRef.current?.focus())
+  }
+  function renderCell(customer: SampleCustomer, columnId: string) {
+    switch (columnId) {
+      case 'customer':
+        return (
+          <HStack className="min-w-0 gap-3">
+            <ProfileAvatar
+              name={customer.name}
+              src={customer.avatarUrl}
+              initials={customer.initials}
+              className="hidden size-8 shrink-0 md:flex"
+              fallbackClassName="text-xs font-medium"
+            />
+            <VStack align="stretch" className="min-w-0 flex-1">
+              <Button
+                variant="link"
+                className="block h-auto max-w-full truncate p-0 text-left font-medium text-foreground"
+                title={customer.name}
+                aria-label={t('customers.viewCustomer', { name: customer.name })}
+                onClick={(event) => {
+                  onView(customer.id, event.currentTarget)
+                }}
+              >
+                {customer.name}
+              </Button>
+              <p className="truncate text-xs text-muted-foreground" title={customer.email}>
+                {customer.email}
+              </p>
+            </VStack>
+          </HStack>
+        )
+      case 'status':
+        return <CustomerStatusBadge status={customer.status} />
+      case 'location':
+        return customer.country
+      case 'orders':
+        return formatNumber(customer.orders)
+      case 'spent':
+        return formatMoney(customer.spent / 100)
+      case 'joined':
+        return formatDate(customer.joined, { year: 'numeric' })
+      case 'actions':
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                aria-label={editorT('actionsLabel', { name: customer.name })}
+                onFocus={(event) => {
+                  actionTrigger.current = event.currentTarget
+                }}
+                onPointerDown={(event) => {
+                  actionTrigger.current = event.currentTarget
+                }}
+              >
+                <MoreHorizontal aria-hidden="true" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              onCloseAutoFocus={(event) => {
+                if (hasOpenDialog) event.preventDefault()
+              }}
+            >
+              <DropdownMenuItem
+                onSelect={() => {
+                  onEdit(customer)
+                }}
+              >
+                <Pencil aria-hidden="true" /> {editorT('edit')}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                onSelect={() => {
+                  onDelete(customer)
+                }}
+              >
+                <Trash2 aria-hidden="true" /> {editorT('remove')}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      default:
+        return null
+    }
   }
   return (
     <Card className="min-w-0 gap-5 overflow-hidden shadow-none" aria-busy={isLoading}>
@@ -145,6 +266,7 @@ export function CustomersList({
                 ))}
               </SelectContent>
             </Select>
+            <TableViewSettings view={view} />
             {hasFilters && (
               <Button variant="ghost" size="sm" onClick={resetFilters}>
                 <X aria-hidden="true" />
@@ -155,7 +277,10 @@ export function CustomersList({
           {isLoading || visibleCustomers.length ? (
             <div className="h-120 min-w-0 border-y">
               <Table
-                className="min-w-[800px] table-fixed md:min-w-[896px]"
+                className="table-fixed"
+                columnWidths={view.columnWidths}
+                density={view.density}
+                pinnedWidth={view.pinnedWidth}
                 containerProps={{
                   role: 'region',
                   'aria-label': t('customers.table'),
@@ -165,36 +290,45 @@ export function CustomersList({
                     'h-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring',
                 }}
               >
-                <colgroup>
-                  <col className="w-[128px] md:w-[224px]" />
-                  <col className="w-[104px]" />
-                  <col className="w-[144px]" />
-                  <col className="w-[88px]" />
-                  <col className="w-[128px]" />
-                  <col className="w-[128px]" />
-                  <col className="w-[72px]" />
-                </colgroup>
                 <TableHeader>
                   <TableRow className="bg-muted/30 hover:bg-muted/30">
-                    <TableHead className="sticky left-0 z-10 border-r bg-muted pl-5">
-                      {t('common.customer')}
-                    </TableHead>
-                    <TableHead>{t('common.status')}</TableHead>
-                    <TableHead>{t('customers.location')}</TableHead>
-                    <TableHead className="text-right">{t('customers.orders')}</TableHead>
-                    <TableHead className="text-right">{t('customers.spent')}</TableHead>
-                    <TableHead>{t('customers.joined')}</TableHead>
-                    <TableHead className="sticky right-0 z-10 border-l bg-card">
-                      <span className="sr-only">{editorT('actions')}</span>
-                    </TableHead>
+                    {view.visibleColumns.map((column) => (
+                      <TableHead
+                        key={column.id}
+                        data-column-id={column.id}
+                        layout={view.getLayout(column.id)}
+                        aria-label={column.label}
+                        className={cn(
+                          'bg-muted',
+                          column.id === 'customer' && 'pl-5',
+                          (column.id === 'orders' || column.id === 'spent') && 'text-right',
+                        )}
+                      >
+                        {column.id === 'actions' ? (
+                          <span className="sr-only">{column.label}</span>
+                        ) : (
+                          <HStack justify="between" className="min-w-0 gap-1">
+                            <span className="min-w-0 wrap-anywhere whitespace-normal">
+                              {column.label}
+                            </span>
+                            <TableColumnControls view={view} columnId={column.id} />
+                          </HStack>
+                        )}
+                      </TableHead>
+                    ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading
                     ? Array.from({ length: 6 }, (_, index) => (
                         <TableRow key={index} className="h-18" aria-hidden="true">
-                          {Array.from({ length: 7 }, (_, cell) => (
-                            <TableCell key={cell} className="px-5">
+                          {view.visibleColumns.map((column) => (
+                            <TableCell
+                              key={column.id}
+                              data-column-id={column.id}
+                              layout={view.getLayout(column.id)}
+                              className="bg-card px-5"
+                            >
                               <Skeleton className="h-4 w-full max-w-28" />
                             </TableCell>
                           ))}
@@ -202,95 +336,19 @@ export function CustomersList({
                       ))
                     : visibleCustomers.map((customer) => (
                         <TableRow key={customer.id} className="group/customer-row h-18">
-                          <TableCell className="sticky left-0 z-10 border-r bg-card py-2 pl-5 group-hover/customer-row:bg-muted">
-                            <HStack className="min-w-0 gap-3">
-                              <ProfileAvatar
-                                name={customer.name}
-                                src={customer.avatarUrl}
-                                initials={customer.initials}
-                                className="hidden size-8 shrink-0 md:flex"
-                                fallbackClassName="text-xs font-medium"
-                              />
-                              <VStack align="stretch" className="min-w-0 flex-1">
-                                <Button
-                                  variant="link"
-                                  className="block h-auto max-w-full truncate p-0 text-left font-medium text-foreground"
-                                  title={customer.name}
-                                  aria-label={t('customers.viewCustomer', {
-                                    name: customer.name,
-                                  })}
-                                  onClick={(event) => {
-                                    onView(customer.id, event.currentTarget)
-                                  }}
-                                >
-                                  {customer.name}
-                                </Button>
-                                <p
-                                  className="truncate text-xs text-muted-foreground"
-                                  title={customer.email}
-                                >
-                                  {customer.email}
-                                </p>
-                              </VStack>
-                            </HStack>
-                          </TableCell>
-                          <TableCell>
-                            <CustomerStatusBadge status={customer.status} />
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {customer.country}
-                          </TableCell>
-                          <TableCell className="text-right wrap-anywhere whitespace-normal tabular-nums">
-                            {formatNumber(customer.orders)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium wrap-anywhere whitespace-normal tabular-nums">
-                            {formatMoney(customer.spent / 100)}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {formatDate(customer.joined, { year: 'numeric' })}
-                          </TableCell>
-                          <TableCell className="sticky right-0 z-10 border-l bg-card pr-5 group-hover/customer-row:bg-muted">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="size-8"
-                                  aria-label={editorT('actionsLabel', { name: customer.name })}
-                                  onFocus={(event) => {
-                                    actionTrigger.current = event.currentTarget
-                                  }}
-                                  onPointerDown={(event) => {
-                                    actionTrigger.current = event.currentTarget
-                                  }}
-                                >
-                                  <MoreHorizontal aria-hidden="true" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                onCloseAutoFocus={(event) => {
-                                  if (hasOpenDialog) event.preventDefault()
-                                }}
-                              >
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    onEdit(customer)
-                                  }}
-                                >
-                                  <Pencil aria-hidden="true" /> {editorT('edit')}
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  variant="destructive"
-                                  onSelect={() => {
-                                    onDelete(customer)
-                                  }}
-                                >
-                                  <Trash2 aria-hidden="true" /> {editorT('remove')}
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
+                          {view.visibleColumns.map((column) => (
+                            <TableCell
+                              key={column.id}
+                              data-column-id={column.id}
+                              layout={view.getLayout(column.id)}
+                              className={cn(
+                                'bg-card group-hover/customer-row:bg-muted',
+                                cellClasses[column.id],
+                              )}
+                            >
+                              {renderCell(customer, column.id)}
+                            </TableCell>
+                          ))}
                         </TableRow>
                       ))}
                   {!isLoading &&
@@ -300,7 +358,7 @@ export function CustomersList({
                         className="h-18 hover:bg-transparent"
                         aria-hidden="true"
                       >
-                        <TableCell colSpan={7} />
+                        <TableCell colSpan={view.visibleColumns.length} />
                       </TableRow>
                     ))}
                 </TableBody>

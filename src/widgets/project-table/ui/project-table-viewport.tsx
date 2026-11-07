@@ -1,6 +1,7 @@
 import { flexRender, type Table as TableModel } from '@tanstack/react-table'
 import { FolderKanban, RefreshCw, Search, TriangleAlert } from 'lucide-react'
 import type { Project } from '@/entities/project'
+import { TableColumnControls, type TableView } from '@/features/table-view'
 import { useTranslation } from '@/shared/lib/i18n'
 import { Button } from '@/shared/ui/button'
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from '@/shared/ui/empty'
@@ -11,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 interface ProjectTableViewportProps {
   table: TableModel<Project>
   compact: boolean
+  view?: TableView
   showLoading: boolean
   showError: boolean
   hasFilters: boolean
@@ -21,6 +23,7 @@ interface ProjectTableViewportProps {
 export function ProjectTableViewport({
   table,
   compact,
+  view,
   showLoading,
   showError,
   hasFilters,
@@ -30,37 +33,51 @@ export function ProjectTableViewport({
   const { t } = useTranslation('workspace')
   return (
     <>
-      {/* Keep a 40px header plus five/eight 72px rows in every request state. */}
+      {/* The viewport stays stable through loading, density changes, and empty/error states. */}
       <div
         data-project-table-viewport
         className={`relative overflow-auto [&>[data-slot=table-container]]:overflow-visible ${compact ? 'h-[25rem]' : 'h-[38.5rem]'}`}
       >
         <Table
           aria-label={t(compact ? 'table.recent' : 'common.projects')}
-          className={compact ? 'min-w-[44rem] table-fixed' : 'min-w-[58rem] table-fixed'}
+          className={compact ? 'min-w-[44rem] table-fixed' : undefined}
+          columnWidths={view?.columnWidths}
+          density={view?.density}
+          pinnedWidth={view?.pinnedWidth}
         >
-          <TableHeader className="sticky top-0 z-10 bg-muted">
+          <TableHeader className="sticky top-0 z-20 bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
+                    data-column-id={header.column.id}
+                    aria-label={
+                      view?.columns.find((column) => column.id === header.column.id)?.label
+                    }
+                    layout={view?.getLayout(header.column.id)}
                     className={
-                      header.column.id === 'select'
-                        ? 'w-12 pl-5 md:pl-6'
-                        : header.column.id === 'status'
-                          ? 'w-28'
-                          : header.column.id === 'owner'
-                            ? 'w-44'
-                            : header.column.id === 'progress'
-                              ? 'w-36'
-                              : header.column.id === 'updatedAt'
+                      !compact
+                        ? header.column.id === 'select'
+                          ? 'pl-5 md:pl-6'
+                          : header.column.id === 'actions'
+                            ? 'pr-5 md:pr-6'
+                            : ''
+                        : header.column.id === 'select'
+                          ? 'w-12 pl-5 md:pl-6'
+                          : header.column.id === 'status'
+                            ? 'w-28'
+                            : header.column.id === 'owner'
+                              ? 'w-44'
+                              : header.column.id === 'progress'
                                 ? 'w-36'
-                                : header.column.id === 'actions'
-                                  ? 'w-12 pr-5 md:pr-6'
-                                  : compact && header.column.id === 'name'
-                                    ? 'pl-5 md:pl-6'
-                                    : ''
+                                : header.column.id === 'updatedAt'
+                                  ? 'w-36'
+                                  : header.column.id === 'actions'
+                                    ? 'w-12 pr-5 md:pr-6'
+                                    : header.column.id === 'name'
+                                      ? 'pl-5 md:pl-6'
+                                      : ''
                     }
                     aria-sort={
                       header.column.getIsSorted() === 'asc'
@@ -70,9 +87,16 @@ export function ProjectTableViewport({
                           : undefined
                     }
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder ? null : view ? (
+                      <HStack justify="between" className="gap-1">
+                        <span className="min-w-0 wrap-anywhere whitespace-normal">
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </span>
+                        <TableColumnControls view={view} columnId={header.column.id} />
+                      </HStack>
+                    ) : (
+                      flexRender(header.column.columnDef.header, header.getContext())
+                    )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -82,9 +106,11 @@ export function ProjectTableViewport({
             {showLoading
               ? Array.from({ length: compact ? 5 : 8 }, (_, index) => (
                   <TableRow key={index} className="h-18" aria-hidden="true">
-                    {table.getVisibleLeafColumns().map((column) => (
+                    {table.getLeafHeaders().map(({ column }) => (
                       <TableCell
                         key={column.id}
+                        data-column-id={column.id}
+                        layout={view?.getLayout(column.id)}
                         className={`py-4 ${column.id === 'select' ? 'pl-5 md:pl-6' : column.id === 'actions' ? 'pr-5 md:pr-6' : compact && column.id === 'name' ? 'pl-5 md:pl-6' : ''}`}
                       >
                         {column.id === 'name' ? (
@@ -120,6 +146,8 @@ export function ProjectTableViewport({
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
+                          data-column-id={cell.column.id}
+                          layout={view?.getLayout(cell.column.id)}
                           className={`py-4 ${cell.column.id === 'select' ? 'pl-5 md:pl-6' : cell.column.id === 'actions' ? 'pr-5 md:pr-6' : compact && cell.column.id === 'name' ? 'pl-5 md:pl-6' : ''}`}
                         >
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}

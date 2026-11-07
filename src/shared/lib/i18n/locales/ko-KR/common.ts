@@ -1,6 +1,34 @@
 import type en from '../en-US/common'
 type TranslationShape<T> = { [K in keyof T]: T[K] extends string ? string : TranslationShape<T[K]> }
 export default {
+  tableView: {
+    title: '보기 설정',
+    description:
+      '변경은 이 표에 바로 적용되며, 저장소를 사용할 수 있으면 현재 브라우저에 저장됩니다.',
+    density: '행 간격',
+    compact: '촘촘하게',
+    default: '기본',
+    comfortable: '여유롭게',
+    columns: '열 설정',
+    show: '{{column}} 표시',
+    pin: '열 고정',
+    pinColumn: '{{column}} 고정',
+    none: '고정 안 함',
+    left: '왼쪽',
+    right: '오른쪽',
+    width: '너비(px)',
+    widthOf: '{{column}} 너비',
+    earlier: '{{column}} 앞으로 이동',
+    later: '{{column}} 뒤로 이동',
+    move: '{{column}} 이동',
+    resize: '{{column}} 너비 조절',
+    moveHint: '같은 고정 영역의 다른 열로 드래그하거나 왼쪽·오른쪽 방향키로 이동하세요.',
+    resizeHint: '드래그나 방향키로 조절하고 Home 키로 기본 너비를 복원하세요.',
+    dropAt: '놓으면 {{column}} 위치로 이동합니다',
+    hint: '열은 같은 고정 영역 안에서 이동합니다. 선택·작업 열은 제자리를 유지합니다. 표가 좁아 스크롤할 공간이 부족하면 열 고정이 잠시 해제됩니다.',
+    reset: '기본값 복원',
+    done: '완료',
+  },
   demoStorage: {
     sessionOnly:
       '브라우저에 저장할 수 없어 일부 데모 변경은 이 탭에서만 유지됩니다. 새로고침하거나 탭을 닫으면 변경이 사라질 수 있습니다.',
